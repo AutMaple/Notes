@@ -37,6 +37,112 @@ IOC ==> Iversion of Control 。控制反转在 java 中表示把创建对象的�
 > - class 类 的全名，需要指定类所在的位置( 全路径 )，必须填写，Spring 通过这个设置创建对象
 > - 该配置文件告诉 Spring 需要创建那些对象，有多少个 就创建多少个对象
 
+### bean 对象的 scope 属性
+
+常用可选值: singleton 和 prototype 
+
+区别：
+
+- singleton表示单实例，prototype 表示多实例
+- 当 scope 是 singleton 的时候，java 在加载配置文件时就会创建单实例对象
+- 当 scope 是 prototype 的时候，java 不会在加载配置文件时创建对象，而是在调用 getBean 方法的时候在创建对象
+
+### bean 的生命周期
+
+1. 通过构造器创建 bean 实例（无参构造方法）
+2. 为 bean 设置属性值（ setter 方法）
+3. 调用 bean 的后置处理器方法 postProcessBeforeInitialization （需要 bean 实现 BeanPostProcessor 接口， 可选）
+4. 调用 bean 的初始化方法 （需要配置初始化方法， 通过 init-method 属性配置）
+5. 调用 bean 的后置处理器方法 postProcessAfterInitialization (需要 bean 实现 BeanPostProcessor 接口, 可选)
+6. bean创建完毕，可以使用
+7. 当容器关闭时，调用 bean 的销毁方法（需要配置销毁方法， 通过 destroy-method 属性配置）
+
+注意：如果在配置文件中声明了后置处理器，那么配置文件中的所有 bean 都会被配置后置处理器
+
+User.java
+
+```java
+package com.autmaple.entity;
+
+public class User {
+    private String name;
+
+    public User(){
+        System.out.println("调用无参构造方法");
+    }
+    public String getName() {return name;}
+
+    public void setName(String name) {
+        System.out.println("调用 setter 方法");
+        this.name = name;
+    }
+
+    public void initMethod(){
+        System.out.println("调用 initMethod");
+    }
+
+    public void destroyMethod(){
+        System.out.println("调用 destroyMethod ");
+    }
+}
+
+```
+
+bean.xml
+
+```xml
+<bean class="com.autmaple.entity.User" id="user7" init-method="initMethod" destroy-method="destroyMethod">
+    <property name="name" value="AutMaple"/>
+</bean>
+<bean class="com.autmaple.entity.BeanPost" id="beanPost"/>
+```
+
+BeanPost.java
+
+```java
+package com.autmaple.entity;
+
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+
+public class BeanPost implements BeanPostProcessor {
+
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        System.out.println("before init");
+        return BeanPostProcessor.super.postProcessBeforeInitialization(bean, beanName);
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        System.out.println("after init");
+        return BeanPostProcessor.super.postProcessAfterInitialization(bean, beanName);
+    }
+}
+
+```
+
+test.java
+
+```java
+ClassPathXmlApplicationContext cpx = new ClassPathXmlApplicationContext("bean.xml");
+User user7 = cpx.getBean("user7", User.class);
+System.out.println(user7);
+cpx.close();
+```
+
+输出：
+
+```text
+调用无参构造方法
+调用 setter 方法
+before init
+调用 initMethod
+after init
+User{name='AutMaple'}
+调用 destroyMethod 
+```
+
 ## Spring 获取对象
 
 配置文件 Bean.xml
@@ -240,7 +346,9 @@ byName 自动注入
     <property name="name" value="市一中"/>
     <property name="address" value="郴州市北湖区"/>
 </bean>
-JAVA
+```
+
+```java
 ClassPathXmlApplicationContext cpx = new ClassPathXmlApplicationContext("Bean.xml");
 User user = cpx.getBean(User.class);
 System.out.println(user); 
@@ -255,7 +363,9 @@ PrimarySchool.java
 package com.autmaple;
 
 public class PrimarySchool extends School{}
-XML
+```
+
+```xml
 <bean id="user" class="com.autmaple.User" autowire="byType">
     <property name="age" value="10"/>
     <property name="name" value="AutMaple"/>
@@ -266,7 +376,9 @@ XML
     <property name="name" value="金海小学"/>
     <property name="address" value="郴州市苏仙区"/>
 </bean>
-JAVA
+```
+
+```java
 ClassPathXmlApplicationContext cpx = new ClassPathXmlApplicationContext("Bean.xml");
 User user = cpx.getBean(User.class);
 System.out.println(user); 
@@ -422,6 +534,45 @@ System.out.println(user);
 </property>
 ```
 
+## Spring 配置文件中引入 properties 文件
+
+引入 context 名称空间
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xmlns:context="http://www.springframework.org/schema/context" <==
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"> <==
+```
+
+引入 properties 文件
+
+```xml
+<context:property-placeholder location="classpath:jdbc.properties"/>
+```
+
+jdbc.properties
+
+```properties
+prop.driverClass=com.mysql.jdbc.Drive
+prop.url=jdbc:mysql://localhost:3306/userdb
+prop.userName=root
+prop.password=root
+```
+
+在 spring 配置文件中使用 properties 中的属性: `${ keyName }`
+
+```xml
+<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+    <property name="driverClassName" value="${prop.driverClass}"/>
+    <property name="url" value="${prop.url}"/>
+    <property name="username" value="${prop.userName}"/>
+    <property name="password" value="${prop.password}"/>
+</bean>
+```
+
 ## java 中配置 Bean
 
 在 Spring 中，想要将一个 Bean 注册到 Spring 容器中，整体上来说，有三种不同的方式。
@@ -488,6 +639,14 @@ public class JavaConfig {
 
 在 Spring4 之后，使用注解开发需要导入 aop 包
 
+```xml
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aop</artifactId>
+    <version>5.3.1</version>
+</dependency>
+```
+
 同时需要在配置文件中配置注解支持
 
 ```XML
@@ -495,13 +654,43 @@ public class JavaConfig {
 <contex:annotation-config/>
 ```
 
+扫描多个包可以是用 `，`隔开
+
+### 配置如何扫描包
+
+如果使用
+
+```xml
+<contex:component-scan base-package="....."/>
+```
+
+那么 spring 会使用默认 filter 去扫描指定包中的所有内容
+
+如果想配置自己的 filter 可以禁用默认的 filter，此时，就必须指定 filter 来告诉 spring 如何进行扫描
+
+```xml
+<context:component-scan base-package="com.autmaple.entity" use-default-filters="false">
+    <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+</context:component-scan>
+```
+
+上述配置告诉 spring 只扫描 `com.autmaple.entity`下带`Controller`注解的内容
+
+```xml
+ <context:component-scan base-package="com.autmaple.entity">
+    <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+</context:component-scan>
+```
+
+上述配置告诉 spring 不扫描 `com.autmaple.entity`下带`Controller`注解的内容
+
 ### 常用注解
 
 | 注解            | 说明                                                         |
 | --------------- | ------------------------------------------------------------ |
 | @Autowired      | 根据 Type 自动进行注入，目标类中可以没有 setter 方法         |
-| @Qualifier      | 配合 Autowired 使用，指定注入的类型                          |
-| @Resource       | 默认根据 Name 自动进行注入。也可以配置根据 Type 进行自动注入 |
+| @Qualifier      | 配合 Autowired 使用，指定注入的类型。当类型有多个时，就需要指定使用哪一个 |
+| @Resource       | 默认根据 Type 自动进行注入，也可以配置根据 Name 进行自动注入。 同时 Resource 注解位于 `javax.annotation`包中 |
 | @Value          | 配置基本数据类型的自动注入                                   |
 | @Scope          | 声明 Bean 的生存方式，singleton 还是 prototype               |
 | @Component      | 声明对应类为一个 Bean 对象，交给 Spring 容器管理             |
@@ -516,3 +705,17 @@ public class JavaConfig {
 | @After          | 目标方法执行完之后执行，不论其是否报错都会执行               |
 | @Around         | 可以在方法执行前后设置相关的信息                             |
 | @AfterReturning | 方法返回之后执行                                             |
+
+### 注解声明一个bean
+
+使用注解声明一个 bean 可以使用如下注解
+
+- `@Component` ===> 普通的bean
+- `@Controller` ===> controller 层的 bean
+- `@Service` ===> service 层的 bean
+- `@Repository` ==> dao 层的 bean
+
+上述四个注解都可以申明对应的类为一个 bean， 基本上没有差别，这几个注解的设置可以增强代码可可阅读性
+
+
+
