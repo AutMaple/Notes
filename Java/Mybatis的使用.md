@@ -10,21 +10,41 @@ Mybatis 可以让程序员不用在编写各实体类和 DAO 的具体实现。�
 
 resources.xml : 该配置文件用于设置数据库相关的配置以及各表对应的 DAO
 
-```XML
+```xml
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE configuration
-        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 4.0//EN"
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
 <configuration>
-    <properties>
-        <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
-        <property name="url" value="jdbc:mysql://localhost:3306/db1?serverTimezone=Asia/Shanghai"/>
-        <property name="username" value="root"/>
-        <property name="password" value="root"/>
-    </properties>
+    <!--
+        引入外部的properties中的配置
+        resource: properties配置文件的位置
+        根据项目编译之后存放的位置来填写
+    -->
+    <properties resource="conf/jdbc.properties"/>
+    
+     <!--
+		另外一种配置方式
+        <properties>
+            <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+            <property name="url" value="jdbc:mysql://localhost:3306/db1?serverTimezone=Asia/Shanghai"/>
+            <property name="username" value="root"/>
+            <property name="password" value="root"/>
+        </properties>
+	 -->
+    <!--
+        配置使用何种数据库,常见的数据库:mysql, oracle
+        default的值是 environment 标签的 id 值
+    -->
     <environments default="development">
         <environment id="development">
+            <!-- 配置数据库的事务管理器： -->
             <transactionManager type="JDBC"/>
+
+            <!--
+                配置dataSource获取数据库连接 Connection 对象
+                type属性指定如何获取数据库连接 Connection 对象
+            -->
             <dataSource type="POOLED">
                 <property name="driver" value="${driver}"/>
                 <property name="url" value="${url}"/>
@@ -33,8 +53,14 @@ resources.xml : 该配置文件用于设置数据库相关的配置以及各表�
             </dataSource>
         </environment>
     </environments>
+
+    <!--告诉mybatis执行sql语句位置-->
     <mappers>
-        <mapper resource="StudentMapper.xml"/>
+        <!--
+            mapper用于指定映射文件存放的位置，映射文件中存放的是sql语句
+            resource的值为项目编译之后文件所在的位置
+         -->
+        <mapper resource="StudentDao.xml"/>
     </mappers>
 </configuration>
 ```
@@ -43,14 +69,14 @@ StudentMapper.xml : 该配置文件用于编写相关的 sql 语句
 
 ```XML
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<!-- namespace ==> 绑定一个 DAO/Mapper 接口-->
-<mapper namespace="com.autmaple.mybatis.dao.StudentDao">
-    <select id="getStudentList" resultType="com.autmaple.mybatis.entity.Student">
-        select * from student
+<!-- namespace ==> 绑定一个 DAO/Mapper 接口, 并且使用全限定类名-->
+<mapper namespace="com.autmaple.dao.StudentDao">
+    <!--编写sql语句-->
+    <select id="selectStudent" resultType="com.autmaple.entity.Student">
+        select id,name,email,age from student
     </select>
 </mapper>
 ```
@@ -59,9 +85,11 @@ StudentMapper.xml : 该配置文件用于编写相关的 sql 语句
 
 StudentDao.java
 
+mybatis 中只需要编写对应的 dao 接口就行，而不需要编写对应 dao 的实现类
+
 ```JAVA
 public interface StudentDao {
-    List<Student> getStudentList();
+    List<Student> selectStudent();
 }
 ```
 
@@ -70,47 +98,72 @@ public interface StudentDao {
 MybatisUtil.java
 
 ```JAVA
-public class MyBatisUtil {
-    private static SqlSessionFactory sqlSessionFactory;
+package com.autmaple.utils;
+
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+public class MybatisUtil {
+    public static SqlSessionFactory sqlSessionFactory;
     static{
         try {
-            String resource = "resource.xml";
-            InputStream inputStream = Resources.getResourceAsStream(resource);
-            sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+            String configFile = "mybatis-config.xml";
+            /**Resources 是Mybatis中的一个类，用于读取配置文件*/
+            InputStream is = Resources.getResourceAsStream(configFile);
+            /**SqlSessionFactory的创建比较耗时，在整个项目中有一个就可以了*/
+            sqlSessionFactory = new SqlSessionFactoryBuilder().build(is);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public static SqlSession getSqlSession(){
-        return sqlSessionFactory.openSession();
+        /**
+         * 获取到的SqlSession对象默认是不自动提交事务，因此在执行 insert, update, delete之后需要手动的提交食物
+         * 如果需要SqlSession自动提交事务需要给 openSession传递一个 布尔值：true 
+         * SqlSession接口中定义了操作数据的方法，其中SqlSession接口的实现类DefaultSqlSession实现了这些方法
+         * */
+        SqlSession sqlSession = null;
+        if(sqlSessionFactory != null) {
+            sqlSession = sqlSessionFactory.openSession();
+        }
+        return sqlSession;
     }
 }
+
 ```
 
 ### 实体类
 
 Student.java
 
+不需要对应的 getter 和 setter 方法
+
 ```JAVA
+package com.autmaple.entity;
+
 public class Student {
-    private int id;
+    private Integer id; // 使用包装类是为了防止查询到的数据无法转换成对应的数据类型时，可以赋值为null,而基本数据类型不可以
     private String name;
-    private int age;
-    private double score;
-    private Date birthday;
+    private String email;
+    private Integer age;
 
     @Override
     public String toString() {
         return "Student{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
                 ", age=" + age +
-                ", score=" + score +
-                ", birthday=" + birthday +
                 '}';
     }
 }
+
 ```
 
 ### 使用
@@ -128,10 +181,8 @@ sqlSession.close();
 ### 输出
 
 ```PLAINTEXT
-Student{id=1, name='AutMaple', age=22, score=135.0, birthday=Wed Jun 09 00:00:00 CST 1999}
-Student{id=2, name='张三', age=32, score=125.0, birthday=Wed Jun 09 00:00:00 CST 1999}
-Student{id=3, name='李四', age=29, score=115.0, birthday=Wed Jun 09 00:00:00 CST 1999}
-Student{id=4, name='Irvin', age=27, score=95.0, birthday=Wed Jun 09 00:00:00 CST 1999}
+Student{id=1, name='AutMaple', email='AutMaple609@qq.com', age=22}
+Student{id=2, name='Irvin', email='Irvin333@qq.com', age=27}
 ....
 ```
 
@@ -306,3 +357,4 @@ xml 配置文件中的配置
 Mybatis 中优先级从大到小:
 
 方法参数传递的属性 ==> resource/url 属性中指定的配置文件 ==> properties 元素中指定的属性
+
