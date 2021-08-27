@@ -149,7 +149,7 @@ springMVC.xml
  		HttpMessageConverter接口：消息转换器
 		功能：定义了 java 转换成 json ，xml 等数据格式的方法。这个接口有很多的实现类
 			 这些实现类是实现了 java 对象到 json ，java 对象到 xml， java 对象到二进制数据的在
-		同时该标签也可以用于处理 @RequestMapping 和其他路径处理器d冲突问题
+		同时该标签也可以用于处理 @RequestMapping 和其他路径处理器的冲突问题
 	-->
     <mvc:annotation-driven/>
 
@@ -186,7 +186,55 @@ location: 静态资源在项目中存放的位置
 <mvc:resources mapping="/**" location="/static/"/>
 ```
 
+## 相对路径和绝对路径的问题
 
+路径以`/`开头的路径为绝对路路径，不以`/`开头的路径为相对路径
+
+绝对路径最终生成的地址是：服务器的域名 + 绝对路径
+
+相对路径最终生成的地址是：项目发布地址 + 相对路径
+
+例如：
+
+绝对路径：/html/hello.html
+
+相对路径：html/hello.html
+
+项目发布地址：http://localhost/sprignmvc/
+
+当我们访问 `/html/hello.html` 时，访问的真实地址是： `http://localhost/html/hello.html`
+
+当我们访问 `html/hello.html` 时，访问的真实地址是： `htpp://localhost/springmvc/html/hello.html`
+
+建议使用相对路径，但是使用绝对路径的方式。虽然使用相对路径会出现一些问题，比如：
+
+`html/user`这个相对路径会返回一个页面，访问该页面的地址是`htpp://localhost/springmvc/html/user`
+
+此时在请求该路径返回的页面中有一个链接也是 `html/user`,此时如果点击该链接，那么访问的地址就会变成 `htpp://localhost/springmvc/html/html/user`, 这样访问就会出错，因为没有对应的资源。因此**推荐使用**绝对路径
+
+但是使用绝对路径就需要在路径中加上项目地址，可以使用在 JSP 中使用 EL表达式`${pageContext.request.contextPath}`这样能够获取到项目的地址，但是这种方法需要在所有的路径中都加上这个表达式，非常的麻烦。
+
+另一种解决方案，通过 html 标签`<base>`来解决
+
+该标签中有一个属性 `href` ， 在设置了 `<base>`标签的 html 页面中，所有的相对路径都将以`<base>` 标签中的 `href`属性为参考地址。
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%
+    String basePath = request.getScheme() + "://" +
+                      request.getServerName() + ":" + request.getServerPort() +
+                      request.getContextPath() + "/";
+%>
+<html>
+<head>
+    <title>Title</title>
+    <base resource="<%=basePath%>">
+</head>
+<body>
+    <a href="html/user">click me</a>
+</body>
+</html>
+```
 
 ## @RequestMapping 注解
 
