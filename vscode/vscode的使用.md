@@ -183,6 +183,3 @@ task.json
 | workspaceRoot           | 项目根路径                                         |
 | fileDirname             | 当前所编辑的文件所在的目录的全路径                 |
 | fileBasenameNoExtension | 表示当前所编辑的文件的文件名去掉文件类型之后的部分 |
-
-
-
