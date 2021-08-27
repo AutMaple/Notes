@@ -43,6 +43,43 @@ SpringMVC就是一个 Spring。 Spring 是容器，ioc 能够管理对象，使�
 
    doDispatch：是 SpringMVC 中 DispatcherServlet 的核心方法， 所有的请求都在这个方法中完成的。
 
+## Tomcat 处理静态资源
+
+Tomcat 本身能处理静态资源的访问， 像html， 图片， js文件都是静态资源
+
+tomcat的配置文件中的 web.xml 文件有一个 servlet 名称是 default ， 在服务器启动时创建的。
+
+```xml
+<servlet>
+    <servlet-name>default</servlet-name>
+    <servlet-class>org.apache.catalina.servlets.DefaultServlet</servlet-class>
+    <init-param>
+        <param-name>debug</param-name>
+        <param-value>0</param-value>
+    </init-param>
+    <init-param>
+        <param-name>listings</param-name>
+        <param-value>false</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+</servlet>
+<servlet-mapping>
+	<servlet-name>default</servlet-name>
+	<url-pattern>/</url-pattern>  ===> 表示静态资源和未映射的请求都这个default处理
+</servlet-mapping>
+```
+
+这个 default Servlet 作用： 
+
+> The default servlet for all web applications,  that serves static resources. 
+>
+> It processes all requests that are not mapped to other servlets with servlet mappings (defined either here or in your own web.xml file).
+
+- 处理静态资源
+- 处理未映射到其它 servlet 的请求。
+
+因此当我们在项目的 web.xml 中配置了 `<url-pattern>/</url-pattern>` 时，就会替代 Tomacat 默认的 Servlet，此时就不能够访问静态资源和未被映射的请求了，只能够处理项目中映射的请求
+
 ## 配置
 
 web.xml
@@ -100,8 +137,8 @@ springMVC.xml
 
     <!--
         在 WEB 容器启动的时候会在上下文中定义一个 DefaultServletHttpRequestHandler，它会对DispatcherServlet的请求进行处理
-        如果该请求已经作了映射，那么会接着交给后台对应的处理程序，如果没有作映射，就交给 WEB 应用服务器默认的 Servlet 处理
-        从而找到对应的静态资源，只有在找不到资源时才会报错。
+        如果该请求已经作了映射，那么会接着交给后台对应的处理程序，如果没有作映射，就交给 WEB 应用服务器默认的 Servlet 进行处理
+        从而找到对应的静态资源并返回给客户端，此时如果还找不到路径对应的找不资源时就报错。
     -->
     <mvc:default-servlet-handler/>
     
@@ -124,8 +161,6 @@ springMVC.xml
 ```
 
 HelloController.java
-
-
 
 ```java
 @Controller
@@ -215,7 +250,7 @@ org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter
 org.springframework.http.converter.json.MappingJackson2HttpMessageConverter <=== json 数据使用的转换器，使用 jackson 作为转换器
 ```
 
-### @ResponseBody注解
+## @ResponseBody注解
 
 位置：路径处理方法上
 
