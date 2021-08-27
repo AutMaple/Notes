@@ -149,7 +149,7 @@ springMVC.xml
  		HttpMessageConverter接口：消息转换器
 		功能：定义了 java 转换成 json ，xml 等数据格式的方法。这个接口有很多的实现类
 			 这些实现类是实现了 java 对象到 json ，java 对象到 xml， java 对象到二进制数据的在
-		同时该标签也可以用于处理 @RequestMapping 和其他路径处理器冲突问题
+		同时该标签也可以用于处理 @RequestMapping 和其他路径处理器d冲突问题
 	-->
     <mvc:annotation-driven/>
 
@@ -167,7 +167,7 @@ springMVC.xml
 在 Spring 3.0 之后， Spring 定义了专门用于处理处理静态资源访问请求的处理器 ResourceHttpHandler。 并且添加了 `<mvc:resources/>`标签，专门用于解决静态资源文件无法访问的问题。需要在 spring 的配置文件中添加如下形式的配置
 
 ```xml
-<mvc:resources mapping="/images/**" location="/images/"/>
+<mvc:resources mapping="/html/**" location="/static/"/>
 ```
 
 配置文件中加入了`<mvc:resources/>`这个标签之后，就会在框架中创建一个 ResourceHttpRequestHandler 处理器对象。这个对象用于处理静态资源的请求，而不用依赖于 Tomcat 默认的 Servlet 来进行处理。
@@ -175,6 +175,20 @@ springMVC.xml
 mapping： 表示静态资源访问的 uri 地址，使用通配符 `**` 来匹配所有的 `/img/....`的路径。 `**`表示文件和文件夹
 
 location: 静态资源在项目中存放的位置
+
+最终访问项目中的资源路径就是` WEB-INF/static/**`
+
+例如访问 `/html/hello.html`, 那么就会去寻找项目中的`WEB-INF/static/hello.html`。
+
+静态资源可以统一放入 `WEB-INF/static`目录下，然后使用如下配置配置进行访问
+
+```xml
+<mvc:resources mapping="/**" location="/static/"/>
+```
+
+
+
+## @RequestMapping 注解
 
 HelloController.java
 
