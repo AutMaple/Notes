@@ -6,7 +6,20 @@ Mybatis 可以让程序员不用在编写各实体类和 DAO 的具体实现。�
 
 ## 快速使用
 
+
+
 ### 编写配置文件
+
+jdbc.properties文件
+
+```properties
+driver=com.mysql.cj.jdbc.Driver
+url=jdbc:mysql://localhost:3306/ssm
+username=root
+password=root
+```
+
+
 
 resources.xml : 该配置文件用于设置数据库相关的配置以及各表对应的 DAO
 
@@ -32,6 +45,13 @@ resources.xml : 该配置文件用于设置数据库相关的配置以及各表�
             <property name="password" value="root"/>
         </properties>
 	 -->
+    
+    <!--输出日志-->
+    <settings>
+        <setting name="logImpl" value="STDOUT_LOGGING"/>
+    </settings>
+
+    
     <!--
         配置使用何种数据库,常见的数据库:mysql, oracle
         default的值是 environment 标签的 id 值
@@ -43,8 +63,10 @@ resources.xml : 该配置文件用于设置数据库相关的配置以及各表�
 
             <!--
                 配置dataSource获取数据库连接 Connection 对象
-                type属性指定如何获取数据库连接 Connection 对象
+                type属性指定如何获取 Connection 对象
+                type = POOLED 表示从连接池中获取 Connection 对象
             -->
+
             <dataSource type="POOLED">
                 <property name="driver" value="${driver}"/>
                 <property name="url" value="${url}"/>
@@ -124,9 +146,9 @@ public class MybatisUtil {
 
     public static SqlSession getSqlSession(){
         /**
+         * SqlSession接口中定义了操作数据的方法，其中SqlSession接口的实现类DefaultSqlSession实现了这些方法
          * 获取到的SqlSession对象默认是不自动提交事务，因此在执行 insert, update, delete之后需要手动的提交食物
          * 如果需要SqlSession自动提交事务需要给 openSession传递一个 布尔值：true 
-         * SqlSession接口中定义了操作数据的方法，其中SqlSession接口的实现类DefaultSqlSession实现了这些方法
          * */
         SqlSession sqlSession = null;
         if(sqlSessionFactory != null) {
@@ -170,7 +192,12 @@ public class Student {
 
 ```JAVA
 SqlSession sqlSession = MyBatisUtil.getSqlSession();
+
+/** 
+ * MyBatis 通过动态代理，自动创建 StudentDao 接口的实现类并返回
+ * */
 StudentDao student = sqlSession.getMapper(StudentDao.class);
+
 List<Student> list = student.getStudentList();
 for(Student stu: list){
 	System.out.println(stu);
@@ -223,13 +250,22 @@ StudentMapper.xml
         select * from student
     </select>
 
-     
+    <!--
+		parameterType属性表示的是 Dao 接口方法中参数的类型，可以是全限定类名，也可以是Mybatis定义的别名
+		Mybatis定义的别名可以参考官网的说明
+
+		注意：parameterType这个属性不是强制的，Mybatis通过反射机制可以发现接口参数的类型，所以可以没有。
+
+		Mybatis中使用 #{} 时，会使用的 PreparedStatement 这个对象来进行 sql 语句的拼接，因此不用担心 sql 注入的问题
+	-->
     <select id="getStudentById" parameterType="int" resultType="com.autmaple.mybatis.entity.Student">
+        <!-- #{id} === Student.id -->
         select * from student where id = #{id}
     </select>
 
 	<!-- 插入方法 -->      
     <insert id="insertStudent" parameterType="com.autmaple.mybatis.entity.Student">
+        <!-- #{name} === Student.name 其他的以此类推-->
         insert into student(name,age,score,birthday) values (#{name},#{age},#{score},#{birthday})
     </insert>
     
@@ -264,6 +300,30 @@ StudentMapper.xml
 </mapper>
 ```
 
+
+
+### 传递多个参数
+
+传递多个参数可以在 dao 接口的方法参数中加上 `@Param`注解。
+
+StrudentDao.java
+
+```java
+public interface StudentDao{
+    
+    List<Student> selectByMultiParams(@Param("myname") String name,
+                                      @Param("myage") Integer age);
+}
+```
+
+Mybatis 的 Mapper 配置文件中
+
+```xml 
+<select id="selectMultiParams" resultType="...">
+	select * from Student where name =#{myname} or age=${myage}
+</select>
+```
+
 ### 传递Map
 
 在传递参数时，可以传递 Map，当表中字段很多时，Map 将会很方便，Map 允许我们自定义传递的数据的名字
@@ -282,6 +342,12 @@ System.out.println(stu);
     select * from student where id = #{studentId}
 </select>
 ```
+
+### #和$
+
+\#：占位符，告诉 mybatis 使用实际的参数值代替。并使用 PrepareStatement 对象执行 sql 语句, #{…}代替 sql 语句的“?”。这样做更安全，更迅速，通常也是首选做法
+
+$：字符串替换，告诉 mybatis 使用$包含的“字符串”替换所在位置。使用 Statement 把 sql 语句和${}的内容连接起来(字符串的拼接)。主要用在替换表名，列名，不同列排序等操作。
 
 ## 结果集映射 resultMap
 
