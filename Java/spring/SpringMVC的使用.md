@@ -78,7 +78,7 @@ tomcat的配置文件中的 web.xml 文件有一个 servlet 名称是 default �
 - 处理静态资源
 - 处理未映射到其它 servlet 的请求。
 
-因此当我们在项目的 web.xml 中配置了 `<url-pattern>/</url-pattern>` 时，就会替代 Tomacat 默认的 Servlet，此时就不能够访问静态资源和未被映射的请求了，只能够处理项目中映射的请求
+因此当我们在项目的 web.xml 中配置了 `<url-pattern>/</url-pattern>` 时，就会替代 Tomacat 默认的 Servlet，此时就不能够访问静态资源和未被映射的请求了，只能够处理项目中映射的请求。如果还需要 tomcat 的默认servlet 工作，就需要在配置文件中加上： `<mvc:default-servlet-handler/>`标签
 
 ## 配置
 
@@ -98,7 +98,7 @@ web.xml
             所有的浏览器的请求都会经过DispatcherServlet
             DispatcherServlet 会将请求转发给对应的 Controller
             经 Controller 处理之后，交给 DispatcherServlet,最后交给浏览器
-           浏览器发送请求 <===> DispatcherServlet ===> Controller ===> DispatcherServlet ===> 浏览器
+           浏览器发送请求 ===> DispatcherServlet ===> Controller ===> DispatcherServlet ===> 浏览器
         -->
         <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
         
@@ -132,14 +132,17 @@ springMVC.xml
         http://www.springframework.org/schema/mvc
         https://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-    <!-- 扫描包下对应的 bean -->
-    <context:component-scan base-package="com.autmaple.controller"/>
+     <!--指定springMVC需要扫描的包-->
+    <context:component-scan base-package="com.autmaple.controller" use-default-filters="false">
+        <!--指定扫描带有@Conntroller注解的类，而不是包下的所有类-->
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
 
     <!--
         在 WEB 容器启动的时候会在上下文中定义一个 DefaultServletHttpRequestHandler，它会对DispatcherServlet的请求进行处理
         如果该请求已经作了映射，那么会接着交给后台对应的处理程序，如果没有作映射，就交给 WEB 应用服务器默认的 Servlet 进行处理
         从而找到对应的静态资源并返回给客户端，此时如果还找不到路径对应的资源时就报错。
-
+		将springMVC不能处理的请求交给 Tomcat 的默认Servlet去处理
     -->
     <mvc:default-servlet-handler/>
     
@@ -149,12 +152,13 @@ springMVC.xml
  		HttpMessageConverter接口：消息转换器
 		功能：定义了 java 转换成 json ，xml 等数据格式的方法。这个接口有很多的实现类
 			 这些实现类是实现了 java 对象到 json ，java 对象到 xml， java 对象到二进制数据的在
+		支持springMVC更高级的一些功能，比如更简单的ajax, 路径请求映射(@RequestMapping等)
 		同时该标签也可以用于处理 @RequestMapping 和其他路径处理器的冲突问题
 	-->
     <mvc:annotation-driven/>
 
 
-
+    <!--配置视图解析器-->
     <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
         <property name="prefix" value="/WEB-INF/templates/"/>
         <property name="suffix" value=".jsp"/>
