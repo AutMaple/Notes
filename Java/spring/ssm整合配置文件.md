@@ -161,6 +161,12 @@
         <param-name>contextConfigLocation</param-name>
         <param-value>classpath:conf/applicationContext.xml</param-value>
     </context-param>
+    
+    
+    <!--
+        使用监听器，在服务器启动的时候加载配置文件,生成一个spring容器（存放在ServletContext（全局共享）
+        如果没有配置 spring 的xml配置文件的位置，默认找的xml文件是/WEB-INF/applicationContext.xml
+     -->
     <listener>
         <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
     </listener>
