@@ -1,5 +1,69 @@
 # SSM 框架整合的配置文件
 
+## web.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+    
+    <!--注册spring的监听器-->
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:conf/applicationContext.xml</param-value>
+    </context-param>
+    
+    
+    <!--
+        使用监听器，在服务器启动的时候加载配置文件,生成一个spring容器（存放在ServletContext（全局共享）
+        如果没有配置 spring 的xml配置文件的位置，默认找的xml文件是/WEB-INF/applicationContext.xml
+     -->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+    
+      <!--注册中央调度器-->
+    <servlet>
+        <servlet-name>springMVC</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>classpath:conf/springMVC.xml</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>springMVC</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+    
+
+    <!--配置过滤器处理乱码问题-->
+    <filter>
+        <filter-name>characterEncodingFilter</filter-name>
+        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>utf-8</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceRequestEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceResponseEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>characterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+</web-app>
+```
+
 ## applicationContext.xml
 
 ```xml
@@ -13,6 +77,18 @@
         http://www.springframework.org/schema/context/spring-context.xsd">
 
     <!-- spring 的配置文件-->
+    
+     <!--指定扫描规则,不包括扫描Controller组件-->
+    <!--会扫描该包下带有 Service, Component, Resource注解的组件 -->
+    <context:component-scan base-package="com.autmaple">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+    <!--声明service的注解@service所在的包的位置-->
+   <!-- <context:component-scan base-package="com.autmaple.service"/> -->
+    
+    
+    <!--加载jdbc的外部配置文件-->
     <context:property-placeholder location="classpath:conf/jdbc.properties"/>
 
     <!-- 声明数据源，连接数据库-->
@@ -22,21 +98,35 @@
         <property name="password" value="${jdbc.password}"/>
     </bean>
 
-
-    <!--SqlSessionFactoryBean用于创建SqlSessionFactory -->
-    <bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sqlSessionFactoryBean">
+    
+    <!--配置和mybatis整合-->
+    <bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sqlSessionFactory">
         <property name="dataSource" ref="dataSource"/>
         <property name="configLocation" value="classpath:conf/mybatis.xml"/>
+        <property name="mapperLocations" value="classpath:mappers/*.xml"/>
     </bean>
+
 
     <!--声明Mybatis的扫描器，创建dao对象-->
+    <!--配置扫描器，将mybatis接口的实现加入到ioc容器中-->
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer" id="mapperScannerConfigurer">
         <property name="sqlSessionFactoryBeanName" value="sqlSessionFactoryBean"/>
+         <!--扫描对应包下所有的dao接口并将接口实现之后加入到IOC容器中-->
         <property name="basePackage" value="com.autmaple.dao"/>
     </bean>
+    
+    <!--配置一个可以执行批量操作的sqlSession-->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory"/>
+        <!--配置批量操作-->
+        <constructor-arg name="executorType" value="BATCH"/>
+    </bean>
 
-    <!--声明service的注解@service所在的包的位置-->
-    <context:component-scan base-package="com.autmaple.service"/>
+    <!--事务控制配置-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--控制数据源-->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>  
 
 </beans>
 ```
@@ -56,14 +146,26 @@
         http://www.springframework.org/schema/mvc
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-    <context:component-scan base-package="com.autmaple.controller"/>
+   <!-- <context:component-scan base-package="com.autmaple.controller"/>-->
+    
+    <!--指定springMVC需要扫描的包-->
+    <context:component-scan base-package="com.autmaple.controller" use-default-filters="false">
+        <!--指定扫描带有@Conntroller注解的类，而不是包下的所有类-->
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+    
+    <!--配置视图解析器-->
     <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
         <property name="suffix" value=".jsp"/>
         <property name="prefix" value="/WEB-INF/templates/"/>
     </bean>
  
+     <!--将springMVC不能处理的请求交给 Tomcat 的默认Servlet去处理-->
+    <mvc:default-servlet-handler/>
+
+    <!--支持springMVC更高级的一些功能，比如更简单的ajax, 路径请求映射(@RequestMapping等)-->
     <mvc:annotation-driven/>
-    <mvc:resources mapping="/**" location="/static/"/>
+   <!-- <mvc:resources mapping="/**" location="/static/"/>-->
 </beans>
 ```
 
@@ -130,70 +232,6 @@
         <package name="com.autmaple.dao"/>
     </mappers>
 </configuration>
-```
-
-## web.xml
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
-         version="4.0">
-    
-    <!--注册中央调度器-->
-    <servlet>
-        <servlet-name>springMVC</servlet-name>
-        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-        <init-param>
-            <param-name>contextConfigLocation</param-name>
-            <param-value>classpath:conf/springMVC.xml</param-value>
-        </init-param>
-        <load-on-startup>1</load-on-startup>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>springMVC</servlet-name>
-        <url-pattern>/</url-pattern>
-    </servlet-mapping>
-    
-    <!--注册spring的监听器-->
-    <context-param>
-        <param-name>contextConfigLocation</param-name>
-        <param-value>classpath:conf/applicationContext.xml</param-value>
-    </context-param>
-    
-    
-    <!--
-        使用监听器，在服务器启动的时候加载配置文件,生成一个spring容器（存放在ServletContext（全局共享）
-        如果没有配置 spring 的xml配置文件的位置，默认找的xml文件是/WEB-INF/applicationContext.xml
-     -->
-    <listener>
-        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
-    </listener>
-
-    <!--配置过滤器-->
-    <filter>
-        <filter-name>characterEncodingFilter</filter-name>
-        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
-        <init-param>
-            <param-name>encoding</param-name>
-            <param-value>utf-8</param-value>
-        </init-param>
-        <init-param>
-            <param-name>forceRequestEncoding</param-name>
-            <param-value>true</param-value>
-        </init-param>
-        <init-param>
-            <param-name>forceResponseEncoding</param-name>
-            <param-value>true</param-value>
-        </init-param>
-    </filter>
-    <filter-mapping>
-        <filter-name>characterEncodingFilter</filter-name>
-        <url-pattern>/*</url-pattern>
-    </filter-mapping>
-    
-</web-app>
 ```
 
 ## pom.xml
