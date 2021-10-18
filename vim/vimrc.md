@@ -51,7 +51,7 @@ nnoremap yr yy
 
 " 删除相关的操作
 nnoremap <silent> dw diw
-nnoremap <silent> d" di"
+nnoremap <silent> d" di
 nnoremap <silent> d( di(
 nnoremap <silent> d{ di{
 nnoremap <silent> dl dw
