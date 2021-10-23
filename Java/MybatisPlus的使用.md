@@ -1,5 +1,17 @@
 # MybatisPlus 的使用
 
+## 整合到 springboot 中
+
+```xml
+<dependency>
+    <groupId>com.baomidou</groupId>
+    <artifactId>mybatis-plus-boot-starter</artifactId>
+    <version>3.4.3.2</version>
+</dependency>
+```
+
+添加该依赖之后不需要在添加 mybatis 的依赖，在该依赖中已经包括了 mybaits
+
 ## 自动生成代码
 
 ### 添加生成器的依赖
@@ -81,6 +93,10 @@ public class DaoGenerator {
         // 设置驼峰命名规则
         strategy.setNaming(NamingStrategy.underline_to_camel);
         strategy.setColumnNaming(NamingStrategy.underline_to_camel);
+        // 去掉表的前缀
+        //strategy.setTablePrefix("t_");
+        // 去掉表字段中的前缀
+        /strategy.setFieldPrefix("...")
         mpg.setStrategy(strategy);
 
         // 执行代码
