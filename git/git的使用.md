@@ -2,7 +2,7 @@
 
 ## 从命令行创建一个仓库
 
-```shell
+```bash
 echo "# Notes" >> README.md
 git init
 git add README.md
@@ -14,7 +14,7 @@ git push -u origin main
 
 ## 推送内容到一个仓库
 
-```shell
+```bash
 git remote add origin git@github.com:AutMaple/Notes.git
 git branch -M main
 git push -u origin main
