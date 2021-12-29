@@ -447,7 +447,9 @@ login.jsp
 
 value: 请求中的参数名
 
-required: 一个 boolean 值，默认是 true。设置为 true 表示i请求中必须含有此参数
+required: 一个 boolean 值，默认是 true。设置为 true 表示请求中必须含有此参数
+
+如果方法中的参数没有被该注解修饰，则请求发送的参数中有没有该参数都会被正确的处理
 
 被 @RequestParam 修饰的变量名可以不与请求中的参数名相同
 
@@ -462,6 +464,42 @@ public ModelAndView login(@RequestParam("username")String name,
     return mv;
 }
 ```
+
+## @PathVariable 注解
+
+该注解是 spring3.0 的新功能，用于接收请求路径中占位符的值,例如
+
+```java
+@RequestMapping("show/{id}/{name}")
+public String test(@PathVariable("id") long ids, @PathVariable("name") String names){
+    .....
+    return "";
+}
+```
+
+## @RequestBody
+
+该注解主要用来接受前端传递给后端的 json 字符串中的数据(请求体中的数据)
+
+最常用的使用请求体传递参数的请求方式就是 Post 方式，因此 @RequestBody 注解通常和 Post 提交方式一起使用
+
+### @RequestBody 和 @RequestParam 参数
+
+- 在后端的某个路径处理方法中，只能够有一个 @RequestBody 注解，而 @RequestParam 注解可以有多个，它们并不冲突
+- 当着两个注解同时使用时，RequestBody 注解接收的是请求体中的数据，RequestParam 接收的是 key-value 中的数据,其中 key-value 的数据就是在路径中传递的参数，也即 get 方法传递参数的方式，在 Post 请求中也可以在请求路径中传递参数
+
+- 如果通过 `application/json` 的方式传递参数，只能通过 RequestBody 的方式进行接收, 如果请求的参数不是放在请求体中，而是放在路径中，我们只能够通过 RequestParam 的方式进行接收
+- 如果路径处理方法中什么注解都不加，**默认**将路径中传递的相匹配的参数进行赋值
+- 根据不同的 Content-Type 等情况,Spring-MVC 会采取不同的 `HttpMessageConverter` 实现来进行信息转换解析
+
+### @RequestBody 修饰一个对象
+
+如果 RequestBody 修饰的是一个对象，则前端传递过来的参数需要符合如下要求
+
+- 根据 json 中的 key 来匹配对象中对应的属性，如果匹配且 key 对应的值是**可转换的**就调用对应的 setter 方法进行赋值
+- json字符串中，如果 value 为 `""` 的话，后端对应属性如果是 String 类型的，那么接受到的就是 `""`，如果是后端属性的类型是Integer、Double等类型，那么接收到的就是 null。
+- json字符串中，如果 value 为 null 的话，后端对应收到的就是 null。
+- 如果某个参数没有 value 的话，在传 json 字符串给后端时，要么干脆就不把该字段写到 json 字符串中；要么写 value 时， 必须有值，null  或 `""` 都行，千万不能有类似 `"stature":` 这样的写法
 
 ## 传递一个对象
 
@@ -478,5 +516,33 @@ public ModelAndView login(User user){
 }
 ```
 
+## @JsonAlias 注解
 
+修饰类中的某一个属性，当对前端传递过来的数据进行转换时，根据是否与注解中指定的值相匹配进行赋值和序列化操作，例如
+
+```java
+@JsonAlias(value = {"Name", "name123"})
+private String name;
+```
+
+这样前端传递过来的参数中的 key 含有 Name, name, name123 中的任意一个都能够识别，并进行赋值
+
+该注解需要依赖于 getter 和 setter
+
+如果 json 中含有多个相同的 key，那么在转换为模型时，最后出现的那个 key 值会被赋值，前面的 key 对应的值会被覆盖，因为 setter 会覆盖原来的值
+
+## @JsonProperty 注解
+
+修饰类中的某个属性，并指定一个值，使得只能够识别该注解指定的值，而不能够识别其他的值，例如
+
+```java
+@JsonProperty(value = "MOTO")
+private String moto;
+```
+
+那么前端传递过来的参数中能够识别的 key 只有 MOTO， moto 这个 key 则不能够被识别
+
+该注解不依赖于 getter 和 setter
+
+在不添加 JsonAlias 和 JsonProperty 这两个注解时，key 的匹配默认是大小写敏感的
 

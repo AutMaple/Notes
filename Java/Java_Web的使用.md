@@ -71,8 +71,8 @@ apache-tomcat-10.0.7
 将项目部署到 Tomcat 中有三种方式
 
 1. 直接将项目放在 webapp 目录下
-2. 配置 `conf/server.xml`文件
-3. 在`conf/Catalina/localhost` 创建 xml 文件进行部署
+2. 配置 `conf/server.xml` 文件
+3. 在 `conf/Catalina/localhost` 创建 xml 文件进行部署
 
 推荐使用第三种方式在 Tomcat 中部署项目
 
@@ -95,7 +95,7 @@ apache-tomcat-10.0.7
 - projectPath: 填写项目所在的路径
 - path: 填写浏览器访问的虚拟路径
 
-例如在`/home/maple`目录下有一个 hello 项目，docBase 就应该填写 `/home/maple/hello`, 而 path 属性则可以任意写，比如`/hehe`。 这项配置就是告诉 Tomcat 当访问`/hehe`路径时，去`/home/maple/hello`目录下寻找相关的配置，并进行显示
+例如在 `/home/maple` 目录下有一个 hello 项目，docBase 就应该填写 `/home/maple/hello`, 而 path 属性则可以任意写，比如`/hehe`。 这项配置就是告诉 Tomcat 当访问`/hehe`路径时，去`/home/maple/hello`目录下寻找相关的配置，并进行显示
 
 ### 第三种方式 – 在 conf/Catalina/localhost 文件夹下创建配置文件
 
@@ -157,7 +157,7 @@ Servlet 是一个接口，定义了 java 类被 Tomcat 识别的规则
 
 需要在配置文件中添加`servlet`和`servlet-mapping`这两个标签
 
-其中`<servlet-class></servlet-class>`填写需要注册的 Servlet 的全称，之后便可以使用 `/hello`访问相应的资源，并将请求交给`com.autmaple.servlet.Hello`处理
+其中`<servlet-class></servlet-class>`填写需要注册的 Servlet 的全称，之后便可以使用 `/hello` 访问相应的资源，并将请求交给`com.autmaple.servlet.Hello`处理
 
 #### 执行原理
 
@@ -186,7 +186,7 @@ public String getServletInfo();
 public void destroy()
 ```
 
-其中的`init`, `service`, `destroy`方法代表着 Servlet 的周期
+其中的`init`, `service`, `destroy` 方法代表着 Servlet 的周期
 
 `init`方法在`Servlet`被创建是进行调用。可以在配置文件中设置什么时候调用`init`方法，只需要在配置文件对应的`Servlet`中设置`<load-on-startup>`属性即可,设置为正数或者 0，表示在启动 Tomcat 服务器时执行 init 方法；设置成负数时，表示在创建 Servlet 时调用 init 方法
 
@@ -244,9 +244,9 @@ public class Index extends HttpServlet {
 
 #### URI 和 URL
 
-`URL`: 统一资源定位符 ==> `https://blog.autmaple.com/tags/java`
+`URL`: 统一资源定位符 => `https://blog.autmaple.com/tags/java`
 
-`URI`: 统一资源标识符 ==> `/tags/java`
+`URI`: 统一资源标识符 => `/tags/java`
 
 URL 表示的范围比 URI 小
 
@@ -357,7 +357,7 @@ resp.sendRedirect("/index");
 
 #### 设置响应头让浏览器下载文件
 
-如果想让浏览器下载某个文件，需要在响应头中设置 `content-disposition`属性，值为`attachment;filename=<filename>`，代码如下
+如果想让浏览器下载某个文件，需要在响应头中设置 `content-disposition` 属性，值为 `attachment;filename=<filename>`，代码如下
 
 ```JAVA
 resp.setHeader("content-disposition","attachment;filename=" + filename);
@@ -423,7 +423,7 @@ getRealPath 方法用于获取资源的真实路径。其中 `/`表示项目的 
         └── web.xml
 ```
 
-此时 `/` 表示的就是 `webapp`目录，此时若要获取其中的 index.jsp ，就可以使用 `/index.jsp`,若要获取 web.xml， 可以使用 `/WEB-INF/web.xml`。 如果要获取 java 目录下的相关文件可以使用
+此时 `/` 表示的就是 `webapp` 目录，此时若要获取其中的 index.jsp ，就可以使用 `/index.jsp`,若要获取 web.xml， 可以使用 `/WEB-INF/web.xml`。 如果要获取 java 目录下的相关文件可以使用
 
 ```JAVA
 <className>.class.getClassLoader().getResource("<source>");
@@ -464,8 +464,8 @@ http 连接是无状态的，也就是每次请求是独立的，这些请求间
 
 方式：
 
-- 客户端会话技术 ==> Cookie
-- 服务端会话技术 ==> Session
+- 客户端会话技术 => Cookie
+- 服务端会话技术 => Session
 
 ### Cookie的使用
 
@@ -571,7 +571,7 @@ Tomcat 正常关闭指的是使用 Tomcat bin 目录下的 shutdown 脚本进行
 
 ### Filter 流程
 
-过滤器流程：请求 ==> Filter ==> Servlet ==> Filter ==> 响应请求
+过滤器流程：请求 => Filter => Servlet => Filter => 响应请求
 
 请求经过过滤器交给 Servlet 处理，Servlet 处理之后，不会立即响应给客户端，需要再次经过过滤器之后才响应客户端的请求
 
