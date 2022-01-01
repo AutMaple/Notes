@@ -488,7 +488,7 @@ public String test(@PathVariable("id") long ids, @PathVariable("name") String na
 - 在后端的某个路径处理方法中，只能够有一个 @RequestBody 注解，而 @RequestParam 注解可以有多个，它们并不冲突
 - 当着两个注解同时使用时，RequestBody 注解接收的是请求体中的数据，RequestParam 接收的是 key-value 中的数据,其中 key-value 的数据就是在路径中传递的参数，也即 get 方法传递参数的方式，在 Post 请求中也可以在请求路径中传递参数
 
-- 如果通过 `application/json` 的方式传递参数，只能通过 RequestBody 的方式进行接收, 如果请求的参数不是放在请求体中，而是放在路径中，我们只能够通过 RequestParam 的方式进行接收
+- 如果通过 `application/json` 的方式传递参数，**只能**通过 RequestBody 的方式进行接收, 如果请求的参数不是放在请求体中，而是放在路径中，我们只能够通过 RequestParam 的方式进行接收
 - 如果路径处理方法中什么注解都不加，**默认**将路径中传递的相匹配的参数进行赋值
 - 根据不同的 Content-Type 等情况,Spring-MVC 会采取不同的 `HttpMessageConverter` 实现来进行信息转换解析
 

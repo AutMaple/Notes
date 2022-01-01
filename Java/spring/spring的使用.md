@@ -691,12 +691,13 @@ public class JavaConfig {
 | @Autowired      | 根据 Type 自动进行注入，目标类中可以没有 setter 方法         |
 | @Qualifier      | 配合 Autowired 使用，指定注入的类型。当类型有多个时，就需要指定使用哪一个 |
 | @Resource       | 默认根据 Type 自动进行注入，也可以配置根据 Name 进行自动注入。 同时 Resource 注解位于 `javax.annotation`包中 |
-| @Value          | 配置基本数据类型的自动注入                                   |
+| @Value          | 配置基本数据类型的自动注入, 可以注入配置文件中的值           |
 | @Scope          | 声明 Bean 的生存方式，singleton 还是 prototype               |
 | @Component      | 声明对应类为一个 Bean 对象，交给 Spring 容器管理             |
 | @Repository     | 声明 Dao 包中的类为一个 Bean 对象，交给 Spring 容器管理      |
 | @Service        | 声明 Service 包中的类为一个 Bean 对象，交给 Spring 容器管理  |
 | @Controller     | 声明 Controller 包中的类为一个 Bean 对象，交给 Spring 容器管理 |
+| @RestController | 该注解声明该类是一个直接返回数据的 Controller，该注解是 @ResponseBody 和 @Controller 的组合 |
 | @Configuration  | 申明该类是一个配置类                                         |
 | @ComponentScan  | 指定扫描那个包下的 Component                                 |
 | @Import         | 导入配置类                                                   |

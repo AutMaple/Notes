@@ -26,11 +26,11 @@ Swagger-UI是HTML, Javascript, CSS的一个集合，可以动态地根据 java �
 - required: 是否是必须要传递的参数，默认值是 true
 - paramType: 参数放的位置
   - header：参数通过 @RequestHeader 注解获取
-  - query：参数通过 @RequestParam 注解获取
+  - query：参数通过 @RequestParam 注解获取, 获取的是路径上的参数
   - path： 参数通过 @PathVariable 注解获取
-  - body：
-  - form：
-- dataType: 参数的类型，默认是 String，还可以是 Integer
+  - body： 参数通过 @RequestBody 注解进行接受，传递的是 json 格式的数据
+  - form： 参数通过 @RequestParam 注解获取，通常用于接收 form 表单中的数据
+- dataType: 参数的类型，默认是 String, 还可以是其他的基本数据类型和自定义类型，如果是自定义类型，需要通过指定`@ApiModel(value="<name>")` 中的 `<name>` 来找到对应的自定义类型，否则找不到
 - defaultValue: 参数的默认值
 
 ```java
@@ -70,21 +70,75 @@ Swagger-UI是HTML, Javascript, CSS的一个集合，可以动态地根据 java �
 
 ## 配置 Swagger-UI
 
-配置 Swagger 需要使用 java 配置类来进行配置, 需要在配置 Swagger 的 bean 实例: Docket
+配置 Swagger 需要使用 java 配置类来进行配置, 需要在配置 Swagger 的实例 bean 是 Docket
 
 Docket 各方法的作用
 
-| 方法                        | 描述                                       |
-| --------------------------- | ------------------------------------------ |
-| apiInfo(ApiInfo apiInfo)    | 设置 Swagger UI 界面中的一些东西，如标题等 |
-| groupName(String groupName) | 设置组的名称                               |
-| ApiSelectorBuilder select() | 返回一个 api 扫描规则配置器                |
+| 方法                        | 描述                                                         |
+| --------------------------- | ------------------------------------------------------------ |
+| apiInfo(ApiInfo apiInfo)    | 设置 Swagger UI 界面中的一些东西，如标题等                   |
+| enable(boolean flag)        | 设置是否允许访问 Swagger UI界面，用于满足生产环境和开发环境中的不同需求 |
+| groupName(String groupName) | 设置组的名称, 设置多个组，则需要配置多个 Docket              |
+| ApiSelectorBuilder select() | 返回一个 api 扫描规则配置器                                  |
 
 Swagger 对生成 API 文档的范围有三种不同选择，根据 Docket 这个 bean 进行配置
 
-1. 生成指定包下面的类的 API 文档 -> `RequestHandlerSelectors.basePackage("com.autmaple.mall.controller")`
-2. 选择被指定注解修饰的类生成 API 文档 -> `RequestHandlerSelectors.withClassAnnotation(Api.class)`
-3. 选择被指定注解修饰的方法生成 API 文档 -> `RequestHandlerSelectors.withMethodAnnotation(ApiOperation.class)`
+### 配置过滤
+
+Swagger 提供了两重过滤机制：apis() 和 paths()
+
+- apis() 指定对哪些类进行扫描
+- paths() 指定对类中的哪些路径进行扫描
+
+#### apis 的三种不同选择
+
+1. 生成指定包下面的类的 API 文档
+
+   ```java
+   apis(RequestHandlerSelectors.basePackage("com.autmaple.mall.controller"))
+   ```
+
+2. 选择被指定注解修饰的类生成 API 文档
+
+   ```java
+   apis(RequestHandlerSelectors.withClassAnnotation(Api.class))
+   ```
+
+3. 选择被指定注解修饰的方法生成 API 文档 
+
+   ```java
+   apis(RequestHandlerSelectors.withMethodAnnotation(ApiOperation.class))
+   ```
+
+#### paths 的配置
+
+paths有四种不同的配置
+
+1. any(): 表示扫描所有的路径
+
+   ```java
+   paths(PathSelectors.any())
+   ```
+
+2. none()：表示不扫描任何路径
+
+   ```java
+   paths(PathSelectors.none())
+   ```
+
+3. regex(final String pathRegex): 表示扫描符合正则表达式的路径
+
+   ```java
+   paths(PathSelectors.regex("..."))
+   ```
+
+4. ant(final String antPatten): 表示扫描符合 ant 表达式中的路径
+
+   ```java
+   paths(PathSelectors.ant("/order/**"))
+   ```
+
+### 示例代码
 
 ```java
 package com.autmaple.mall.config;
@@ -205,7 +259,8 @@ public class CommentGenerator extends DefaultCommentGenerator {
     public void addJavaFileComment(CompilationUnit compilationUnit) {
         super.addJavaFileComment(compilationUnit);
         //只在model中添加swagger注解类的导入
-        if(!compilationUnit.isJavaInterface()&&!compilationUnit.getType().getFullyQualifiedName().contains(EXAMPLE_SUFFIX)){
+         if (!compilationUnit.isJavaInterface() &&
+             !compilationUnit.getType().getFullyQualifiedName().contains(EXAMPLE_SUFFIX)) {
             compilationUnit.addImportedType(new FullyQualifiedJavaType(API_MODEL_PROPERTY_FULL_CLASS_NAME));
         }
     }
