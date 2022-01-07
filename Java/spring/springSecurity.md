@@ -10,14 +10,14 @@ Spring Security 是 Spring 家族中的一个安全管理框架，实际上，�
 
 因此，一般来说，常见的安全管理技术栈的组合是这样的：
 
-* SSM + Shiro
-* Spring Boot/Spring Cloud + Spring Security
+- SSM + Shiro
+- Spring Boot/Spring Cloud + Spring Security
 
-__注意，这只是一个推荐的组合而已，如果单纯从技术上来说，无论怎么组合，都是可以运行的。__
+**注意，这只是一个推荐的组合而已，如果单纯从技术上来说，无论怎么组合，都是可以运行的。**
 
 ## SpringSecurity 是什么
 
-SpringSecurity 是一个强大的可高度定制的__认证和授权__框架，对于 Spring 应用来说它是一套 Web 安全标准
+SpringSecurity 是一个强大的可高度定制的**认证和授权**框架，对于 Spring 应用来说它是一套 Web 安全标准
 
 SpringSecurity 注重于为 Java 应用提供认证和授权功能，像所有的 Spring 项目一样，它对自定义需求具有强大的扩展性。
 
@@ -41,9 +41,9 @@ SpringSecurity 注重于为 Java 应用提供认证和授权功能，像所有�
 
 自定义用户名和密码有三种方式
 
-* 在配置文件中配置
-* 在内存中配置
-* 通过数据库中数据进行创建
+- 在配置文件中配置
+- 在内存中配置
+- 通过数据库中数据进行创建
 
 1. 在配置文件中进行配置
 
@@ -83,9 +83,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 #### 密码加密
 
-在 SpringSecurity5 版本中要求密码必须加密，否则当你输入用户名和密码时，登录不了，并在控制台报错： `There is no PasswordEncoder mapped for the id "null"`, 要解决这个问题需要创建一个实现了 PasswordEncode 接口的加密类，SpringSecurity 默认实现了一些类，可以直接使用, 不同的实现类使用不同的加密方法，可以自由的进行选择
+在 SpringSecurity5 版本中要求密码必须加密，否则当你输入用户名和密码时，登录不了，并在控制台报错： `There is no PasswordEncoder mapped for the id "null"`, 要解决这个问题需要创建一个实现了 PasswordEncode 接口的加密类，SpringSecurity 默认实现了一些类，可以直接使用, 不同的实现类使用不同的加密方法，可以自由的进行选择,通常使用 BCryptPasswordEncoder 这个类来对密码进行加密
 
 ![image-20220101132910469](/home/autmaple/.config/Typora/typora-user-images/image-20220101132910469.png)
+
+
 
 ```java
 @Configuration
@@ -258,9 +260,9 @@ public class SecurityApplication {
 
 SpringSecurity 的原理就是一个过滤器链，其内部提供各种功能的过滤器,常用的过滤器：
 
-* UsernamePasswordAuthenticationFilter: 负责处理在登录界面发送过来的登录请求,登录中的认证操作主要是由这个过滤器完成
-* ExceptionTranslationFilter: 处理过滤链中抛出的任何 AccessDeniedException 和 AuthenticationExcetion
-* FilterSecurityInterceptor: 负责权限校验的过滤器
+- UsernamePasswordAuthenticationFilter: 负责处理在登录界面发送过来的登录请求,登录中的认证操作主要是由这个过滤器完成
+- ExceptionTranslationFilter: 处理过滤链中抛出的任何 AccessDeniedException 和 AuthenticationException
+- FilterSecurityInterceptor: 负责权限校验的过滤器
 
 ### 查看 SpringSecurity 提供的过滤器
 
@@ -289,9 +291,7 @@ public class SecurityApplication {
 ## 常用的一些接口
 
 1. Authentication 接口：它的实现类表示当前访问系统的用户，封装了用户的相关信息
-
 2. AuthenticationManager 接口： 定义了认证 Authentication 的方法
-
 3. UserDetailsService 接口：加载用户特定数据的核心接口，里面定义了根据用户名查询用户信息的方法
 
 4. UserDetails 接口： 提供核心用户信息。通过 UserDetailService 接口并根据用户名获取到处理过的用户信息之后要将其封装成 UserDetails 对象,然后将这些信息封裝到 Authentication 对象中
@@ -304,10 +304,10 @@ SpringSecuriy 中使用 RBAC(Role-Based Access Control) 基于角色的访问控
 
 ### 基于 RBAC 设计表
 
-* 用户表：用于用户认证， 即用户登录
-* 角色表：定义角色信息，如角色的名称，角色的描述
-* 用户和角色的关系：用户和角色的关系可以是多对多的关系 => 一个用户可以有多个角色，一个角色对应多个用户
-* 权限表：定义角色和权限的关系，角色可以有哪些权限
+- 用户表：用于用户认证， 即用户登录
+- 角色表：定义角色信息，如角色的名称，角色的描述
+- 用户和角色的关系：用户和角色的关系可以是多对多的关系 => 一个用户可以有多个角色，一个角色对应多个用户
+- 权限表：定义角色和权限的关系，角色可以有哪些权限
 
 ## SpringSecurity 中认证的类和接口
 
@@ -330,6 +330,165 @@ UserDetailsService 接口：实现这个接口可以根据前端传递过来的 
                 .failureUrl("...")
                 
     }
-
 ```
 
+## SpringSecurity 处理登录流程
+
+1. SpringSecurity 提取前端表单中的 username 和 password 字段，封装到 Authentication 接口的实现类：UsernamePasswordAuthenticationToken 对象中
+2. 将 UsernamePasswordAuthenticationToken 对象传给 AuthenticationMananger 的实现类 ProviderManager 进行验证；
+3. ProviderManager 在一条链上依次调用 AuthenticationProvider 进行验证；它是如何确定使用哪一个具体的 Provider 来进行验证的呢？答案是通过判断 AuthenticationToken 的实现类的类型来判断和对应方法的返回的结果来判断,且只要有一个 Provider 验证成功就不再继续验证
+4. 验证成功则返回一个封装了权限信息的 Authentication对 象（即对象的Collection<? extends GrantedAuthority>属性被赋值）；
+5. 将此对象放入安全上下文 SecurityContext中；
+6. 需要时，可以将 Authentication 对象从 SecurityContextHolder 上下文中取出。
+
+## UserDetailsService 接口
+
+UserDetailService 接口作用是允许我们自定义用户的认证(查询数据库来判读用户是否是合法用户，登录是否有效)，如果合法则返回用户的详细信息，即返回一个 UserDetail 接口的实现类，这个类可以自定义实现，也可以使用 SpringSecurity 实现好的一个类：User
+
+该接口只有一个方法需要实现
+
+```java
+public interface UserDetailsService {
+    UserDetails loadUserByUsername(String username) throws UsernameNotFoundException;
+}
+```
+
+实现类可以在这个方法中查询数据库并将用户信息封装成 UserDetails 类型的对象
+
+## UserDetails 接口
+
+这个接口规定了 SpringSecurity 的用户对象必须拥有的一些方法, 从而规定了用户对象必须要有的属性，属性名可以自定义，但是对应的意思必须与 SpringSecurity 方法规定的意思相同
+
+## 认证过程中使用到的一些接口
+
+- Authentication 接口：认证的接口，接口实现类中封装前端传递过来的用户名和密码,如果验证成功，则 Authentication 就会被放入 SecurityContextHolder 中, 在验证未过期的时间段内一直有效
+
+- AuthenticatoinManager 接口：验证管理类的总接口，常用的实现类是 ProviderMananger，这个实现类中写好了验证的链条（需要经过哪些 AuthenticationProvider 接口的实现类) ， AuthenticationPorvider 提供具体的验证工作(对用户名和密码进行校验)
+- AuthenticationProvider 接口： 进行具体验证的接口，其有一个实现类 DaoAuthenticationProvider 提供与数据库中的信息比对的服务
+
+## 使用数据库中的数据进行认证
+
+要使用数据库中的数据对用户进行认证，需要使用 DaoAuthenticationProvider。在 SpringSecurity 中可以直接通过 SpringSecurity 的配置类直接进行配置
+
+```java
+protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        ...省略
+        //加入数据库验证类，下面的语句实际上在验证链中加入了一个DaoAuthenticationProvider
+        auth.userDetailsService(myUserDetailsService).passwordEncoder(new BCryptPasswordEncoder());
+    }
+```
+
+## SpringSecurity 的配置类
+
+```java
+package com.autmaple.mall.config;
+
+import com.autmaple.mall.component.JwtAuthenticationTokenFilter;
+import com.autmaple.mall.component.RestAuthenticationEntryPoint;
+import com.autmaple.mall.component.RestfulAccessDeniedHandler;
+import com.autmaple.mall.dto.AdminUserDetails;
+import com.autmaple.mall.mbg.model.UmsAdmin;
+import com.autmaple.mall.mbg.model.UmsPermission;
+import com.autmaple.mall.service.UmsAdminService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.util.List;
+
+@Configuration
+@EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Autowired
+    private UmsAdminService umsAdminService;
+
+    @Autowired
+    private RestfulAccessDeniedHandler restfulAccessDeniedHandler;
+
+    @Autowired
+    private RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+
+
+    @Override
+    protected void configure(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity.csrf().disable()// 由于使用的 JWT， 这里不需要 csrf
+                .sessionManagement()// 基于 token， 所有不用 session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .authorizeRequests()
+                .antMatchers(HttpMethod.GET, // 允许对静态资源的无授权访问
+                        "/",
+                        "/*.html",
+                        "/favicon.ico",
+                        "/**/*.html",
+                        "/**/*.css",
+                        "/**/*.js",
+                        "/swagger-resources/**",
+                        "/v2/api-docs/**"
+                )
+                .permitAll()
+                .antMatchers("/admin/login","/admin/register")// 对登录注册允许匿名访问
+                .permitAll()
+                .antMatchers(HttpMethod.OPTIONS)// 跨域请求先进行一个 options 请求
+                .permitAll()
+                // .antMatchers("/**")// 测试时全部都可以访问
+                // .permitAll()
+                .anyRequest()// 除了上面的请求外全部都需要鉴权认证
+                .authenticated();
+
+        // 禁用缓存
+        httpSecurity.headers().cacheControl();
+
+        // 添加 JWT filter
+        httpSecurity.addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+
+        // 添加自定义未授权和未登录用户的返回
+        httpSecurity.exceptionHandling()
+                .accessDeniedHandler(restfulAccessDeniedHandler) // 当用户访问没有权限的资源时，SpringSecurity 会使用该处理器来处里
+                .authenticationEntryPoint(restAuthenticationEntryPoint); // 当用户没有认证或者是认证失败时，交给该处理器处理
+    }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        // 配置 DaoAuthenticationProvider,用于使用数据库中的数据进行认证和授权工作
+        auth.userDetailsService(userDetailsService())
+                .passwordEncoder(passwordEncoder());
+    }
+
+    @Bean
+    public JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter() {
+        return new JwtAuthenticationTokenFilter();
+    }
+
+
+    @Bean
+    public PasswordEncoder passwordEncoder(){
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> {
+            UmsAdmin admin = umsAdminService.getAdminByUsername(username);
+            if(admin != null){
+                List<UmsPermission> permissionList = umsAdminService.getPermissionList(admin.getId());
+                return new AdminUserDetails(admin, permissionList);
+            }
+            throw new UsernameNotFoundException("用户名或密码错误");
+        };
+    }
+}
+```

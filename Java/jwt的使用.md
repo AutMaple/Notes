@@ -162,7 +162,7 @@ token 的第二部分是有效负载，其中包含 Claims（声明）。**Claim
 
 然后，获取在第一部分（Header）中提供的算法并应用于上面的连接结果。如果前两部分的哈希结果与 token 的第三部分匹配，则表示此 JWT 是有效的；如果不匹配，则表示此 token 被修改过，是无效的。
 
-```csharp
+```java
 HMACSHA256(
   base64UrlEncode(header) + "." + base64UrlEncode(payload),
   secret)
@@ -221,4 +221,4 @@ http://bazingafeng.com/?token=xxx
 
 - 不要在 Payload 中存储敏感信息
 - 不要泄露 secret
-- 尽量使用HTTPS 因为 token 一旦被其他人获取，则他们可以冒充我们向服务器发起任意请求了。比如在 HTTP 请求中，我们发送 token 给服务端时，该 token 可能会被人抓包获取。针对这个问题，也没有什么解决办法，一般建议使用 HTTPS 而非 HTTP。虽然这样不能保证 token 一定不会被人获取，但可以更加安全。
+- 尽量使用 HTTPS 因为 token 一旦被其他人获取，则他们可以冒充我们向服务器发起任意请求了(CSRF)。比如在 HTTP 请求中，我们发送 token 给服务端时，该 token 可能会被人抓包获取。针对这个问题，也没有什么解决办法，一般建议使用 HTTPS 而非 HTTP。虽然这样不能保证 token 一定不会被人获取，但可以更加安全。
