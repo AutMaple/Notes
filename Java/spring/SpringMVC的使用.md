@@ -445,7 +445,7 @@ login.jsp
 
 ## @RequestParam
 
-value: 请求中的参数名
+value: 请求中的参数名,可以是请求体中的参数，也可以是 URL 中带的参数
 
 required: 一个 boolean 值，默认是 true。设置为 true 表示请求中必须含有此参数
 
