@@ -1,0 +1,116 @@
+{
+  "main": {
+    "id": "9d952d42c3ea3e81",
+    "type": "split",
+    "children": [
+      {
+        "id": "2265e4df4b4171f4",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "树.md",
+            "mode": "source",
+            "source": false
+          }
+        }
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "c63e46ba26a2bb8d",
+    "type": "split",
+    "children": [
+      {
+        "id": "adaa58b994eb8340",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "5df2f16e5f57722c",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {}
+            }
+          },
+          {
+            "id": "bdb76a9c1c266bdd",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 292.5036334991455
+  },
+  "right": {
+    "id": "5f20f30743f51390",
+    "type": "split",
+    "children": [
+      {
+        "id": "3b0f962010fa95bf",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e2e3e47ebb25820b",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "树.md",
+                "collapseAll": true,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": true,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "f10123d7017dfa29",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "树.md"
+              }
+            }
+          },
+          {
+            "id": "762c4ca949eb2c60",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 282,
+    "collapsed": true
+  },
+  "active": "2265e4df4b4171f4",
+  "lastOpenFiles": [
+    "树.md",
+    "刷题笔记.md"
+  ]
+}

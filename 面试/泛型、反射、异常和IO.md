@@ -1,0 +1,1204 @@
+# 泛型和反射
+## 泛型
+泛型在 java 中有非常重要的地位，在面向对象编程及各种设计模式中有非常广泛的应用。
+
+泛型：通俗一点理解就是：参数化类型,将类型由原来的具体型类型参数化。这种参数化类型可以放在类，接口和方法中,分别称为泛型类，泛型接口和泛型方法
+
+### 泛型只在编译阶段有效
+在编译过程中，正确检验泛型结果后，会将泛型的相关信息擦除，并且在对象进入和离开方法的边界处添加类型检查和类型转换的方法。也就是说，泛型信息不会进入到运行时阶段,编译器会帮我们处理一些类型类型转换的细节
+
+定义的泛型类，就一定要传入泛型类型实参么？并不是这样，在使用泛型的时候如果传入泛型实参，则会根据传入的泛型实参做相应的限制，此时泛型才会起到本应起到的限制作用。如果不传入泛型类型实参的话，在泛型类中使用泛型的方法或成员变量定义的类型可以为任何的类型(Object) 即泛型变量最终被编译成(Object)。
+
+**注意**
+- 泛型的类型参数只能够是引用类型，不能是基本数据类型
+- 类型擦除是擦除到第一个边界，如果没有设置边界的话第一个边界默认是 Object 对象。
+
+在 Java7 之前 `new` 参数化类型时需要指定类型，但在 Java7 之后 `new` 操作可以不用显示指定类型，编译器会自动推导出来：
+
+```java
+ Holder<String> h = new Holder<>("abc");
+```
+
+静态的属性、静态方法、和静态内部类是无法使用类的泛型参数的。如果要使 static 方法具有泛型能力，可以使用泛型方法。
+
+```java
+public class Calculate<T> {
+    // 静态方法时无法使用T的，编译时就会报错
+    public static T add(T a, T b) {
+        T c = a + b;
+    }
+}
+```
+
+在实现泛型接口时需要为类型参数指定具体的类型
+
+我们无法创建一个确切类型的数组,但是声明一个确切的泛型数组引用可以：
+```java
+Person<Integer>[] arr; // 正确
+Person<Integer>[] gia = new Person<Integer>[10]; // 报错
+```
+
+上面的代码会报错。接下来的代码可以，不会报错，但是会有个警告: 在赋值时没有检查类型是否匹配
+
+```java
+Person<Integer>[] gia = new Person[10];
+```
+
+如果真的要创建一个确切的泛型数组，可以使用强制类型转换
+
+```java
+Person<Integer>[] gia = (Person<Integer>[]) new Person[10]; // 正确，但会有警告
+gia[0] = new Person<String>(); // 报错
+```
+数组能追踪元素的实际类型，这个类型是在数组创建的时候建立的，所以上面的代码会报错
+但是由于 java 的泛型只编译期存在，因此这个强转最终还是没有转换，即最终还是生成一个`Person[]` 数组，但是这样有个好处就是在编译器有类型检测和自动转型
+
+
+```java
+public class GenericArray<T extends Integer> {
+    private T[] array;
+    @SuppressWarnings("unchecked")
+    public GenericArray(int sz) {
+        array = (T[])new Object[sz];   // 创建泛型数组
+    }
+    public void put(int index, T item) {
+        array[index] = item;
+    }
+    public T get(int index) { return array[index]; }
+    // Method that exposes the underlying representation:
+    public T[] rep() { return array; }     //返回数组会报错
+    public static void main(String[] args) {
+        GenericArray<Integer> gai =
+                new GenericArray<Integer>(10);
+        // This causes a ClassCastException:
+        //! Integer[] ia = gai.rep();
+        // This is OK:
+        Object[] oa = gai.rep();
+    }
+}
+```
+
+由于擦除，运行期的数组类型只能是 `Object[]`，如果我们立即把它转型为 `T[]`，那么在编译期就失去了数组的实际类型(`Object[]`)，此时编译器会将 `Object[]` 当成 `T[]`, 但是在运行时却是`Object[]`,此时编译器可能无法发现潜在的错误。因此，更好的办法是在内部最好使用 `Object[]` 数组，在取出元素的时候再转型。看下面的例子：
+
+```java
+public class GenericArray2<T> {
+    private Object[] array;
+    public GenericArray2(int sz) {
+        array = new Object[sz];
+    }
+    public void put(int index, T item) {
+        array[index] = item;
+    }
+    @SuppressWarnings("unchecked")
+    public T get(int index) { return (T)array[index]; }
+    @SuppressWarnings("unchecked")
+    public T[] rep() {
+        return (T[])array; // Warning: unchecked cast
+    }
+    public static void main(String[] args) {
+        GenericArray2<Integer> gai =
+        new GenericArray2<Integer>(10);
+        for(int i = 0; i < 10; i ++)
+        gai.put(i, i);
+        for(int i = 0; i < 10; i ++)
+        System.out.print(gai.get(i) + " ");
+        System.out.println();
+        try {
+            Integer[] ia = gai.rep();
+        } catch(Exception e) { System.out.println(e); }
+    }
+} 
+
+/* Output: (Sample)
+	0 1 2 3 4 5 6 7 8 9
+	java.lang.ClassCastException: [Ljava.lang.Object; cannot be cast to [Ljava.lang.Integer;
+*/
+```
+
+
+现在内部数组的呈现不是 `T[]` 而是 `Object[]`，当 `get()` 被调用的时候数组的元素被转型为 `T`，这正是元素的实际类型。不过调用 `rep()` 还是会报错， 因为数组的实际类型依然是`Object[]`，终究不能转换为其它类型。使用 `Object[]` 代替 `T[]` 的好处是让我们不会忘记数组运行期的实际类型，以至于不小心引入错误。
+
+### 泛型方法
+可以单独为方法声明泛型，而这个类不必是泛型类。定义泛型方法，只需要将泛型参数列表置于返回值之前
+```java
+public <K> K getName(K name){
+	return name;
+}
+```
+
+使用泛型方法时不用显示的指定出具体的类型，编译器会根据方法类型参数的入参或返回赋值的类型推断出具体的类型，**但若将调用结果直接作为一个参数传递给另外一个方法，这时编译器并不会进行类型推断。** 如果是基本类型则会自动装箱为包装类型。
+
+在调用泛型方法时也可以显示的指明类型，在点操作符与方法名之间插入尖括号，然后把类型置于其中
+```java
+Test.<String, Date>newMap();
+```
+
+变长参数列表也可以使用泛型参数
+```java
+public static <T> List<T> toList(T... args) {
+    List<T> l = new ArrayList<T>(args.length);
+    for (T e : args) {
+        l.add(e);
+    }
+    return l;
+}
+```
+
+在继承一个泛型类或实现一个泛型接口时需要指定具体类型，指定了具体的类型后对子类而言它的父类或实现的接口就是参数化类型的
+
+若继承类或实现接口时未指定类型，则对子类而言父类或接口的就是一个普通的类或接口，而其类型参数被擦除为 `Object`
+
+由于类型擦除，对于类型参数我们是无法直接使用到具体的属性或方法的。不过可以通过 `extends` 显示的声明类型参数的上界，若没有声明那么上界就是 `Object`。
+
+声明类上界后，在使用该泛型类时指定的类型只能为上界或其子类。
+
+在没有声明上界时默认上界为 `Object`，所有我们可以在没有声明上界的情况下调用 `Object` 的方法
+
+可变参数列表的入参是可以为不同类型的，所以有时编译也无法决定泛型可变参数的具体类型，只能选择一个最通用的类型。
+
+```JAVA
+public class Test {
+	public static void main(String[] args) {
+		System.out.println(toArray(Integer.valueOf(11), Double.valueOf(13)).getClass());
+	}
+
+	public static <T> T[] toArray(T... args) { return args; }
+}
+
+// 输出：class [Ljava.lang.Number;
+```
+
+使用 super 关键字指定下界，使用 extends 关键字指定上界
+
+上界通配符声明的实例是不允许调用参数有类型参数的方法的;但返回是安全的，将子类赋给父类是安全的，所以返回类型类型参数的方法不受影响。
+
+用父类型来操作子类型是安全的，所以下界通配符声明的实例使用入参带类型参数的方法是安全的。但由于不能将父类赋值给子类，所以下界通配符声明的实例不能将返回类型为参数类型的方法的返回值赋给其他变量。
+
+使用泛型时指定的类型只在编译期生效，在编译后会将所有的类型参数擦除到它的第一个边界，未指定边界的情况下擦除为 `Object`。
+
+因为在编译时擦除了具体的类型信息，为类保证运行时正确的类型行为，编译器在编译时对泛型‘边界’，即对类中有泛型入参和放回的方法做了类型检查和插入强制转型代码，调用方法时对入参进行类型转换，返回时对返回值进行转换。
+
+如果使用泛型方法可以取代泛型类，那么应该尽量使用泛型方法替换类的泛型类。
+
+将参数化类型赋给原始类型后，编译器不会再对原始类型实例的操作进行类型检查，这可能会造成运行时的错误。
+
+```java
+class Calculator<T> {
+    public int intAdd(T v1, T v2) {
+        return ((Number) v1).intValue() + ((Number) v1).intValue();
+    }
+}
+```
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Calculator<Integer> intCal= new Calculator<>();
+        Calculator cal = intCal;
+        cal.intAdd("a", "b");
+    }
+}
+```
+
+```java
+Exception in thread "main" java.lang.ClassCastException: java.lang.String cannot be cast to java.lang.Number
+
+at com.test.java.Calculator.intAdd(Test.java:10)  
+at com.test.java.Test.main(Test.java:20)
+
+```
+
+### 常用的通配符
+**常用的通配符为： T，E，K，V，？**
+
+-   ？ 表示不确定的 Java 类型
+-   T (type) 表示具体的一个 Java 类型
+-   K V (key value) 分别代表 Java 键值中的 Key Value
+-   E (element) 代表 Element
+
+## 反射
+
+反射之所以被称为框架的灵魂，主要是因为它赋予了我们在运行时分析类以及执行类中方法的能力。通过反射你可以获取任意一个类的所有属性和方法，你还可以调用这些方法和属性。反射(Reflection)是 Java 程序开发语言的特征之一，它允许运行中的 Java 程序获取自身的信息，并且可以操作类或对象的内部属性。
+
+**反射的本质就是：在运行时，把 Java 类中的各种成分映射成一个个的 Java 对象。**
+
+### 反射的应用场景
+
+- **开发通用框架** - 反射最重要的用途就是开发各种通用框架。很多框架（比如 Spring）都是配置化的（比如通过 XML 文件配置 JavaBean、Filter 等），为了保证框架的通用性，它们可能需要根据配置文件加载不同的对象或类，调用不同的方法，这个时候就必须用到反射——运行时动态加载需要加载的对象。
+
+- **动态代理** - 在切面编程（AOP）中，需要拦截特定的方法，通常，会选择动态代理方式。这时，就需要反射技术来实现了。
+
+- **注解** - 注解本身仅仅是起到标记作用，它需要利用反射机制，根据注解标记去调用注解解释器，执行行为。如果没有反射机制，注解并不比注释更有用。
+
+- **可扩展性功能** - 应用程序可以通过使用完全限定名称创建可扩展性对象实例来使用外部的用户定义类。
+
+
+
+### 反射机制优缺点
+
+-   **优点** ： 可以让咱们的代码更加灵活、为各种框架提供开箱即用的功能提供了便利
+-   **缺点** ：让我们在运行时有了分析操作类的能力，这同样也增加了安全问题。比如可以无视泛型参数的安全检查（泛型参数的安全检查发生在编译时）。另外，反射的性能也要稍差点，不过，对于框架来说实际是影响不大的。
+
+
+像咱们平时大部分时候都是在写业务代码，很少会接触到直接使用反射机制的场景。
+
+但是，这并不代表反射没有用。相反，正是因为反射，你才能这么轻松地使用各种框架。像 Spring/Spring Boot、MyBatis 等等框架中都大量使用了反射机制。
+
+**这些框架中也大量使用了动态代理，而动态代理的实现也依赖反射。**
+
+像 Java 中的一大利器 **注解** 的实现也用到了反射。
+
+### 获取 Class 对象的四种方式
+
+如果我们动态获取到这些信息，我们需要依靠 Class 对象。Class 类对象将一个类的方法、变量等信息告诉运行的程序。Java 提供了四种方式获取 Class 对象:
+
+**1. 知道具体类的情况下可以使用：**
+
+```java
+Class alunbarClass = TargetObject.class;
+```
+
+但是我们一般是不知道具体类的，基本都是通过遍历包下面的类来获取 Class 对象，通过此方式获取 Class 对象不会进行初始化
+
+**2. 通过 `Class.forName()` 传入类的全路径获取：**
+
+```java
+Class alunbarClass1 = Class.forName("cn.javaguide.TargetObject");
+```
+
+**3. 通过对象实例 `instance.getClass()`获取：**
+
+```java
+TargetObject o = new TargetObject();
+Class alunbarClass2 = o.getClass();
+```
+
+**4. 通过类加载器 `xxxClassLoader.loadClass()` 传入类路径获取:**
+
+```java
+Class clazz = ClassLoader.loadClass("cn.javaguide.TargetObject");
+```
+
+通过类加载器获取 Class 对象不会进行初始化，意味着不进行包括初始化等一系列步骤，**静态代码块和静态对象不会得到执行**
+
+## 注解
+`Annotation` 是 Java5 开始引入的新特性，可以看作是一种特殊的注释，主要用于修饰类、方法或者变量。
+
+注解本质是一个继承了 `Annotation` 的特殊接口：
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.SOURCE)
+public @interface Override {
+
+}
+
+public interface Override extends Annotation{
+    
+}
+```
+
+```java
+public interface Annotation {
+    boolean equals(Object var1);
+
+    int hashCode();
+
+    String toString();
+
+    Class<? extends Annotation> annotationType();
+}
+
+```
+
+注解只有被解析之后才会生效，常见的解析方法有两种：
+
+- **编译期直接扫描** ：编译器在编译 Java 代码的时候扫描对应的注解并处理，比如某个方法使用 `@Override` 注解，编译器在编译的时候就会检测当前的方法是否重写了父类对应的方法。
+- **运行期通过反射处理** ：像框架中自带的注解(比如 Spring 框架的 `@Value` 、`@Component`)都是通过反射来进行处理的。
+
+JDK 提供了很多内置的注解（比如 `@Override` 、`@Deprecated`），同时，我们还可以自定义注解。
+
+## 代理
+
+代理模式是一种比较好理解的设计模式。简单来说就是**我们使用代理对象来代替对真实对象(real object)的访问，这样就可以在不修改原目标对象的前提下，提供额外的功能操作，扩展目标对象的功能。**
+
+**代理模式的主要作用是扩展目标对象的功能，比如说在目标对象的某个方法执行前后你可以增加一些自定义的操作。**
+
+代理模式有静态代理和动态代理两种实现方式
+
+### 静态代理
+
+**静态代理中，我们对目标对象的每个方法的增强都是手动完成的（\*后面会具体演示代码\*），非常不灵活（\*比如接口一旦新增加方法，目标对象和代理对象都要进行修改\*）且麻烦(\*需要对每个目标类都单独写一个代理类\*)。** 实际应用场景非常非常少，日常开发几乎看不到使用静态代理的场景。
+
+上面我们是从实现和应用角度来说的静态代理，从 JVM 层面来说， **静态代理在编译时就将接口、实现类、代理类这些都变成了一个个实际的 class 文件。**
+
+静态代理实现步骤:
+
+1. 定义一个接口及其实现类；
+2. 创建一个代理类同样实现这个接口
+3. 将目标对象注入进代理类，然后在代理类的对应方法调用目标类中的对应方法。这样的话，我们就可以通过代理类屏蔽对目标对象的访问，并且可以在目标方法执行前后做一些自己想做的事情。
+
+下面通过代码展示！
+
+**1.定义发送短信的接口**
+
+```java
+public interface SmsService {
+    String send(String message);
+}
+```
+
+**2.实现发送短信的接口**
+
+```java
+public class SmsServiceImpl implements SmsService {
+    public String send(String message) {
+        System.out.println("send message:" + message);
+        return message;
+    }
+}
+```
+
+**3.创建代理类并同样实现发送短信的接口**
+
+```java
+public class SmsProxy implements SmsService {
+
+    private final SmsService smsService;
+
+    public SmsProxy(SmsService smsService) {
+        this.smsService = smsService;
+    }
+
+    @Override
+    public String send(String message) {
+        //调用方法之前，我们可以添加自己的操作
+        System.out.println("before method send()");
+        smsService.send(message);
+        //调用方法之后，我们同样可以添加自己的操作
+        System.out.println("after method send()");
+        return null;
+    }
+}
+```
+
+### 动态代理
+
+动态代理是程序在运行期间动态构建代理对象和动态调用代理方法的一种机制。
+
+相比于静态代理来说，动态代理更加灵活。我们不需要针对每个目标类都单独创建一个代理类，并且也不需要我们必须实现接口，我们可以直接代理实现类(*CGLIB 动态代理机制*)。
+
+**从 JVM 角度来说，动态代理是在运行时动态生成类字节码，并加载到 JVM 中的。**
+
+**动态代理在我们日常开发中使用的相对较少，但是在框架中的几乎是必用的一门技术。学会了动态代理之后，对于我们理解和学习各种框架的原理也非常有帮助。**
+
+就 Java 来说，动态代理的实现方式有很多种，比如 **JDK 动态代理**、**CGLIB 动态代理**等等。
+
+#### JDK 动态代理
+
+**Java 动态代理机制中 `InvocationHandler` 接口和 `Proxy` 类是核心。**
+
+`Proxy` 类中使用频率最高的方法是：`newProxyInstance()` ，这个方法主要用来生成一个代理对象。
+
+```java
+public static Object newProxyInstance(ClassLoader loader,
+                                      Class<?>[] interfaces,
+                                      InvocationHandler h)
+    throws IllegalArgumentException{
+    	......
+	}
+
+```
+
+这个方法一共有 3 个参数：
+
+1. **loader** :类加载器，用于加载代理对象。
+2. **interfaces** : 被代理类实现的一些接口；
+3. **h** : 实现了 `InvocationHandler` 接口的对象；
+
+我们给这个代理对象提供了一组什么接口，那么这个代理对象就会实现了这组接口，这个时候我们就可以将这个代理对象强制类型转化为这组接口中的任意一个。
+
+要实现动态代理的话，还必须需要实现`InvocationHandler` 来自定义处理逻辑。 当我们的动态代理对象调用一个方法时，这个方法的调用就会被转发到实现`InvocationHandler` 接口类的 `invoke` 方法来调用。
+
+```java
+public interface InvocationHandler {
+
+    /**
+     * 当你使用代理对象调用方法的时候实际会调用到这个方法
+     */
+    public Object invoke(Object proxy, Method method, Object[] args)
+        throws Throwable;
+}
+```
+
+`invoke()` 方法有下面三个参数：
+
+- **proxy** :动态生成的代理类
+
+- **method** : 与代理类对象调用的方法相对应
+
+- **args** : 当前 method 方法的参数
+
+也就是说：**你通过`Proxy` 类的 `newProxyInstance()` 创建的代理对象在调用方法的时候，实际会调用到实现`InvocationHandler` 接口的类的 `invoke()`方法。** 你可以在 `invoke()` 方法中自定义处理逻辑，比如在方法执行前后做什么事情。
+
+`invoke()` 方法: 当我们的动态代理对象调用原生方法的时候，最终实际上调用到的是 `invoke()` 方法，然后 `invoke()` 方法代替我们去调用了被代理对象的原生方法。
+
+##### JDK 动态代理类使用步骤
+
+1. 定义一个接口及其实现类；
+2. 自定义 `InvocationHandler` 并重写`invoke`方法，在 `invoke` 方法中我们会调用原生方法（被代理类的方法）并自定义一些处理逻辑；
+3. 通过 `Proxy.newProxyInstance(ClassLoader loader,Class<?>[] interfaces,InvocationHandler h)` 方法创建代理对象；
+
+**同时我们一定要记住，通过 `Proxy.newProxyInstance` 创建的代理对象是在 jvm 运行时动态生成的一个对象，它并不是我们的 InvocationHandler 类型，也不是我们定义的那组接口的类型，而是在运行时动态生成的一个对象，并且命名方式都是这样的形式，以 $ 开头，proxy 在中，最后一个数字表示对象的标号**。
+
+##### 动态代理实现的原理
+
+动态代理本质上就是将静态代理代码生成出来，然后编译执行, 只不过将类和接口进行了参数化，这样就可以代理任何实现了指定接口类型的代理对象。光有类和接口这两个参数就已经能够实现对所有类的代理，但是此时有个问题就是不能够自定义处理逻辑，因此再加一个 invocationHandler 接口，并将这个接口像静态代理那样将这个接口聚合到动态生成的代理对象中，然后在动态代理对象中的每个接口方法中通过 invocationHandler 定义的方法来调用对应的方法，因此我们就可以通过传递 invocationHandler 的实现类来实现对代理方法的自定义处理。代码的大致实现如下：
+
+```java
+package com.youngfeng.proxy;
+
+import java.lang.Override;
+import java.lang.reflect.Method;
+
+public class TimeProxy implements Flyable {
+  private InvocationHandler handler;
+
+  public TimeProxy(InvocationHandler handler) {
+    this.handler = handler;
+  }
+
+  @Override
+  public void fly() {
+    try {
+    	Method method = com.youngfeng.proxy.Flyable.class.getMethod("fly");
+    	this.handler.invoke(this, method, null);
+    } catch(Exception e) {
+    	e.printStackTrace();
+    }
+  }
+}
+```
+
+参考链接：[10分钟看懂动态代理设计模式](https://juejin.cn/post/6844903568986603534) -- 非常推荐阅读，讲的非常清楚。
+
+
+
+#### CGLIB 动态代理机制
+
+**JDK 动态代理有一个最致命的问题是其只能代理实现了接口的类。**
+
+**为了解决这个问题，我们可以用 CGLIB 动态代理机制来避免。**
+
+[CGLIBopen in new window](https://github.com/cglib/cglib)(*Code Generation Library*)是一个基于[ASMopen in new window](http://www.baeldung.com/java-asm)的字节码生成库，它允许我们在运行时对字节码进行修改和动态生成。CGLIB 通过继承方式实现代理。很多知名的开源框架都使用到了[CGLIBopen in new window](https://github.com/cglib/cglib)， 例如 Spring 中的 AOP 模块中：如果目标对象实现了接口，则默认采用 JDK 动态代理，否则采用 CGLIB 动态代理。
+
+**在 CGLIB 动态代理机制中 `MethodInterceptor` 接口和 `Enhancer` 类是核心。**
+
+你需要自定义 `MethodInterceptor` 并重写 `intercept` 方法，`intercept` 用于拦截增强被代理类的方法。
+
+```java
+public interface MethodInterceptor
+extends Callback{
+    // 拦截被代理类中的方法
+    public Object intercept(Object obj, java.lang.reflect.Method method, Object[] args,
+                               MethodProxy proxy) throws Throwable;
+}
+```
+
+1. **obj** :被代理的对象（需要增强的对象）
+2. **method** :被拦截的方法（需要增强的方法）
+3. **args** :方法入参
+4. **proxy** :用于调用原始方法
+
+你可以通过 `Enhancer`类来动态获取被代理类，当代理类调用方法的时候，实际调用的是 `MethodInterceptor` 中的 `intercept` 方法。
+
+不同于 JDK 动态代理不需要额外的依赖。[CGLIBopen in new window](https://github.com/cglib/cglib)(*Code Generation Library*) 实际是属于一个开源项目，如果你要使用它的话，需要手动添加相关依赖。
+
+```xml
+<dependency>
+  <groupId>cglib</groupId>
+  <artifactId>cglib</artifactId>
+  <version>3.3.0</version>
+</dependency>
+```
+
+##### CGLIB 动态代理类使用步骤
+
+1. 定义一个类；
+2. 自定义 `MethodInterceptor` 并重写 `intercept` 方法，`intercept` 用于拦截增强被代理类的方法，和 JDK 动态代理中的 `invoke` 方法类似；
+3. 通过 `Enhancer` 类的 `create()`创建代理类；
+
+#### JDK 动态代理和 CGLIB 动态代理对比
+
+- **JDK 动态代理只能代理实现了接口的类或者直接代理接口，而 CGLIB 可以代理未实现任何接口的类。** 另外， CGLIB 动态代理是通过生成一个被代理类的子类来拦截被代理类的方法调用，因此不能代理声明为 final 类型的类和方法。
+
+- 就二者的效率来说，大部分情况都是 JDK 动态代理更优秀，随着 JDK 版本的升级，这个优势更加明显
+
+- JDK Proxy 是 Java 语言自带的功能，无需通过加载第三方类实现；
+- Java 对 JDK Proxy 提供了稳定的支持，并且会持续的升级和更新 JDK Proxy，例如 Java 8 版本中的 JDK Proxy 性能相比于之前版本提升了很多；
+- JDK Proxy 是通过拦截器加反射的方式实现的；
+- JDK Proxy 只能代理继承接口的类；
+- JDK Proxy 实现和调用起来比较简单；
+- CGLib 是第三方提供的工具，基于 ASM 实现的，性能比较高；
+- CGLib 无需通过接口来实现，它是通过实现子类的方式来完成调用的。
+
+### 如何实现动态代理？JDK Proxy 和 CGLib 有什么区别？ 
+
+**动态代理**的常用实现方式是**反射**。反射机制是指程序在运行期间可以访问、检测和修改其本身状态或行为的一种能力，使用反射我们可以调用任意一个类对象，以及类对象中包含的属性及方法。
+
+但动态代理不止有反射一种实现方式，例如，动态代理可以通过 **CGLib** 来实现，而 **CGLib** 是基于 **ASM**（一个 Java 字节码操作框架）而非反射实现的。简单来说，**动态代理是一种行为方式**，而反射或 ASM 只是它的一种实现手段而已。
+
+## 静态代理和动态代理的对比
+
+1. **灵活性** ：动态代理更加灵活，不需要必须实现接口，可以直接代理实现类，并且可以不需要针对每个目标类都创建一个代理类。另外，静态代理中，接口一旦新增加方法，目标对象和代理对象都要进行修改，这是非常麻烦的！
+2. **JVM 层面** ：静态代理在编译时就将接口、实现类、代理类这些都变成了一个个实际的 class 文件。而动态代理是在运行时动态生成类字节码，并加载到 JVM 中的。
+
+# 异常
+
+java 中所有的异常都有一个公共的父类：Throwable, 其中 Throwable 是 Object 类的直接子类，且 Throwable 只有两个直接子类：Exception 和 Error。
+
+Error：是程序无法处理的错误，我们不可以通过 catch 来捕获。例如：虚拟机运行错误(Virtual Machine Error), 虚拟机内存不足错误(Out Of Memory Error),类定义无法找到错误(NoClassDefFoundError)等，当这些错误发生时，虚拟机会终止程序的执行
+
+Exception: 是程序本身可以处理的异常。同时 Exception 又分为受检查异常和 RuntimeException(运行时异常) 
+
+## 受检查异常和运行时异常
+除了 Error 、 RuntimeException 和它的子类外，其他的都是受检查异常。常见的受检查异常有： IO 相关的异常、`ClassNotFoundException` 、`SQLException`...。受检查异常是我们必须要处理的异常，不然不能够通过编译。
+
+RuntimeException 及其子类统称为非受检查异常。这类异常不捕获也可以通过编译。常见的运行时异常有：NullPointExecrption(空指针异常)、NumberFormatException（字符串转换为数字）、ArrayIndexOutOfBoundsException（数组越界）、ClassCastException（类型转换错误）、ArithmeticException（算术错误）等。
+
+## 处理异常对性能的影响
+
+**在没有发生异常的情况下，try-catch 对性能的影响微乎其微。但是一旦发生异常，性能上则是灾难性的。**
+
+因此，我们应该尽可能的避免通过异常来处理正常的逻辑检查，这样可以确保不会因为发生异常而导致性能问题。
+
+当异常发生时，异常实例的构建，是非常消耗性能的。这是由于在构造异常实例时，Java 虚拟机需要生成该异常的异常栈（stack trace）。异常栈会逐一访问当前线程的 Java 栈帧，以及各种调试信息。包括栈帧所指向的方法名，方法所在的类名、文件名以及在代码中是第几行触发的异常。
+
+这些异常输出到 Log 中，就是我们熟悉的崩溃日志（崩溃栈）。
+
+### 异常处理流程
+
+每个方法在字节码中都会有一张 Exceptions Table。异常表中的每一条记录代表一个异常处理器。
+
+异常处理流程，还需要区分是否命中异常
+
+*1.* **命中异常**
+
+当程序发生异常时，Java 虚拟机会从上到下遍历异常表中所有的记录。当发现触发异常的字节码的索引值，在某个异常表中某个异常监控的范围内。Java 虚拟机会判断所抛出的异常和该条异常监听的异常类型，是否匹配。如果能匹配上，Java 虚拟机会将控制流转向至该此异常处理器的 target 索引指向的字节码，这是命中异常的情况。
+
+*2.* **未命中异常**
+
+而如果遍历完异常表中所有的异常处理器之后，仍未匹配到异常处理器，那么它会弹出当前方法对应的 Java 栈帧。回到它的调用者，在其中重复此过程。
+
+最坏的情况下，Java 虚拟机需要遍历当前线程 Java 栈上所有方法的异常表。
+
+## 异常处理无法覆盖异步回调
+
+`try-catch-finally` 确实很好用，但是它并不能捕获，异步回调中的异常。try 语句里的方法，如果允许在另外一个线程中，其中抛出的异常，是无法在调用者这个线程中捕获的。
+
+这一点在使用的过程中，需要特别注意。
+
+## Throwable 类常用方法有哪些？
+
+- `String getMessage()`: 返回异常发生时的简要描述
+- `String toString()`: 返回异常发生时的详细信息
+- `String getLocalizedMessage()`: 返回异常对象的本地化信息。使用 `Throwable` 的子类覆盖这个方法，可以生成本地化信息。如果子类没有覆盖该方法，则该方法返回的信息与 `getMessage()`返回的结果相同
+- `void printStackTrace()`: 在控制台上打印 `Throwable` 对象封装的异常信息
+
+## try-catch-finally 如何使用？
+- **`try` 块：** 用于捕获异常。其后可接零个或多个 `catch` 块，如果没有 `catch` 块，则必须跟一个 `finally` 块。
+- **`catch` 块：** 用于处理 try 捕获到的异常。
+- **`finally` 块：** 无论是否捕获或处理异常，`finally` 块里的语句都会被执行。当在 `try` 块或 `catch` 块中遇到 `return` 语句时，`finally` 语句块将在方法返回之前被执行。
+```java
+public class Test {
+    public static void main(String[] args) {
+        try{
+            System.out.println("start");
+            throw new RuntimeException("RuntimeException");
+        }catch (Exception e){
+            System.out.println(e.getMessage());
+            return;
+        }finally {
+            System.out.println("running finally block");
+        }
+    }
+}
+
+```
+
+输出：
+
+```text
+start
+RuntimeException
+running finally block
+```
+
+**注意：不要在 finally 语句块中使用 return!**  当 try 语句和 finally 语句中都有 return 语句时，try 语句块中的 return 语句不会被执行。
+
+一般我们不建议在 finally 代码块中添加 return 语句，因为这会破坏并阻止异常的抛出，导致不宜排查的崩溃。
+
+### Finally 语句块一定会执行?
+
+正常情况下是一定会执行的，如果在 finally 语句执行之前虚拟机被终止执行，那么 finally 语句就不会执行
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        try {
+            System.out.println("Try to do something");
+            throw new RuntimeException("RuntimeException");
+        } catch (Exception e) {
+            System.out.println("Catch Exception -> " + e.getMessage());
+            // 终止当前正在运行的Java虚拟机
+            System.exit(1);
+        } finally {
+            System.out.println("Finally");
+        }
+
+    }
+}
+```
+
+输出
+
+```text
+Try to do something
+Catch Exception -> RuntimeException
+```
+
+还有两种情况也是不会执行的：
+
+- 程序所在的线程死亡
+- CPU 被关闭
+
+## try-catch-finally 底层的实现原理
+
+测试程序
+
+```java
+public void foo(){
+    try {
+        int result = 9 + 8;
+    } catch (Exception e){
+        handleException(e);
+    }
+}
+
+public void handleException(Exception e){
+
+}
+
+```
+
+编译和反编译之后
+
+```shell
+$ javac Test.java
+$ javap -c -v -s Test
+```
+
+得到结果：
+
+```java
+public void foo();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=2, locals=2, args_size=1
+         0: bipush        17
+         2: istore_1
+         3: goto          12
+         6: astore_1
+         7: aload_0
+         8: aload_1
+         9: invokevirtual #3    // Method handleException:(Ljava/lang/Exception;)V
+        12: return
+      Exception table:
+         from    to  target type
+           0     3     6    Class java/lang/Exception
+      LineNumberTable:
+        line 6: 0
+        line 9: 3
+        line 7: 6
+        line 8: 7
+        line 10: 12
+      StackMapTable: number_of_entries = 2
+        frame_type = 70 /* same_locals_1_stack_item */
+          stack = [ class java/lang/Exception ]
+        frame_type = 5 /* same */
+```
+
+相对于没有 `try-catch` block 的代码，上述代码中多出了一个 `Exception Table`。
+
+在编译后字节码中，每个方法都附带一个异常表（Exception table），异常表里的每一行表示一个异常处理器，由 from 指针、to 指针、target 指针、所捕获的异常类型 type 组成。
+
+这些指针的值是字节码索引，用于定位字节码 其含义是在 `[from, to)` 字节码范围内，抛出了异常类型为`type`的异常，就会跳转到 `target` 表示的字节码处。
+
+比如，上面的例子异常表表示：在 0 到 3 中间（不包含 3）如果抛出了 Exception 异常，就跳转到 6 执行。
+
+现在将异常处理多加几个
+
+```java
+public void foo(){
+    try {
+        int result = 9 + 8;
+    } catch (NullPointerException e){
+        handleException(e);
+    } catch (IndexOutOfBoundsException e){
+        handleException(e);
+    } catch (NumberFormatException e){
+        handleException(e);
+    }
+}
+
+public void handleException(Exception e){
+
+}
+
+```
+
+编译和反编译之后， Exception table 中多了两项
+
+```java
+from    to  target type
+ 0      3     6     Class java/lang/NullPointerException
+ 0      3    15     Class java/lang/IndexOutOfBoundsException
+ 0      3    24     Class java/lang/NumberFormatException
+
+```
+
+Exception Table 中变为三种类型的异常，如果[0,3)的代码段（不包括 3）发生异常，则可以跳转到，6，15，24 行代码寻找可捕获的异常类型。
+
+当程序出现异常时，Java 虚拟机会从上至下遍历异常表中所有的条目。当触发异常的字节码索引值在某个异常条目的`[from, to)` 范围内，则会判断抛出的异常与该条目想捕获的异常是否匹配。
+
+- 如果匹配，Java 虚拟机会将控制流跳转到 target 指向的字节码；如果不匹配则继续遍历异常表
+- 如果遍历完所有的异常表，还未匹配到异常处理器，那么该**异常将蔓延到调用方（caller）中重复上述的操作。最坏的情况下虚拟机需要遍历该线程 Java 栈上所有方法的异常表。** 如果在方法栈中的所有调用方中，都未找到可匹配的异常表，JVM 会清空当前方法栈。
+
+## finally 执行的秘密
+
+程序
+
+```java
+ public void foo(){
+    try {
+        int result = 9 + 8;
+    } catch (NullPointerException e){
+        handleException(e);
+    } catch (IndexOutOfBoundsException e){
+        handleException(e);
+    } catch (NumberFormatException e){
+        handleException(e);
+    } finally {
+        handleException();
+    }
+}
+
+public void handleException(Exception e){
+
+}
+
+public void handleException(){}
+```
+
+编译之后
+
+```java
+public void foo();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=2, locals=3, args_size=1
+         0: bipush        17
+         2: istore_1
+         3: aload_0
+         4: invokevirtual #2                  // Method handleException:()V
+         7: goto          56
+        10: astore_1
+        11: aload_0
+        12: aload_1
+        13: invokevirtual #4                  // Method handleException:(Ljava/lang/Exception;)V
+        16: aload_0
+        17: invokevirtual #2                  // Method handleException:()V
+        20: goto          56
+        23: astore_1
+        24: aload_0
+        25: aload_1
+        26: invokevirtual #4                  // Method handleException:(Ljava/lang/Exception;)V
+        29: aload_0
+        30: invokevirtual #2                  // Method handleException:()V
+        33: goto          56
+        36: astore_1
+        37: aload_0
+        38: aload_1
+        39: invokevirtual #4                  // Method handleException:(Ljava/lang/Exception;)V
+        42: aload_0
+        43: invokevirtual #2                  // Method handleException:()V
+        46: goto          56
+        49: astore_2
+        50: aload_0
+        51: invokevirtual #2                  // Method handleException:()V
+        54: aload_2
+        55: athrow
+        56: return
+      Exception table:
+         from    to  target type
+             0     3    10   Class java/lang/NullPointerException
+             0     3    23   Class java/lang/IndexOutOfBoundsException
+             0     3    36   Class java/lang/NumberFormatException
+             0     3    49   any 
+            10    16    49   any
+            23    29    49   any
+            36    42    49   any
+
+```
+
+可以看到，字节码中包含了三份 finally 语句块，都在程序正常 return 和异常 throw 之前。其中两处在 try 和 catch 调用 return 之前，一处是在异常 throw 之前。而 finally 的代码，如果出现异常，就不是当前方法所能处理的了，会直接向外抛出。
+
+**Java 采用的方式是复制 finally 代码块的内容，分别放在 try catch 代码块所有正常 return 和 异常 throw 之前。所以 finally 代码块始终会执行。**
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        try {
+            throw new RuntimeException("RuntimeException!!!");
+        }finally {
+            System.out.println("Running Finally block");
+        }
+    }
+}
+```
+
+输出：
+
+```text
+Running Finally block
+Exception in thread "main" java.lang.RuntimeException: RuntimeException!!!
+	at Test.main(Test.java:4)
+```
+
+### 异常表中的 any 的作用是什么
+
+```java
+ from    to  target type
+             0     3    10   Class java/lang/NullPointerException
+             0     3    23   Class java/lang/IndexOutOfBoundsException
+             0     3    36   Class java/lang/NumberFormatException
+             0     3    49   any 
+            10    16    49   any
+            23    29    49   any
+            36    42    49   any
+```
+
+1. 通过 0 和 3 可以看到是 try 中的语句，说明是对 catch 的补充，用于处理 catch 没有捕获的异常
+2. 通过 10 和 16 可以看到它是 catch 所处的代码段，因此 catch 代码块也是被异常处理器监视的
+
+### finally 修改返回值的场景
+
+```java
+public class Test {
+    public static int foo() {
+        int i = 0;
+        try {
+            i = 1;
+            return i;
+        }catch (Exception e){
+            i = 2;
+            return i;
+        }finally {
+            i = 3;
+        }
+    }
+}
+```
+
+编译之后：
+
+```java
+public static int foo();
+    descriptor: ()I
+    flags: ACC_PUBLIC, ACC_STATIC
+    Code:
+      stack=1, locals=4, args_size=0
+         0: iconst_0
+         1: istore_0
+         2: iconst_1
+         3: istore_0
+         4: iload_0
+         5: istore_1
+         6: iconst_3
+         7: istore_0
+         8: iload_1
+         9: ireturn
+        10: astore_1
+        11: iconst_2
+        12: istore_0
+        13: iload_0
+        14: istore_2
+        15: iconst_3
+        16: istore_0
+        17: iload_2
+        18: ireturn
+        19: astore_3
+        20: iconst_3
+        21: istore_0
+        22: aload_3
+        23: athrow
+      Exception table:
+         from    to  target type
+             2     6    10   Class java/lang/Exception
+             2     6    19   any
+            10    15    19   any
+      LineNumberTable:
+        line 6: 0
+        line 8: 2
+        line 9: 4
+        line 14: 6
+        line 9: 8
+        line 10: 10
+        line 11: 11
+        line 12: 13
+        line 14: 15
+        line 12: 17
+        line 14: 19
+        line 15: 22
+      StackMapTable: number_of_entries = 2
+        frame_type = 255 /* full_frame */
+          offset_delta = 10
+          locals = [ int ]
+          stack = [ class java/lang/Exception ]
+        frame_type = 72 /* same_locals_1_stack_item */
+          stack = [ class java/lang/Throwable ]
+}
+```
+
+**通过字节码，我们发现，在 try 语句的 return 块中，return 返回的变量并不是直接返回 i 值，而是在执行 finally 块之前把 i 值存储在临时区域，当执行 return 时直接返回的临时区域中的值，即使在 finally 语句中把变量 i 的值修改了，也不会影响返回的值。**
+
+### finally 中含有 return 的场景
+
+当finally 中有return 语句时，return 语句会重写 try-block, catch-block的返回值。
+
+```java
+public class Test {
+    public static int foo() {
+        int i = 0;
+        try {
+            i = 1;
+            return i;
+        }catch (Exception e){
+            i = 2;
+            return i;
+        }finally {
+            i = 3;
+            return i;
+        }
+    }
+}
+```
+
+编译之后：
+
+```java
+public static int foo();
+descriptor: ()I
+flags: ACC_PUBLIC, ACC_STATIC
+Code:
+  stack=1, locals=4, args_size=0
+     0: iconst_0
+     1: istore_0
+     2: iconst_1
+     3: istore_0
+     4: iload_0
+     5: istore_1
+     6: iconst_3
+     7: istore_0
+     8: iload_0
+     9: ireturn
+    10: astore_1
+    11: iconst_2
+    12: istore_0
+    13: iload_0
+    14: istore_2
+    15: iconst_3
+    16: istore_0
+    17: iload_0
+    18: ireturn
+    19: astore_3
+    20: iconst_3
+    21: istore_0
+    22: iload_0
+    23: ireturn
+  Exception table:
+     from    to  target type
+         2     6    10   Class java/lang/Exception
+         2     6    19   any
+        10    15    19   any
+  LineNumberTable:
+    line 6: 0
+    line 8: 2
+    line 9: 4
+    line 14: 6
+    line 15: 8
+    line 10: 10
+    line 11: 11
+    line 12: 13
+    line 14: 15
+    line 15: 17
+    line 14: 19
+    line 15: 22
+  StackMapTable: number_of_entries = 2
+    frame_type = 255 /* full_frame */
+      offset_delta = 10
+      locals = [ int ]
+      stack = [ class java/lang/Exception ]
+    frame_type = 72 /* same_locals_1_stack_item */
+      stack = [ class java/lang/Throwable ]
+```
+
+在finally 语句中增加一行返回值操作。运行结果却变成了3, 返回了finally block 中的值,分析:
+
+每个 try block, catch block 后侧，return 指令之前，都会拷贝finally block的代码块。可以看到，虽然 try-catch block 中的 i 值被暂存了，但是由于 finally 有 return 语句，返回的依然是 finally 修改后的 i 值。
+
+### 总结
+
+- 第一，JVM 采用异常表的方式来处理 try-catch 的跳转逻辑；
+- 第二，finally 的实现采用拷贝 finally 语句块的方式来实现 finally 一定会执行的语义逻辑；
+
+## 如何使用 `try-with-resources` 代替 `try-catch-finally`
+
+1. **适用范围（资源的定义）：** 任何实现 `java.lang.AutoCloseable` 或者 `java.io.Closeable` 的对象
+
+2. **关闭资源和 finally 块的执行顺序：** 在 `try-with-resources` 语句中，任何 catch 或 finally 块在声明的资源**关闭后运行**
+
+《Effective Java》中明确指出：
+
+> 面对必须要关闭的资源，我们总是应该优先使用 `try-with-resources` 而不是 `try-finally`。随之产生的代码更简短，更清晰，产生的异常对我们也更有用。`try-with-resources` 语句让我们更容易编写必须要关闭的资源的代码，若采用 `try-finally` 则几乎做不到这点。
+
+
+
+# IO
+
+## 什么是序列化?什么是反序列化?
+
+如果我们需要持久化 Java 对象比如将 Java 对象保存在文件中，或者在网络传输 Java 对象，这些场景都需要用到序列化。
+
+简单来说：
+
+- **序列化**： 将数据结构或对象转换成二进制字节流的过程。
+- **反序列化**：将在序列化过程中所生成的二进制字节流转换成原来数据结构或者对象的过程
+
+维基百科是如是介绍序列化的：
+
+> **序列化**（serialization）在计算机科学的数据处理中，是指将数据结构或对象状态转换成可取用格式（例如存成文件，存于缓冲，或经由网络中发送），以留待后续在相同或另一台计算机环境中，能恢复原先状态的过程。依照序列化格式重新获取字节的结果时，可以利用它来产生与原始对象相同语义的副本。对于许多对象，像是使用大量引用的复杂对象，这种序列化重建的过程并不容易。面向对象中的对象序列化，并不概括之前原始对象所关系的函数。这种过程也称为对象编组（marshalling）。从一系列字节提取数据结构的反向操作，是反序列化（也称为解编组、deserialization、unmarshalling）。
+
+综上：**序列化的主要目的是通过网络传输对象或者说是将对象存储到文件系统、数据库、内存中。**
+
+### Java 序列化中如果有些字段不想进行序列化，怎么办？
+
+对于不想进行序列化的变量，使用 `transient` 关键字修饰。
+
+`transient` 关键字的作用是：阻止实例中那些用此关键字修饰的的变量序列化；当对象被反序列化时，被 `transient` 修饰的变量值不会被持久化和恢复。
+
+关于 `transient` 还有几点注意：
+
+- `transient` 只能修饰变量，不能修饰类和方法。
+- `transient` 修饰的变量，在反序列化后变量值将会被置成类型的默认值。例如，如果是修饰 `int` 类型，那么反序列后结果就是 `0`。
+- `static` 变量因为不属于任何对象(Object)，所以无论有没有 `transient` 关键字修饰，均不会被序列化。
+
+## 获取用键盘输入常用的两种方法
+
+方法 1：通过 `Scanner`
+
+```java
+Scanner input = new Scanner(System.in);
+String s  = input.nextLine();
+input.close();
+```
+
+方法 2：通过 `BufferedReader`
+
+```java
+BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+String s = input.readLine();
+```
+
+## Java 中 IO 流分为几种?
+
+- 按照流的流向分，可以分为输入流和输出流；
+- 按照操作单元划分，可以划分为字节流和字符流；
+- 按照流的角色划分为节点流和处理流。
+
+Java IO 流共涉及 40 多个类，这些类看上去很杂乱，但实际上很有规则，而且彼此之间存在非常紧密的联系， Java IO 流的 40 多个类都是从如下 4 个抽象类基类中派生出来的。
+
+- InputStream/Reader: 所有的输入流的基类，前者是字节输入流，后者是字符输入流。
+- OutputStream/Writer: 所有输出流的基类，前者是字节输出流，后者是字符输出流。
+
+按操作方式分类结构图：
+
+![IO-操作方式分类](https://my-blog-to-use.oss-cn-beijing.aliyuncs.com/2019-6/IO-%E6%93%8D%E4%BD%9C%E6%96%B9%E5%BC%8F%E5%88%86%E7%B1%BB.png)
+
+按操作对象分类结构图：
+
+![IO-操作对象分类](https://my-blog-to-use.oss-cn-beijing.aliyuncs.com/2019-6/IO-%E6%93%8D%E4%BD%9C%E5%AF%B9%E8%B1%A1%E5%88%86%E7%B1%BB.png)
+
+### 既然有了字节流,为什么还要有字符流?
+
+问题本质想问：**不管是文件读写还是网络发送接收，信息的最小存储单元都是字节，那为什么 I/O 流操作要分为字节流操作和字符流操作呢？**
+
+回答：字符流是由 Java 虚拟机将字节转换得到的，问题就出在这个过程还算是非常耗时，并且，如果我们不知道编码类型就很容易出现乱码问题。所以， I/O 流就干脆提供了一个直接操作字符的接口，方便我们平时对字符进行流操作。如果音频文件、图片等媒体文件用字节流比较好，如果涉及到字符的话使用字符流比较好。
+
+### 字节流
+
+字节流在默认情况下是不支持缓存的，这意味着每调用一次 read 方法都会请求操作系统来读取一个字节，这往往会伴随着一次磁盘 IO，因此效率会比较低。同时它重载的方法：read(byte b[]) 只是循环的调用 read() 方法而已
+
+### 字符流
+
+Java 中的字符流处理的最基本的单元是 Unicode 码元（大小2字节），它通常用来处理文本数据。
+
+与存储在内存中不同，存储在磁盘上的数据通常有着各种各样的编码方式。使用不同的编码方式，相同的字符会有不同的二进制表示。实际上字符流是这样工作的：
+
+- 输出字符流：把要写入文件的字符序列（实际上是Unicode码元序列）转为指定编码方式下的字节序列，然后再写入到文件中；
+- 输入字符流：把要读取的字节序列按指定编码方式解码为相应字符序列（实际上是 Unicode 码元序列）从而可以存在内存中。
+
+在我们使用 Writer 时，如果没有指定编码类型，默认使用操作系统使用字符集来进行编码。由于字符流在输出前实际上是要完成 Unicode 码元序列到相应编码方式的字节序列的转换，所以它会使用内存缓冲区来存放转换后得到的字节序列，等待都转换完毕再一同写入磁盘文件中。Unicode -> 字符 -> 查表 -> GBK(...)
+
+总结：
+
+- 字节流操作的基本单元为字节；字符流操作的基本单元为 Unicode 码元。
+
+- 字节流默认不使用缓冲区；字符流使用缓冲区。
+
+- 字节流通常用于处理二进制数据，实际上它可以处理任意类型的数据，但它不支持直接写入或读取 Unicode 码元；字符流通常处理文本数据，它支持写入及读取 Unicode 码元。
+
+### UTF 编码
+
+事实证明，对可以用 ASCII 表示的字符使用 UNICODE 并不高效，因为 UNICODE 比 ASCII 占用大一倍的空间，而对 ASCII 来说高字节的 0 对他毫无用处。为了解决这个问题，就出现了一些中间格式的字符集，他们被称为通用转换格式，即 UTF（Universal Transformation Format）。常见的 UTF 格式有：UTF-7, UTF-7.5, UTF-8,UTF-16, 以及 UTF-32
+
+对于英语国家来说,UNICODE 内码非常浪费空间,对于 UCS-2 浪费了 50% 的存储空间,对于 UCS-4 则浪费了 70% 的存储空间. 而且还有一个更大的问题, UNICODE 的内码中含有很多 '\0', 原有的 C 标准库函数没办法处理这些字符串.于是有人发明了一种针对 UNICODE 的变换规则,把 UNICODE 字符串中的 0 去除. **注意这个变换规则不是通过查表实现的,而只要用一些位移操作就可以实现**. 这就是 UTF8. **UTF8 只是 UNICODE 内码在存储/传输时的状态**. 而从 GB2312 编码转换到 UNICODE 编码需要查表. UTF8 和 UNICODE 的关系 与 GB2312 和 UNICODE 的关系有本质的不同. UTF8 和 UNICODE 是一个人的两个面孔, GB2312 和 UNICODE 是两个人. 所以,要实现 UTF8 编码到 GB2312 编码的转换必须先把 UTF8 编码还原为 UNICODE 编码,再通过查表的方式,把UNICODE 编码转化为 GB2312 编码.
+
+总结：
+
+- UTF-8 编码和 Unicode 编码是同种编码的不同形式，它们之间的转换不需要查表就能够完成
+- 不同种编码之间的转换需要先转换成 Unicode 编码，然后再转换成其他的编码
+- 在计算机内存中，统一使用 Unicode 编码，当需要保存到硬盘或者需要传输的时候，就转换为 UTF-8 编码
+
+#### 转换原理
+
+由于各种编码之间不存在互相变换的算法，**只能通过查表解决转换问题**。自编代码进行转换在嵌入式系统中最有实际意义，该方法具有最方便的移植特性和最小的代码量。需要解决的主要技术问题有：
+
+- 获取所需的编码转换表
+
+- 实现码表的快速搜索算法（UTF-8 转 GB 码才需要，其实就是折半查找）
+
+- 待转换字符串中的中/西文字符判别
+
+**由于折半查找要求码表是事先排序的，正变换和反变换需要各有一张转换表**。转换表可以从开源软件中获取也可以自己编段程序生成一份。
+
+由于非 Unicode 编码字串中的西文字母只有一字节/字符，而汉字是 2 字节/字符，需要在转换时区别对待。判断方法在本文的前面部分有介绍。
+
+由 GB2312 码转 Unicode 时，由于转换表是按区位表排列的，可以直接由汉字的 GB 码通过计算得到转换表中的行列值，计算公式为：
+
+Row = MSB - 0xA0 - 16
+
+Col = LSB – 0xA0
+
+由于转换表是从汉字区开始的，即第一个汉字是“啊”，开始行不是0，而是16，所以要从行值中减去一个偏移量。得到行列值后，可以直接取回表中的 Unicode。`Unicode = CODE_LUT[Row][Col]`;
