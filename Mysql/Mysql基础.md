@@ -189,7 +189,8 @@ where
 group by
 	分组字段
 having
-	分组之后的条件
+	-- having 子句出现的数据必须在 group by 执行之后,在 having 中可以使用聚合函数
+	分组之后的条件 
 order by
 	排序
 limit
@@ -200,6 +201,10 @@ limit
 
 mysql 中 utf8 编码格式的默认排序规则就是：utf8_general_ci ===> 不区分大小写。因此在创建表的时候分清清楚字段需不需要区分大小写
 
+可以使用子查询返回单个值与 where 语句中的比较运算符进行比较
+
+
+
 ### 聚合函数
 
 | 函数  | 作用                                        |
@@ -209,6 +214,14 @@ mysql 中 utf8 编码格式的默认排序规则就是：utf8_general_ci ===> �
 | min   | 计算最小值                                  |
 | sum   | 计算和                                      |
 | avg   | 计算平均值                                  |
+
+### 常用函数
+
+| isnull() | 判断是否为空 |
+| -------- | ------------ |
+|          |              |
+|          |              |
+|          |              |
 
 **注意**
 
@@ -228,6 +241,44 @@ limit 0,5 -- 表示显示第 1，2，3，4，5 条数据
 
 limit 5,5 -- 表示显示第 6，7，8，9，10 条数据
 ```
+
+## hash 连接
+
+hash 连接的步骤是将内表(子查询出来的表)中的每一行 hash 到内存中，然后将主表的每一行进行 hash 于内表的 hash 值进行比较，选出 hash 值相同的
+
+## loop 循环
+
+loop 循环指的是将主表中的数据每一条和内表中的数据进行匹配，不过内表需要查询数据库，但是查数据库时能够使用索引，因此比较的次数取决于主表的行数，主表有 10000 行，就得查 10000 次数据库 
+
+## in 和 exists 的区别
+
+1. exists、not exists 一般都是与子查询一起使用，In 可以与子查询一起使用，也可以直接in (a,b.....)
+
+2. **exists 会针对子查询的表使用索引，not exists 会对主子查询都会使用索引。in 与子查询一起使用的时候，只能针对主查询使用索引，not in 则不会使用任何索引**。
+
+**注意**
+
+一直以来认为 exists 比 in 效率高的说法是不准确的。
+
+in 是把外表和内表作 hash 连接，而 exists 是对外表作 loop 循环，每次 loop 循环再对内表进行查询。
+
+- 如果查询的两个表大小相当，那么用 in 和 exists 差别不大。
+- 如果两个表中一个较小，一个是大表，则子查询表大的用 exists，子查询表小的用 in
+
+in 是在内存中进行比较，而 exists 是通过查数据库的方式进行查找
+
+IN 的元素不能超过1000个。
+
+所有的[关联查询](https://so.csdn.net/so/search?q=关联查询&spm=1001.2101.3001.7020)都可以转换为子查询。但是并不是所有的子查询都能转化成关联查询。
+
+## not in 和 not exists
+
+- 如果查询语句使用了 not in 那么内外表都进行全表扫描，没有用到索引
+- 如果查询语句使用了 not extsts， 那么子查询依然能用到子表上的索引。
+
+因为 not in 实质上等于 `!= and != ...`，因为 != 不会使用索引，故 not in 不会使用索引。
+
+所以**无论那个表大，用 not exists 都比 not in 要快**。
 
 ## 约束
 
@@ -340,6 +391,20 @@ $ mysqldump -u <username> -p <password> <databaseName> > <savePath>
 
 ## 多表查询
 
+from 子句中 on 条件主要用来连接表，其他不属于连接表的条件可以使用 where 子句来指定； 
+
+join 连接分为三种: 其中外连接的 outer 和内链接的 inner 可以省略
+
+1. 内连接: inner join, 默认，所以可以省略 inner 关键字。要求两个表中的值都存在，即取两个表中的交集
+
+2. 外连接: 附表中的值可能会被置为 null
+
+   - left outer join, 左外连接，结果表中除了匹配的行外，还包括左表中有而右表中不匹配的行，右表中不存在的行置为 null
+
+   - right outer join， 右外连接，结果表中除了匹配的行外，还包括右表中有而左表中不匹配的行，左表中不存在的行置为 null
+
+3. 交叉连接：cross join，交叉连接，实际上就是将两个表进行笛卡尔积运算，结果表的行数等于两表行数之积
+
 - 内连接查询
   - 隐式内连接
   - 显示内连接
@@ -350,6 +415,18 @@ $ mysqldump -u <username> -p <password> <databaseName> > <savePath>
   - 子查询结果是单行单列的将其当作变量使用
   - 子查询结果是多行单列的将其当作数组使用，可以使用 in 关键字进行使用
   - 子查询结果是多行多列的数据,将其作为一个虚拟表来使用
+
+```sql
+-- 关键字 on 主要用于连接表,
+select
+	FirstName, LastName, City, State
+from
+	Person left join Address
+on
+	Person.PersonId = Address.PersonId;
+```
+
+
 
 ## 事务
 
@@ -494,3 +571,36 @@ show grants for 'root'@'localhost'
 ```SQL
 revoke 权限列表  on <database>.<tableName> to '<username>'@'<hostname>'
 ```
+
+## 注意事项
+
+from 中的表如果是子查询生成的表，则必须为子查询指定一个表名，否则会报错
+
+```sql
+select Email
+from 
+(
+    select Email, count(Email) as num
+    from Person
+    group by Email
+) as statistic 
+where num > 1;
+
+-- 更加高效的方式
+select Email
+from Person
+group by Email
+having count(Email) > 1;
+```
+
+子查询中不要写上分号 `;`，否则会报错
+
+```sql
+select name
+from customers
+where id not in
+(
+    select customerid from orders -- `;` 这个分号不要写啊，会报错的
+);
+```
+
