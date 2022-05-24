@@ -13,6 +13,13 @@ JWT 是 JSON 格式的加密字符串，即将 json 数据加密后的字符串�
   - 通过**授权**，可以验证发送到服务器的请求是否是已登录的用户，从而决定是否授予该用户访问系统的权限，继而批准该用户通过获得的 token 访问路由、服务和资源，其中 token 中含有权限等级。
 - **信息交换**：JWT(JSON Web Token) 是在双方之间安全地传输信息的一种好方法。因为 JWT 可以被签名（例如，使用公钥/私钥对），所以能确保请求就是来自客户，而非来在恶意客户（黑客）。此外，由于签名是使用 Header 和 Payload 加密计算得到的，因此还能够验证发送的内容是否被篡改。
 
+## When should you use JSON Web Tokens?
+
+Here are some scenarios where JSON Web Tokens are useful:
+
+- **Authorization**: This is the most common scenario for using JWT. Once the user is logged in, each subsequent request will include the JWT, allowing the user to access routes, services, and resources that are permitted with that token. **SSO(Single Sign On)** is a feature that widely uses JWT nowadays, because of its small overhead and its ability to be easily used across different domains.
+- **Information Exchange**: JSON Web Tokens are a good way of securely transmitting information between parties. Because JWTs can be signed—for example, using public/private key pairs—you can be sure the senders are who they say they are. Additionally, as the signature is calculated using the header and the payload, you can also verify that the content hasn't been tampered with.
+
 ## JWT 与 Session Id 比较
 
 ### 小型 Web 应用程序
@@ -123,7 +130,7 @@ Header 通常由两部分组成：
 }
 ```
 
-然后，将此 JSON 以 **Base64Url** 编码，形成 JWT 的第一部分。
+然后，将此 JSON 以 **Base64Url** 编码，形成 JWT 的第一部分。Base64Url 算法不是加密算法
 
 ### Payload (Data)
 
@@ -156,6 +163,30 @@ token 的第二部分是有效负载，其中包含 Claims（声明）。**Claim
 
 > 除非将其加密，否则请不要将机密信息放入 JWT 的 Payload 或 Header 元素中。
 
+### Payload
+
+The second part of the token is the payload, which contains the claims. Claims are statements about an entity (typically, the user) and additional data. There are three types of claims: *registered*, *public*, and *private* claims.
+
+- [**Registered claims**](https://tools.ietf.org/html/rfc7519#section-4.1): These are a set of predefined claims which are not mandatory but recommended, to provide a set of useful, interoperable claims. Some of them are: **iss** (issuer), **exp** (expiration time), **sub** (subject), **aud** (audience), and [others](https://tools.ietf.org/html/rfc7519#section-4.1).
+
+  > Notice that the claim names are only three characters long as JWT is meant to be compact.
+
+- [**Public claims**](https://tools.ietf.org/html/rfc7519#section-4.2): These can be defined at will by those using JWTs. But to avoid collisions they should be defined in the [IANA JSON Web Token Registry](https://www.iana.org/assignments/jwt/jwt.xhtml) or be defined as a URI that contains a collision resistant namespace.
+
+- [**Private claims**](https://tools.ietf.org/html/rfc7519#section-4.3): These are the custom claims created to share information between parties that agree on using them and are neither *registered* or *public* claims.
+
+An example payload could be:
+
+```
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "admin": true
+}
+```
+
+The payload is then **Base64Url** encoded to form the second part of the JSON Web Token.
+
 ### Signature签名
 
 签名使我们能够验证 token 是否有效和没被篡改。它的工作方式是获取 token 的前两部分，将 Header 和 Payload 分别编码为 Base64，然后将它们用 “.” 连接起来。这样我们就拥有了与用户共享的所有数据。
@@ -177,6 +208,21 @@ HMACSHA256(
 最后发送给用户的数据是：header.payload.signature
 
 **其中 signature 使用 header 中的算法进行不可逆加密，header 和 payload 则使用 Base64Url 编码进行编码便于在网络中传输，由于使用的是 Base64Url 编码，因此不能够在 header 和 payload 中存放像密码这样的敏感数据** 
+
+### Signature
+
+**To create the signature part you have to take the encoded header, the encoded payload, a secret, the algorithm specified in the header, and sign that.**
+
+For example if you want to use the HMAC SHA256 algorithm, the signature will be created in the following way:
+
+```
+HMACSHA256(
+  base64UrlEncode(header) + "." +
+  base64UrlEncode(payload),
+  secret)
+```
+
+The signature is used to verify the message wasn't changed along the way, and, in the case of tokens signed with a private key, it can also verify that the sender of the JWT is who it says it is.
 
 #### 签名方式
 

@@ -114,9 +114,9 @@ Mapper 接口是没有实现类的，当调用接口方法时，`接口全限名
 
 Mapper 接口里的方法，是不能重载的，因为是使用 全限名+方法名 的保存和寻找策略。**Mapper 接口的工作原理是 JDK 动态代理**，Mybatis 运行时会使用 JDK动态代理为 Mapper 接口生成代理对象 proxy，代理对象会拦截接口方法，转而执行 MapperStatement 所代表的 sql，然后将 sql 执行结果返回。
 
-1、我们用 mytabis 操作数据库，有一个固定流程：先创建 SqlSessionFactory，然后创建 SqlSession，然后再创建获取 mapper 代理对象，最后利用 mapper 代理对象完成数据库的操作；一次数据库操作完成后需要关闭SqlSession；
+1、我们用 mytabis 操作数据库，有一个固定流程：先创建 SqlSessionFactory，然后创建 SqlSession，然后再创建获取 mapper 代理对象，最后利用 mapper 代理对象完成数据库的操作；一次数据库操作完成后需要关闭 SqlSession；
 
-2、创建 SqlSessionFactory 实例的过程中，解析 mybatis 配置文件和映射文件，将内容都存放到Configuration 实例的对应属性中；创建 SqlSession 的过程中，有创建事务 Transaction、执行器Executor，以及 DefaultSqlSession；Mapper 代理对象的创建，利用的是 JDK 的动态代理，InvocationHandler 是 MapperProxy，后续 Mapper 代理对象方法的执行都会先经过 MapperProxy 的invoke 方法；
+2、创建 SqlSessionFactory 实例的过程中，解析 mybatis 配置文件和映射文件，将内容都存放到 Configuration 实例的对应属性中；创建 SqlSession 的过程中，有创建事务 Transaction、执行器 Executor，以及 DefaultSqlSession；Mapper 代理对象的创建，利用的是 JDK 的动态代理，InvocationHandler 是 MapperProxy，后续 Mapper 代理对象方法的执行都会先经过 MapperProxy 的 invoke 方法；
 
 ## Mybatis 是如何进行分页的？分页插件的原理是什么？
 
@@ -263,7 +263,7 @@ Mybatis 提供了 9 种动态 sql 标签：trim | where | set | foreach | if | c
 
 ## Xml 映射文件中，除了常见的 select | insert | updae | delete 标签之外，还有哪些标签？
 
-答：`<resultMap>、<parameterMap>、<sql>、<include>、<selectKey>`，加上动态 sql 的 9 个标签，其中`<sql>`为 sql 片段标签，通过 `<include>` 标签引入 sql 片段，`<selectKey>` 为不支持自增的主键生成策略标签。
+答：`<resultMap>、<parameterMap>、<sql>、<include>、<selectKey>`，加上动态 sql 的 9 个标签，其中 `<sql>` 为 sql 片段标签，通过 `<include>` 标签引入 sql 片段，`<selectKey>` 为不支持自增的主键生成策略标签。
 
 ## Mybatis 的 Xml 映射文件中，不同的 Xml 映射文件，id 是否可以重复？
 

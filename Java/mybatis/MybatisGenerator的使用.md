@@ -1,5 +1,9 @@
 # Mybatis Generator 的使用
 
+[Mybatis Generator 官网](https://mybatis.org/generator/)
+
+接下来使用 Java 的方式运行 Mybatis Generator，其他的方式运行 Mybatis Generator 可以到 [https://mybatis.org/generator/running/running.html](https://mybatis.org/generator/running/running.html) 进行查看
+
 ## Mybatis的配置文件
 
 ### pom.xml 添加的依赖
@@ -23,6 +27,8 @@ jdbc.password=root
 ```
 
 ### generatorConfig.xml
+
+Mybatis Generator 配置文件官网：[https://mybatis.org/generator/configreference/xmlconfig.html](https://mybatis.org/generator/configreference/xmlconfig.html)
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -108,5 +114,103 @@ public class Generator {
         }
     }
 }
+```
+
+# 常用的方法
+
+| 方法                          | 描述                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| deleteByPrimaryKey()          | 根据主键删除对应的行                                         |
+| insert()                      | 增加一行数据，没有给的 col 将会填入 null                     |
+| insertSelective()             | 插入一行数据，没有给的 col 不会填入 null                     |
+| insertMultiple()              | 插入多行数据，没有给的 col 将会填入 null                     |
+| selectByPrimaryKey()          | 根据主键查询对应的行                                         |
+| updateByPrimaryKey()          | 根据主键更新行,没有给的 col 将会填入 null                    |
+| updateByPrimaryKeySelective() | 根据主键更新，没有给的 col 不会填入 null,即没有给的 col 不更新，只更新给的 col |
+|                               |                                                              |
+
+# Example 类的使用
+
+Example 类用于动态的生成 where 子句
+
+Example 类中含有一个内部类 Criteria, 这个类中含有一系列可添加到 where 子句中的条件.一个 Criterial 对象中添加的多个条件最终通过 and 拼接成 sql。
+
+Example 类中可以持有多个 Criteria 对象(`List<Criteria>`)，这些 Criteria 对象最终会组合到一起组成一个 where 子句
+
+创建 Criteria 对象可以通过 Example 实例对象的 `createCriteria` 或者 `or` 方法。调用这些方法时，会自动将生成的对象添加到 `List<Criteria>` 中。下面是这两个方法的实现
+
+```java
+public Criteria or() {
+    Criteria criteria = createCriteriaInternal();
+    oredCriteria.add(criteria);
+    return criteria;
+}
+
+public Criteria createCriteria() {
+    Criteria criteria = createCriteriaInternal();
+    if (oredCriteria.size() == 0) {
+        oredCriteria.add(criteria);
+    }
+    return criteria;
+}
+```
+
+使用 `or` 方法每次都会添加到 `List<Criteria>` 中
+
+使用 `createCriteria` 方法只有在 `List<Cirteria>` 为空的时候会添加进去
+
+因此 `createCriteria` 方法只适合生成一个简单的 where 子句
+
+**注意：** 官网建议只使用 `or` 方法，因为该方法写出来的代码可读性更强
+
+## 使用示例
+
+生成 `where field1 = 5`
+
+```java
+TestTableExample example = new TestTableExample();
+example.createCriteria().andField1EqualTo(5);
+```
+
+或者
+
+```java
+TestTableExample example = new TestTableExample();
+example.or().andField1EqualTo(5);
+```
+
+### 复杂的例子
+
+```java
+TestTableExample example = new TestTableExample();
+
+  example.or()
+    .andField1EqualTo(5)
+    .andField2IsNull();
+
+  example.or()
+    .andField3NotEqualTo(9)
+    .andField4IsNotNull();
+
+  List<Integer> field5Values = new ArrayList<Integer>();
+  field5Values.add(8);
+  field5Values.add(11);
+  field5Values.add(14);
+  field5Values.add(22);
+
+  example.or()
+    .andField5In(field5Values);
+
+  example.or()
+    .andField6Between(3, 7);
+```
+
+最终生成的 sql：
+
+```sql
+ where (field1 = 5 and field2 is null)
+     or (field3 <> 9 and field4 is not null)
+     or (field5 in (8, 11, 14, 22))
+     or (field6 between 3 and 7)
 ```
 
