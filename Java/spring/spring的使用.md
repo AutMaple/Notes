@@ -707,6 +707,23 @@ public class JavaConfig {
 | @Around         | 可以在方法执行前后设置相关的信息                             |
 | @AfterReturning | 方法返回之后执行                                             |
 
+#### @Autowired 注解
+
+该注解既可以放在字段、方法和构造方法中
+
+- 如果注解放在字段上，那么 Spring 在项目启动时自动注入对应类型的实例对象
+- 如果注解放在方法上，那么 Spring 在注入时，会调用一次 @Autowired 注解所在的方法，同时如果方法声明了参数，会自动对参数进行装配。这种方式可以用于在自动注入的时候进行一些初始化操作
+
+#### Idea 使用 @Autowired 报 warning 的问题
+
+> Spring Team recommends "Always use constructor based dependency injection in your beans. Always use assertions for mandatory dependencies". 使用构造方法进行依赖注入，使用断言进行强制依赖
+
+@Autowired 注入 bean，相当于在配置文件中配置 bean，并且使用 setter 进行注入
+
+Java 变量初始化的步骤：
+
+静态代码块 -> 构造方法 -> @Autowired
+
 ### 注解声明一个bean
 
 使用注解声明一个 bean 可以使用如下注解
@@ -718,5 +735,5 @@ public class JavaConfig {
 
 上述四个注解都可以申明对应的类为一个 bean， 基本上没有差别，这几个注解的设置可以增强代码可可阅读性
 
-
+### 
 

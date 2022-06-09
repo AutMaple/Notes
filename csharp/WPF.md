@@ -22,3 +22,20 @@ HelloWPF/
   - ViewAndModels 文件夹用于存放业务逻辑，每个类对应一个视图，提供如数据绑定的数据，Command 等
 - Theme 文件夹用于存放自定义的控件主题，自定义控件的样式
 
+# Template
+
+The ControlTemplate contains the tree of elements that define the desired look.
+
+- XAML Code
+- Logic Code
+- WPF Resources
+
+For WPF Resources, there are three parts of resource you can change
+
+- Window.Resource
+- ControlName.Resource
+- Applicati on.Resource
+
+Every predefined control in the WPF that has a visual appearance also has a template that entirely defines that appearance. **This template is an object of type ControlTemplate that is set to the Template property defined by the Control class**
+
+A ControlTemplate specifies the visual structure and visual behavior of a control
