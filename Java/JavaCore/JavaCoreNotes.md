@@ -256,3 +256,131 @@ The compiler goes one step further. It looks at the source files to see if the s
 If you import a class from the current package, the compiler searches **all** source files of the current package to see which one defines the class
 
 **As of Java 9, classes can also be loaded from the module path**
+
+# 多态(polymorphism)
+
+The fact that an object variable (such as the variable e) can refer to multiple actual types is called *polymorphism*.
+
+**all arrays remember the element type with which they were created**
+
+### 动态绑定
+
+Automatically selecting the appropriate method at runtime is called *dynamic binding*.
+
+Dynamic binding has a very important property: It makes programs *extensible* without the need for modifying existing code.
+
+### 静态绑定
+
+If the method is *private*, *static*, *final*, or a constructor, then the compiler knows exactly which method to call. This is called *static binding*
+
+### 方法调用的过程
+
+1. The compiler looks at the declared type of the object and the method name. Note that there may be multiple methods, all with the same name *f*, but with different parameter types. For example, there may be a method *f(int)* and a method *f(String)*. The compiler enumerates all methods called *f* in the class *C* and **all accessible methods** called *f* in the superclasses of *C*. (Private methods of the superclass are not accessible.) Now the compiler knows all possible candidates for the method to be called
+2. Next, the compiler determines the types of the arguments supplied in the method call. If among all the methods called *f* there is a unique method whose parameter types are a best match for the supplied arguments, that method is chosen to be called. This process is called *overloading resolution*. For example, in a call *x.f("Hello")*, the compiler picks *f(String)* and not *f(int)*. The situation can get complex because of type conversions (int to double, Manager to Employee, and so on). If the compiler cannot find any method with matching parameter types or if multiple methods all match after applying conversions, the compiler
+   reports an error.
+
+The return type is not part of the signature. *However*, when you override a method, you need to keep the return type compatible。返回值的只能够是对应类型或者是它的子类
+
+**the virtual machine precomputes a method table for each class**, The method table lists all method signatures and the actual methods to be called. The virtual machine can build the method table after loading a class, by combining the methods that it finds in the class file with the method table of the superclass.
+
+#### 参考资料
+
+Java Core I: P337
+
+## Final 类
+
+if a class is declared final, only the methods, not the fields, are automatically final.
+
+*Enumerations* and *records* are always final — you cannot extend them
+
+## inline
+
+If a method is not overridden, and it is short, then a compiler can optimize the method call away—a process called *inlining*. 
+
+For example, inlining the call *e.getName()* replaces it with the field access *e.name*.
+
+the just-in-time compiler in the virtual machine can do a better job than a traditional compiler. It knows exactly which classes extend a given class, and it can check whether any class actually overrides a given method. If a method is short, frequently called, and not actually overridden, the justin-time compiler can inline it.
+
+## protected 关键字
+
+*protected* features in Java are accessible to all subclasses as well as to all other classes in the same package
+
+## four access control modifiers
+
+1. Accessible in the class only (private).
+
+2. Accessible by the world (public).
+3. Accessible in the package and all subclasses (protected).
+
+4. Accessible in the package—the (unfortunate) default. No modifiers are
+   needed
+
+## Records
+
+Records automatically define an equals method that compares the fields. Two record instances are equals when the corresponding field values are equal
+
+A *record* type automatically provides a *hashCode* method that derives a hash
+code from the hash codes of the field values.
+
+## Equals 方法
+
+The Java Language Specification requires that the *equals* method has the following
+properties:
+
+1. It is *reflexive*: For any non-null reference x, x.equals(x) should return
+   true.
+2. It is *symmetric*: For any references x and y, x.equals(y) should return
+   true if and only if y.equals(x) returns true.
+3. It is *transitive*: For any references x, y, and z, if x.equals(y) returns true
+   and y.equals(z) returns true, then x.equals(z) should return true.
+4. It is *consistent*: If the objects to which x and y refer haven’t changed, then
+   repeated calls to x.equals(y) return the same value.
+5. For any non-null reference x, x.equals(null) should return false
+
+### 重写 Equals 方法的技巧
+
+1. Name the explicit parameter *otherObject*—later, you will need to cast it
+   to another variable that you should call *other*.
+
+2. Test whether this happens to be identical to otherObject:
+
+   `if (this == otherObject) return true;`
+   This statement is just an optimization. In practice, this is a common case.
+   It is much *cheaper* to check for identity than to compare the fields.
+
+3. Test whether *otherObject* is null and return false if it is. This test is
+   required.
+   `if (otherObject == null) return false;`
+
+4. Compare the classes of *this* and *otherObject*. If the semantics of equals
+   can change in subclasses, use the *getClass* test:
+
+   `if (getClass() != otherObject.getClass()) return false;`
+   `ClassName other = (ClassName) otherObject;`
+   If the same semantics holds for all subclasses, you can use an *instanceof*
+   test:
+   `if (!(otherObject instanceof ClassName other)) return false;`
+   Note that the *instanceof* test sets *other* to *otherObject* if it succeeds. No
+   cast is necessary.
+
+5. Now compare the fields, as required by your notion of equality. Use *==* for
+   primitive type fields, *Objects.equals* for object fields. Return true if all
+   fields match, false otherwise.
+   `return field1 == other.field1
+   && Objects.equals(field2, other.field2)
+   && . . .;`
+   If you redefine equals in a subclass, include a call to `super.equals(other)`
+
+## HashCode 方法
+
+### 重写 HashCode 方法
+
+直接调用 `Objects.hash(Object... objects)` 方法即可，该方法会为每一个传入的参数调用 `Objects.hashCode()` 方法,同时将每个参数调用 hashCode 方法产生的结果进行结合之后返回
+
+## 字符串连接
+
+Whenever an object is concatenated with a string by the “+” operator, the Java compiler
+automatically invokes the toString method to obtain a string representation of the object
+
+The *toString* method is a great tool for logging
+
