@@ -1,5 +1,42 @@
 # Git的使用
 
+## Git 远程仓库操作
+
+##### Git global setup
+
+```
+git config --global user.name "郝永福"
+git config --global user.email "haoyongfu@yihuosoft.com"
+```
+
+##### Create a new repository
+
+```
+git clone git@git.local.com:rp-cilent/rp-processedit.git
+cd rp-processedit
+touch README.md
+git add README.md
+git commit -m "add README"
+```
+
+##### Push an existing folder
+
+```
+cd existing_folder
+git init
+git remote add origin git@git.local.com:rp-cilent/rp-processedit.git
+git add .
+git commit -m "Initial commit"
+```
+
+##### Push an existing Git repository
+
+```
+cd existing_repo
+git remote rename origin old-origin
+git remote add origin git@git.local.com:rp-cilent/rp-processedit.git
+```
+
 ## Git 的一些概念
 
 - 工作区: 平常看到的目录
@@ -123,4 +160,3 @@ git merge <name> # 将 name 分支的内容合并到当前分支
  # 为最新提交的版本打上标签, 方便后续的查找和切换, -a 表示创建一个带注解(annotation)的标签
 git tag -a <name>
 ```
-
