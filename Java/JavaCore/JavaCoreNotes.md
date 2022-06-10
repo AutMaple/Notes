@@ -412,3 +412,62 @@ As a rule of thumb, always use clone whenever you need to return a copy of a mut
 
 When a subclass object is constructed without explicit invocation of a super-class constructor, the superclass **must** have a no-argument constructor.
 
+## Wrapper class 包装类
+
+The wrapper classes are immutable—you cannot change a wrapped value after the wrapper has been constructed. They
+are also final, so you cannot subclass them.
+
+Don’t compare them with *==* and don’t use them as locks
+
+Don’t use the wrapper class constructor. They are deprecated and scheduled for removal
+
+自动装箱使用的是 `Integer.valueOf()` 方法
+
+if you mix *Integer* and *Double* types in a *conditional expression*(三目运算符), then the *Integer* value is unboxed, promoted to *double*, and boxed into a *Double*:
+
+```java
+Integer n = 1;
+Double x = 2.0;
+System.out.println(true ? n : x); // Output: 1.0
+```
+
+boxing and unboxing is a courtesy of the compiler, not the virtual machine, The compiler inserts the necessary calls when it generates the bytecodes of a class
+
+## Enumeration Classes 枚举类
+
+```java
+public enum SIZE{SMALL,MEDIUM,LARGE,EXTRA_LARGE}
+```
+
+The type defined by this declaration is actually a class. The class has exactly four instances—it is not possible to construct new objects.
+
+Therefore, you **never need** to use *equals* for values of enumerated types. Simply use **==** to compare them.
+
+the constructors are *only* invoked when the enumerated constants are constructed
+
+```JAVA
+public enum Size
+{
+    SMALL("S"), MEDIUM("M"), LARGE("L"), EXTRA_LARGE("XL");
+    private String abbreviation;
+    
+    // automatically private
+    Size(String abbreviation) { 
+        this.abbreviation = abbreviation;
+    }
+   
+    public String getAbbreviation() { return abbreviation; }
+}
+```
+
+The constructor of an enumeration is always private
+
+All enumerated types are subclasses of the abstract class *Enum*. They inherit a number of methods from that class. The most useful one is *toString*, which returns the name of the enumerated constant.
+
+Each enumerated type has a static *values* method that returns an array of all values of the enumeration.
+
+```java
+Size[] values = Size.values();
+```
+
+The *ordinal* method yields the position of an enumerated constant in the enum declaration, counting from zero. For example, `Size.MEDIUM.ordinal()` returns 1
