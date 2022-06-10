@@ -384,3 +384,31 @@ automatically invokes the toString method to obtain a string representation of t
 
 The *toString* method is a great tool for logging
 
+# 面向对象编程 VS 面向过程编程
+
+Traditional structured programming consists of designing a set of procedures (or algorithms) to solve a problem. Once the procedures are determined, the traditional next step was to find appropriate ways to store the data. This is why the designer of the Pascal language, Niklaus Wirth, called his famous book on programming Algorithms + Data Structures = Programs (Prentice Hall, 1976). Notice that in Wirth’s title, algorithms come first, and data structures second. This reflects the way programmers worked at that time. First, they decided on the procedures for manipulating the data; then, they decided what structure to impose on the data to make the manipulations easier. OOP reverses the order: puts the data first, then looks at the algorithms to operate on the data
+
+For small problems, the breakdown into procedures works very well. But objects are more appropriate for larger problems
+
+# 封装
+
+As a rule of thumb, always use clone whenever you need to return a copy of a mutable field
+
+## 类设计建议
+
+1. 尽可能的将字段声明成 private
+2. 初始化字段，不要依赖于字段类型的默认值，而是要显示的声明各字段的值
+3. 不要再类中声明太多基本数据类型的字段，将这些字段设计成多个类会让代码更易于阅读
+4. 不是所有的字段都需要 *accessor* (get) 和 *mutator* (set) 方法
+5. 不要把所有的功能放在一个类上, 能拆分尽可能的拆分，当然，这个概念有点模糊
+6. 方法名和类名要见名知意。类名使用 *名词* 或者 *形容词+名词* 或者 *动名词*
+7. 尽可能将类设计成不可变类(没有方法可以改变类的状态)。不可变类天生就是类型安全的
+
+## Supper 关键字
+
+*super* is not a reference to an object. you cannot assign the value super to another object variable. Instead, *super* is a special keyword that directs the compiler to invoke the superclass method
+
+## 父类构造方法
+
+When a subclass object is constructed without explicit invocation of a super-class constructor, the superclass **must** have a no-argument constructor.
+
