@@ -471,3 +471,19 @@ Size[] values = Size.values();
 ```
 
 The *ordinal* method yields the position of an enumerated constant in the enum declaration, counting from zero. For example, `Size.MEDIUM.ordinal()` returns 1
+
+## Reflection 反射
+
+While your program is running, the Java runtime system always maintains
+what is called *runtime type identification*(运行时类型标识) on all objects. This information keeps track of the class to which each object belongs. *Runtime type information* is used by the virtual machine to select the correct methods to execute.
+
+However, you can also access this information by working with a special
+Java class. The class that holds this information is called, somewhat
+confusingly, *Class*. The `getClass()` method in the Object class returns an instance of *Class* type.
+
+```java
+Employee e = ...;
+Class cl = getClass();
+```
+
+a *Class* object describes the properties of a particular class.
