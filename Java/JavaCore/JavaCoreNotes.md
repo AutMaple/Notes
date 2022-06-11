@@ -487,3 +487,7 @@ Class cl = getClass();
 ```
 
 a *Class* object describes the properties of a particular class.
+
+## 内部类 Inner Class
+
+*Inner classes* are useful when you design collections of cooperating classes.
