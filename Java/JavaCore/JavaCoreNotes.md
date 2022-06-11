@@ -491,3 +491,92 @@ a *Class* object describes the properties of a particular class.
 ## 内部类 Inner Class
 
 *Inner classes* are useful when you design collections of cooperating classes.
+
+## Interface 接口
+
+Interfaces is a way of describing what classes should do, without specifying how they should do it
+
+### Comparable 接口
+
+The documentation of the *Comparable* interface suggests that the *compareTo* method should be compatible with the *equals* method
+
+实现该接口时，如果是原始数据类型比较并且你不能够保证比较的代码是正确的时候，使用原始数据类型对应的包装类的 compare 方法是一个很好选择
+
+### 接口中的默认方法
+
+An important use for *default* methods is *interface evolution*.
+
+#### 解决默认方法中的冲突
+
+如果一个类的父类中有一个具体实现的方法，并且接口中有一个相同方法签名的默认方法，那么父类中的方法优先级更高, This is the “class wins” rule(类优先的原则)
+
+如果实现的两个接口提供了两个相同方法签名的默认方法，那么必须通过重写该方法来解决冲突
+
+### 回调函数 callback
+
+A common pattern in programming is the *callback* pattern. In this pattern, you specify the action that should occur whenever a particular event happens.
+
+### 浅拷贝 shallow copy
+
+```java
+class Employee implements Cloneable{
+  // .....
+  public Employee clone() {
+      return (Employee) super.clone();
+  }
+}
+```
+
+Cloneable 接口是一个标记接口，没有任何方法，clone() 方法是 Object 类带有的方法,并且 Object 类中的 clone 方法的访问权限是 protected, 我们在重写 clone 方法时，需要将权限改成 public, 解释：
+
+A subclass can call a protected *clone* method only to clone its own objects. You must **redefine** clone to be public to allow objects to be cloned by any method
+
+### 标记接口 tagging interfaces
+
+A *tagging interface* has no methods; its only purpose is to allow the use of instanceof in a type inquiry
+
+I recommend that you do not use tagging interfaces in your own programs.
+
+## lambda 表达式
+
+### 函数引用示例
+
+| 函数引用          | 等价形式                   |
+| ----------------- | -------------------------- |
+| separator::equals | x -> separator.equals(x)   |
+| String::trim      | x -> x.strip()             |
+| String::concat    | (x,y) -> x.concat(y)       |
+| Integer::valueOf  | x -> Integer.valueOf(x)    |
+| Ingeger::sum      | (x,y) -> Integer.sum(x, y) |
+| String::new       | x -> new String(x)         |
+| String[]::new     | n -> new String[n]         |
+| this::equals      | x -> this.equals(x)        |
+| super::equals     | x -> super.equals(x)       |
+
+### deferred execution 延迟执行
+
+The point of using lambdas is **deferred execution**. There are many reasons for executing code later, such as:
+
+- Running the code in a separate thread
+- Running the code multiple times
+- Running the code at the right point in an algorithm (for example, the
+  comparison operation in sorting)
+- Running the code when something happens (a button was clicked, data has
+  arrived, and so on)
+- Running the code only when necessary
+
+### 常见的函数式接口
+
+| Functional Interface | method | Description                                     |
+| -------------------- | ------ | ----------------------------------------------- |
+| Runable              | run    | Runs an action without arguments or return type |
+| Supplier<T>          | get    | Supplier a value of type T                      |
+| Consumer<T>          | accept | Consumes a value of type T                      |
+| BiConsumer<T,U>      | accept | Consumes values of type T and U                 |
+| Funtion<T,R>         | apply  | A function with argument of type T              |
+| BiFuntion<T,U,R>     | apply  | A function with argument of type T and U        |
+| UnaryOperator<T>     | apply  | A unary operator on the type T                  |
+| BinaryOperator<T>    | applay | A binary operator on the type T                 |
+| Predicate<T>         | test   | A boolean-valued funtion                        |
+| BiPredicate<T,U>     | test   | A boolean-valued funtion with two arguments     |
+
