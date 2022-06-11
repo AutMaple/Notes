@@ -492,6 +492,8 @@ a *Class* object describes the properties of a particular class.
 
 *Inner classes* are useful when you design collections of cooperating classes.
 
+Inner classes used to be very important for concisely implementing callbacks
+
 ## Interface 接口
 
 Interfaces is a way of describing what classes should do, without specifying how they should do it
@@ -580,3 +582,21 @@ The point of using lambdas is **deferred execution**. There are many reasons for
 | Predicate<T>         | test   | A boolean-valued funtion                        |
 | BiPredicate<T,U>     | test   | A boolean-valued funtion with two arguments     |
 
+### Comparator 函数接口
+
+该接口中有一个静态的 comparing 方法，该方法需要传入一个 key 提取器函数，内部实现的细节就是将 key 提取函数的返回值封装成一个 Comparator 来进行比较
+
+```java 
+Arrays.sort(people, Comparator.comparing(Person::getName));
+```
+
+上述代码的作用是使用 Person 的 name 字段进行字母序排序。该方式的好处就是不需要我们实现 Comparator 接口。
+
+同时可以使用 Comparator 的 thenComparing 方法构建比较链，只有前一个比较相等的时候才会执行后一个比较
+
+```java
+Arrays.sort(people, Comparator.comparing(Person::getName)
+           .thenComparing(Person::getFirstName));
+```
+
+上面的代码只有在 name 相同的情况下，才会去比较 firstName
