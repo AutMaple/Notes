@@ -504,6 +504,48 @@ Use a static inner class whenever the inner class does not need to access an out
 
 如果内部类不需要访问外部类对象就尽可能的将其设置为静态内部类。如果需要访问外部类对象，则不能够将其设置为 static。因为编译器在编译内部类的时候,会将外部类的 this 引用注入到内部类中, 而 this 指针的含义是代表当前对象，而 static  关键字修饰的属性不需要对象存在也可以访问，如果在静态属性中包含一个 this 引用，可能会造成空指针异常，因此 java 编译器阻止了这种操作。
 
+**注意**
+
+1. Classes that are declared inside an interface are automatically static and public.
+2. Interfaces, records, and enumerations that are declared inside a class are automatically static.
+
+```java
+public class ArraysSample {
+
+    public static Paris getMaxAndMin(double[]  arr){
+        double min = Double.MIN_VALUE;
+        double max = Double.MAX_VALUE;
+        for(double val : arr){
+            if(min  > val)
+                min = val;
+            if(max  < val)
+                max  = val;
+        }
+        return new Paris(min, max);
+    }
+
+    public static class Paris{
+        private final double first;
+        private final double second;
+
+        public Paris(double first, double second) {
+            this.second  = second;
+            this.first = first;
+        }
+
+        public double  getFirst(){
+            return first;
+        }
+
+        public double getSecond() {
+            return second;
+        }
+    }
+}
+```
+
+
+
 ## Interface 接口
 
 Interfaces is a way of describing what classes should do, without specifying how they should do it
@@ -610,3 +652,107 @@ Arrays.sort(people, Comparator.comparing(Person::getName)
 ```
 
 上面的代码只有在 name 相同的情况下，才会去比较 firstName
+
+## 代理
+
+*Proxies* are only necessary when you don’t yet know at compile time which interfaces you need to implement
+
+### 创建代理类
+
+1. 使用 Proxy 类的静态方法 newProxyInstance 方法进行创建
+2. 实现 InvocationHandler 接口
+
+NewProxyInstance 方法的三个参数：
+
+- 一个类加载器
+- 一个 Class 数组，该数组中的每个 Class 代表一个接口，该接口表示代理对象要实现的接口
+- 一个 invocation handler
+
+### 代理类的作用
+
+- Routing method calls to remote servers
+- Associating user interface events with actions in a running program
+- **Tracing method calls for debugging purposes**
+
+**注意:**
+
+All proxy classes override the *toString*, *equals*, and *hashCode* methods of the Object class. Object 的其他方法则不会被自动的重写(redefine)
+
+在实现 InvocationHandler 接口的时候，我们通常会将被代理类的一个实例对象注入到我们的实现类中，方便在代理过程中进行使用，实例如下
+
+```java
+class TraceHandler implements InvocationHandler{
+    private Object target; // 存放被代理对象的一个实例对象，方便对它方法的调用
+    
+    public TraceHandler(Object t){
+        target = t;
+    }
+    
+    public Object invoke(Object proxy, Method m, Object[] args) throws Throwable{
+        System.out.print(target);
+        System.out.print("." + m.getName() + "(");
+        if(args != null){
+            for(int i = 0; i < args.length; i++){
+                System.out.print(args[i]);
+                if(i < args.length - 1)
+                    System.out.print(", ");
+            }
+        }
+        System.out.println(")");
+        // 执行真实调用的方法
+        return m.invoke(target, args);
+    }
+}
+```
+
+Any additional data required to carry out the proxy objects’ tasks must be stored in the invocation handler
+
+执行任务所需要的额外数据必须都存储在 invocation handler 中
+
+代理类的名字由编译器自动给出，以 $Proxy 开头，并且特定的类加载器和有序的接口集合对应相同的一个类，也就是说如果在程序中使用相同的参数调用两次 Proxy.newInstance 方法，得到的是同一个类的两个实例对象
+
+### 获取代理类的方法
+
+使用 Proxy 类的 getProxyClass() 方法即可
+
+```java
+Class proxyClass = Proxy.getPorxyClass(null, interfaces);
+```
+
+### 调用代理类的默认方法
+
+Calling a default method of a proxy triggers the invocation handler. To actually invoke the method, use the static *invokeDefault* method of the *InvocationHandler* interface.
+
+```java
+InvocationHandler handler = (proxy, method, args) -> {
+    if(method.isDefault())
+        return InvocationHandler.invokeDefault(proxy, method, args);
+    else
+        return method.invoke(target, args);
+}
+```
+
+## try-finally 自动释放资源
+
+在 try-finally 中获取系统资源并自动释放资源，需要对应的类实现 AutoCloseable 接口，该接口只有一个方法: close()。同时 AutoCloseable 接口还有一个子类 Closeable 接口，同样只有一个方法，不过该方法需要抛出 IOException
+
+## 异常处理类：StackWalker
+
+A more flexible approach is the StackWalker class that yields a stream of *StackWalker.StackFrame* instances, each describing one stack frame. You can iterate over the stack frames with this call:
+
+```java
+StackWalker walker = StackWalker.getInstance();
+walker.forEach(frame -> .....);
+```
+
+If you want to process the *Stream<StackWalker.StackFrame>* lazily, call:
+
+```java
+walker.walk(stream -> ....);
+```
+
+The *StackWalker.StackFrame* class has methods to obtain the file name and line number, as well as the class object and method name, of the executing line of code. The *toString* method yields a formatted string containing all of this information
+
+**注意：**
+
+Prior to Java 9, the *Throwable.getStackTrace* method yielded a *StackTraceElement[]* array with similar information as the stream of *StackWalker.StackFrame* instances. However, that call is **less efficient** since it captures the entire stack even though the caller may only need a few frames, and it only provides access to the class names, but not the class objects, of the pending methods
