@@ -494,6 +494,16 @@ a *Class* object describes the properties of a particular class.
 
 Inner classes used to be very important for concisely implementing callbacks
 
+### 静态内部类 static inner class
+
+an object of *a static inner class* does not have a reference to the outer class object that generated it.
+
+静态内部类不会持有外部类的引用，这是静态内部类和普通内部类的区别，其他的特性和普通内部类一样
+
+Use a static inner class whenever the inner class does not need to access an outer class object.
+
+如果内部类不需要访问外部类对象就尽可能的将其设置为静态内部类。如果需要访问外部类对象，则不能够将其设置为 static。因为编译器在编译内部类的时候,会将外部类的 this 引用注入到内部类中, 而 this 指针的含义是代表当前对象，而 static  关键字修饰的属性不需要对象存在也可以访问，如果在静态属性中包含一个 this 引用，可能会造成空指针异常，因此 java 编译器阻止了这种操作。
+
 ## Interface 接口
 
 Interfaces is a way of describing what classes should do, without specifying how they should do it
