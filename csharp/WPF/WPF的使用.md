@@ -439,7 +439,7 @@ Data template is a bit of XAML that describes how bound data is displayed. A dat
 
 Therefore, DataTemplate can be applied to ContentControls or ItemsControl. The name of the property to which you can assign a DataTemplate depends whether the control is a content control or an ItemsControl.
 
-The controls that can contain a single item (single logical child of type Object) are called “content controls”. These controls derive from the ContentControl base class. Controls that can contain a collection of items (many logical children of type Object) are called “items controls”.
+The controls that can contain a *single item* (single logical child of type Object) are called “*content controls*”. These controls derive from the ContentControl base class. Controls that can contain a *collection of items* (many logical children of type Object) are called “*items controls*”.
 
 It is recommended that data templates are defined in a resource collection and referenced in your element rather than defining them inline.
 
