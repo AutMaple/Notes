@@ -36,3 +36,24 @@ WPF framework-level XAML elements inherit a [Name](https://docs.microsoft.com/en
     </Application.Resources>
 </Application>
 ```
+
+## ResourceDictionary 文件的作用
+
+相当于 Vue 当中的一个组件，可以在文件中声明一个 WPF 控件的样式，排版等各种属性，然后如果需要声明全局资源，则需要在 App.xaml 文件中进行祖注册，这样就可以在其他控件中进行复用
+
+### ResourceDictionany 与 UserControl 对比
+
+我们可以在 UserControl 中引入 ResourceDictionary 文件
+
+```xaml
+<UserControl.Resources>
+	<ResourceDictionary>
+    	.....
+        <ResourceDictionary.MergedDictionaries>
+        	<ResourceDictionary Source="...."></ResourceDictionary>
+        </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+</UserControl.Resources>
+```
+
+控件可以通过 ResourceDictionary.MergedDictionaries 节点引用多个 ResourceDictionay 文件
