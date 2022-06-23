@@ -75,7 +75,7 @@ mapping 是对处理数据的方式和规则方面做出的一些限制，如某
 
 注意：下载的时候不要下载源码，而是下载已经编译好的文件，如果下载源码，就需要自己编译。
 
-下载好对应的文件之后，解压缩。将解压后的文件夹放到 elasticsearch 目录下的 plugins 目录
+下载好对应的文件之后，解压缩。将解压后的文件夹放到 elasticsearch 目录下的 plugins  目录中
 
 ## 安装和启动
 
@@ -120,6 +120,10 @@ ElssticSearch 使用 Json 格式的字符串来传递数据, 传递给 ElasticSe
 ElasticSearch 是面向文档型的数据库,使用倒排索引, 简单的理解就是将文章内容来对应文章的 id。正排索引则是通过文章 id 来查询文章的内容
 
 需要先创建 index（索引） 才能够查询数据，index 相当于数据库，创建索引使用 put 请求,数据库的名称就是请求的路径，例如要创建一个 shopping 的索引，则请求的路径为：`http://127.0.0.1:9200/shopping`, 本地测试的时候不能够是 htpps 的请求，会报错
+
+## 常用的操作
+
+官方指导文档：[https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
 
 | 请求路径                                            | 方法   | 描述                                                         |
 | --------------------------------------------------- | ------ | ------------------------------------------------------------ |
