@@ -1,5 +1,92 @@
 # Mysql数据库基础
 
+## Binary strings(二进制串)
+
+二进制字符串是由字节序列组成。与包含文本数据的字符串不同，一个二进制字符串通常用于保存非传统的数据，如图片。一个二进制字符串的长度等于序列中包含的字节数。A binary string has a CCSID of 65535. Only character strings of FOR BIT DATA are compatible with binary strings.
+
+## Mysql 数据类型
+
+### 数值类型
+
+| 类型         | 大小                                     | 范围（有符号）                                               | 范围（无符号）                                               | 用途            |
+| :----------- | :--------------------------------------- | :----------------------------------------------------------- | :----------------------------------------------------------- | :-------------- |
+| TINYINT      | 1 字节                                   | (-128，127)                                                  | (0，255)                                                     | 小整数值        |
+| SMALLINT     | 2 字节                                   | (-32 768，32 767)                                            | (0，65 535)                                                  | 大整数值        |
+| MEDIUMINT    | 3 字节                                   | (-8 388 608，8 388 607)                                      | (0，16 777 215)                                              | 大整数值        |
+| INT或INTEGER | 4 字节                                   | (-2 147 483 648，2 147 483 647)                              | (0，4 294 967 295)                                           | 大整数值        |
+| BIGINT       | 8 字节                                   | (-9 233 372 036 854 775 808，9 223 372 036 854 775 807)      | (0，18 446 744 073 709 551 615)                              | 极大整数值      |
+| FLOAT        | 4 字节                                   | (-3.402 823 466 E+38，-1.175 494 351 E-38)，0，(1.175 494 351 E-38，3.402 823 466 351 E+38) | 0，(1.175 494 351 E-38，3.402 823 466 E+38)                  | 单精度 浮点数值 |
+| DOUBLE       | 8 字节                                   | (-1.797 693 134 862 315 7 E+308，-2.225 073 858 507 201 4 E-308)，0，(2.225 073 858 507 201 4 E-308，1.797 693 134 862 315 7 E+308) | 0，(2.225 073 858 507 201 4 E-308，1.797 693 134 862 315 7 E+308) | 双精度 浮点数值 |
+| DECIMAL      | 对DECIMAL(M,D) ，如果M>D，为M+2否则为D+2 | 依赖于M和D的值                                               | 依赖于M和D的值                                               | 小数值          |
+
+| Data type                     | Description                                                  |
+| :---------------------------- | :----------------------------------------------------------- |
+| BIT(*size*)                   | A bit-value type. The number of bits per value is specified in *size*. The *size* parameter can hold a value from 1 to 64. The default value for *size* is 1. |
+| TINYINT(*size*)               | A very small integer. Signed range is from -128 to 127. Unsigned range is from 0 to 255. The *size* parameter specifies the maximum display width (which is 255) |
+| BOOL                          | Zero is considered as false, nonzero values are considered as true. |
+| BOOLEAN                       | Equal to BOOL                                                |
+| SMALLINT(*size*)              | A small integer. Signed range is from -32768 to 32767. Unsigned range is from 0 to 65535. The *size* parameter specifies the maximum display width (which is 255) |
+| MEDIUMINT(*size*)             | A medium integer. Signed range is from -8388608 to 8388607. Unsigned range is from 0 to 16777215. The *size* parameter specifies the maximum display width (which is 255) |
+| INT(*size*)                   | A medium integer. Signed range is from -2147483648 to 2147483647. Unsigned range is from 0 to 4294967295. The *size* parameter specifies the maximum display width (which is 255) |
+| INTEGER(*size*)               | Equal to INT(size)                                           |
+| BIGINT(*size*)                | A large integer. Signed range is from -9223372036854775808 to 9223372036854775807. Unsigned range is from 0 to 18446744073709551615. The *size* parameter specifies the maximum display width (which is 255) |
+| FLOAT(*size*, *d*)            | A floating point number. The total number of digits is specified in *size*. The number of digits after the decimal point is specified in the *d* parameter. This syntax is deprecated in MySQL 8.0.17, and it will be removed in future MySQL versions |
+| FLOAT(*p*)                    | A floating point number. MySQL uses the *p* value to determine whether to use FLOAT or DOUBLE for the resulting data type. If *p* is from 0 to 24, the data type becomes FLOAT(). If *p* is from 25 to 53, the data type becomes DOUBLE() |
+| DOUBLE(*size*, *d*)           | A normal-size floating point number. The total number of digits is specified in *size*. The number of digits after the decimal point is specified in the *d* parameter |
+| DOUBLE PRECISION(*size*, *d*) |                                                              |
+| DECIMAL(*size*, *d*)          | An exact fixed-point number. The total number of digits is specified in *size*. The number of digits after the decimal point is specified in the *d* parameter. The maximum number for *size* is 65. The maximum number for *d* is 30. The default value for *size* is 10. The default value for *d* is 0. |
+| DEC(*size*, *d*)              | Equal to DECIMAL(size,d)                                     |
+
+### 日期和时间类型
+
+| 类型      | 大小 (字节) | 范围                                                         | 格式                | 用途                     |
+| :-------- | :---------- | :----------------------------------------------------------- | :------------------ | :----------------------- |
+| DATE      | 3           | 1000-01-01/9999-12-31                                        | YYYY-MM-DD          | 日期值                   |
+| TIME      | 3           | '-838:59:59'/'838:59:59'                                     | HH:MM:SS            | 时间值或持续时间         |
+| YEAR      | 1           | 1901/2155                                                    | YYYY                | 年份值                   |
+| DATETIME  | 8           | 1000-01-01 00:00:00/9999-12-31 23:59:59                      | YYYY-MM-DD HH:MM:SS | 混合日期和时间值         |
+| TIMESTAMP | 4           | 1970-01-01 00:00:00/2038 结束时间是第 2147483647 秒，北京时间 2038-1-19 11:14:07，格林尼治时间 2038-1-19 03:14:07 | YYYYMMDD HHMMSS     | 混合日期和时间值，时间戳 |
+
+| Data type        | Description                                                  |
+| :--------------- | :----------------------------------------------------------- |
+| DATE             | A date. Format: YYYY-MM-DD. The supported range is from '1000-01-01' to '9999-12-31' |
+| DATETIME(*fsp*)  | A date and time combination. Format: YYYY-MM-DD hh:mm:ss. The supported range is from '1000-01-01 00:00:00' to '9999-12-31 23:59:59'. Adding DEFAULT and ON UPDATE in the column definition to get automatic initialization and updating to the current date and time |
+| TIMESTAMP(*fsp*) | A timestamp. TIMESTAMP values are stored as the number of seconds since the Unix epoch ('1970-01-01 00:00:00' UTC). Format: YYYY-MM-DD hh:mm:ss. The supported range is from '1970-01-01 00:00:01' UTC to '2038-01-09 03:14:07' UTC. Automatic initialization and updating to the current date and time can be specified using DEFAULT CURRENT_TIMESTAMP and ON UPDATE CURRENT_TIMESTAMP in the column definition |
+| TIME(*fsp*)      | A time. Format: hh:mm:ss. The supported range is from '-838:59:59' to '838:59:59' |
+| YEAR             | A year in four-digit format. Values allowed in four-digit format: 1901 to 2155, and 0000. MySQL 8.0 does not support year in two-digit format. |
+
+### 字符串类型
+
+| 类型       | 大小                | 用途                            |
+| :--------- | :------------------ | :------------------------------ |
+| CHAR       | 0-255字节           | 定长字符串                      |
+| VARCHAR    | 0-65535 字节        | 变长字符串                      |
+| TINYBLOB   | 0-255字节           | 不超过 255 个字符的二进制字符串 |
+| TINYTEXT   | 0-255字节           | 短文本字符串                    |
+| BLOB       | 0-65 535字节        | 二进制形式的长文本数据          |
+| TEXT       | 0-65 535字节        | 长文本数据                      |
+| MEDIUMBLOB | 0-16 777 215字节    | 二进制形式的中等长度文本数据    |
+| MEDIUMTEXT | 0-16 777 215字节    | 中等长度文本数据                |
+| LONGBLOB   | 0-4 294 967 295字节 | 二进制形式的极大文本数据        |
+| LONGTEXT   | 0-4 294 967 295字节 | 极大文本数据                    |
+
+| Data type                   | Description                                                  |
+| :-------------------------- | :----------------------------------------------------------- |
+| CHAR(size)                  | A FIXED length string (can contain letters, numbers, and special characters). The *size* parameter specifies the column length in characters - can be from 0 to 255. Default is 1 |
+| VARCHAR(size)               | A VARIABLE length string (can contain letters, numbers, and special characters). The *size* parameter specifies the maximum column length in characters - can be from 0 to 65535 |
+| BINARY(size)                | Equal to CHAR(), but stores binary byte strings. The *size* parameter specifies the column length in bytes. Default is 1 |
+| VARBINARY(size)             | Equal to VARCHAR(), but stores binary byte strings. The *size* parameter specifies the maximum column length in bytes. |
+| TINYBLOB                    | For BLOBs (Binary Large OBjects). Max length: 255 bytes      |
+| TINYTEXT                    | Holds a string with a maximum length of 255 characters       |
+| TEXT(size)                  | Holds a string with a maximum length of 65,535 bytes         |
+| BLOB(size)                  | For BLOBs (Binary Large OBjects). Holds up to 65,535 bytes of data |
+| MEDIUMTEXT                  | Holds a string with a maximum length of 16,777,215 characters |
+| MEDIUMBLOB                  | For BLOBs (Binary Large OBjects). Holds up to 16,777,215 bytes of data |
+| LONGTEXT                    | Holds a string with a maximum length of 4,294,967,295 characters |
+| LONGBLOB                    | For BLOBs (Binary Large OBjects). Holds up to 4,294,967,295 bytes of data |
+| ENUM(val1, val2, val3, ...) | A string object that can have only one value, chosen from a list of possible values. You can list up to 65535 values in an ENUM list. If a value is inserted that is not in the list, a blank value will be inserted. The values are sorted in the order you enter them |
+| SET(val1, val2, val3, ...)  | A string object that can have 0 or more values, chosen from a list of possible values. You can list up to 64 values in a SET list |
+
 ## SQL通用语法
 
 1. SQL 语句可以单行或多行书写，以分号结尾
@@ -8,6 +95,8 @@
 4. SQL 的三种注释方法
    - 单行注释： 使用`--` 或者 `#` ( MYSQL独有的注释方法 )进行注释，注意，注释符号后空一格，然后书写注释语句
    - 多行注释： `/* 注释内容... */`
+
+- 
 
 ## SQL 分类
 

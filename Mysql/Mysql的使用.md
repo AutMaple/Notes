@@ -320,3 +320,4 @@ group_concat(distinct <expr1>
 
 - 默认按照升序进行排序
 - 默认的连接符是 `,` 逗号
+
