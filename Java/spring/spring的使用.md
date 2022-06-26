@@ -702,10 +702,11 @@ public class JavaConfig {
 | @ComponentScan  | 指定扫描那个包下的 Component                                 |
 | @Import         | 导入配置类                                                   |
 | @Aspect         | 声明标注类是一个切面                                         |
-| @Before         | 目标方法之前执行                                             |
-| @After          | 目标方法执行完之后执行，不论其是否报错都会执行               |
-| @Around         | 可以在方法执行前后设置相关的信息                             |
+| @Before         | 目标方法执行之前执行                                         |
+| @After          | 目标方法执行完毕之后执行，不论其是否报错都会执行             |
+| @Around         | 可以在方法执行前后设置相关的信息，即在方法执行之前调用一次，方法执行完毕以后再调用一次 |
 | @AfterReturning | 方法返回之后执行                                             |
+| @AfterThrowing  | 目标方法抛出异常时执行                                       |
 
 #### @Autowired 注解
 
