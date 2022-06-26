@@ -24,3 +24,9 @@
 # Idea 激活教程
 
 直接访问 [https://3.jetbra.in/](https://3.jetbra.in/) 网址就行，里面有最新版 Idea 的破解教程，进入网站 -> 下载压缩文件 -> 解压缩文件 -> 打开 readerme.txt, 按照里面的步骤一步一步的设置
+
+## 常用的插件
+
+- grep console：用于设置日志的样式，从而快速的抓住重点
+- mybatis log plugin: 将 mybaits 执行的 sql 语句转化成可以直接运行的 sql 语句
+- restfultookit: 快速定位指定 URI 所在的 Controller 

@@ -18,7 +18,7 @@ PageHelper 的原理是通过实现 mybatis 的 interceptor 接口, 拦截 sql �
 
 请不要在系统中配置多个分页插件(使用Spring时,`mybatis-config.xml`和`Spring<bean>`配置方式，请选择其中一种，不要同时配置多个分页插件)！
 
-### 分页插件不支持带有`for update`语句的分页
+### 分页插件不支持带有 `for update` 语句的分页
 
 对于带有 `for update` 的sql，会抛出运行时异常，对于这样的sql建议手动分页，毕竟这样的sql需要重视。
 

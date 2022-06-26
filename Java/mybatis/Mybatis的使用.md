@@ -6,8 +6,6 @@ Mybatis 可以让程序员不用在编写各实体类和 DAO 的具体实现。�
 
 ## 快速使用
 
-
-
 ### 编写配置文件
 
 jdbc.properties文件
@@ -18,8 +16,6 @@ url=jdbc:mysql://localhost:3306/ssm
 username=root
 password=root
 ```
-
-
 
 resources.xml : 该配置文件用于设置数据库相关的配置以及各表对应的 DAO
 
@@ -252,12 +248,12 @@ StudentMapper.xml
     </select>
 
     <!--
-		parameterType属性表示的是 Dao 接口方法中参数的类型，可以是全限定类名，也可以是Mybatis定义的别名
-		Mybatis定义的别名可以参考官网的说明
+		parameterType 属性表示的是 Dao 接口方法中参数的类型，可以是全限定类名，也可以是 Mybatis 定义的别名
+		Mybatis 定义的别名可以参考官网的说明
 
 		注意：parameterType这个属性不是强制的，Mybatis通过反射机制可以发现接口参数的类型，所以可以没有。
 
-		Mybatis中使用 #{} 时，会使用的 PreparedStatement 这个对象来进行 sql 语句的拼接，因此不用担心 sql 注入的问题
+		Mybatis中使用 #{} 时，会使用 PreparedStatement 这个对象来进行 sql 语句的拼接，因此不用担心 sql 注入的问题
 	-->
     <select id="getStudentById" parameterType="int" resultType="com.autmaple.mybatis.entity.Student">
         <!-- #{id} === Student.id -->
@@ -282,7 +278,7 @@ StudentMapper.xml
 </mapper>
 ```
 
-增删改査只需要进行配置即可，不需要程序员去实现，程序员只需要知道编写 sql 语句就行。在 xml 文件中配置增删改查时，需要配置 sql ， 以及对应 dao 接口中方法即可。xml 中通过 namespace 指定使用哪个 dao 接口；通过使用 id 与对应的方法进行绑定
+增删改査只需要进行配置即可，不需要程序员去实现，程序员只需要知道编写 sql 语句就行。在 xml 文件中配置增删改查时，需要配置 sql ， 以及对应 dao 接口中方法即可。**xml 中通过 namespace 指定使用哪个 dao 接口；通过使用 id 与对应的方法进行绑定**
 
 ```XML
 <mapper namespace="com.autmaple.mybatis.dao.StudentDao">
@@ -305,7 +301,7 @@ StudentMapper.xml
 
 ### 传递多个参数
 
-传递多个参数可以在 dao 接口的方法参数中加上 `@Param`注解。
+传递多个参数可以在 dao 接口的方法参数中加上 `@Param` 注解。
 
 StrudentDao.java
 
@@ -346,9 +342,9 @@ System.out.println(stu);
 
 ### #和$
 
-\#：占位符，告诉 mybatis 使用实际的参数值代替。并使用 PrepareStatement 对象执行 sql 语句, #{…}代替 sql 语句的“?”。这样做更安全，更迅速，通常也是首选做法
+\#：占位符，告诉 mybatis 使用实际的参数值代替。并使用 PrepareStatement 对象执行 sql 语句, #{…} 代替 sql 语句的“?”。这样做更安全，更迅速，通常也是首选做法
 
-$：字符串替换，告诉 mybatis 使用$包含的“字符串”替换所在位置。使用 Statement 把 sql 语句和${}的内容连接起来(字符串的拼接)。主要用在替换表名，列名，不同列排序等操作。
+`$`：字符串替换，告诉 mybatis 使用 `$` 包含的“字符串”替换所在位置。使用 Statement 把 sql 语句和 `${}` 的内容连接起来 (字符串的拼接)。主要用在替换表名，列名，不同列排序等操作。
 
 ## 结果集映射 resultMap
 
@@ -429,7 +425,7 @@ Mybatis 中优先级从大到小:
 
 ### 类型别名
 
-resultType中的属性名太长，可以使用别名来简化书写，先定义后使用
+resultType 中的属性名太长，可以使用别名来简化书写，先定义后使用
 
 第一种方式：一个一个的定义
 
@@ -453,7 +449,7 @@ resultType中的属性名太长，可以使用别名来简化书写，先定义�
 
 [注]：**不推荐使用别名**，建议使用全限定类名
 
-## ResultType与查询数据之间的关系
+## ResultType 与查询数据之间的关系
 
 查询到的结果分为 ：一行一列，一行多列以及多行多列
 
@@ -475,7 +471,7 @@ resultType中的属性名太长，可以使用别名来简化书写，先定义�
 </select>
 ```
 
-传递map
+传递 map
 
 ```xml
 <select id="selectStudent" resultType="map">
@@ -537,7 +533,7 @@ resultType中的属性名太长，可以使用别名来简化书写，先定义�
 
 此时，可使用动态 SQL 来解决这样的问题
 
-**注意**：
+**注意:**
 
 在 mapper 的动态 SQL 中若出现大于号（>）、小于号（<）、大于等于号（>=），小于等于号（<=）等符号，最好将其转换为实体符号
 
@@ -552,11 +548,11 @@ resultType中的属性名太长，可以使用别名来简化书写，先定义�
 | `>=` | `&gt;=`  |
 | `<=` | `&lt;=`  |
 
-### <if/>标签
+### `<if/>`标签
 
 对于该标签的执行，当 test 的值为 true 时，会将其包含的 SQL 片断拼接到其所在的 SQL 语句中
 
-语法：<if test="条件"> sql 语句的部分 </if>
+语法：`<if test="条件">` sql 语句的部分 ` </if>`
 ```xml
 <select id="selectStudentIf" resultType="com.bjpowernode.domain.Student">
  select id,name,email,age from student
@@ -571,16 +567,16 @@ resultType中的属性名太长，可以使用别名来简化书写，先定义�
 </select>
 ```
 
-### <where>标签
+### `<where> ` 标签
 
-<if/>标签的中存在一个比较麻烦的地方：需要在 where 后手工添加 1=1 的子句
+`<if/>` 标签的中存在一个比较麻烦的地方：需要在 where 后手工添加 1=1 的子句
 
-因为，若 where 后的所有<if/>条件均为 false，而 where 后若又没有 1=1 子句，则 SQL 中就会只剩下一个空的 where，SQL
+因为，若 where 后的所有 `<if/>` 条件均为 false，而 where 后若又没有 1=1 子句，则 SQL 中就会只剩下一个空的 where，SQL
 出错。所以，在 where 后，需要添加恒为 true 的子句 1=1，以防止这种情况的发生。但当数据量很大时，这个语句会严重影响查询的效率
 
-使用<where/>标签，在有查询条件时，可以自动添加上 where 子句；没有查询条件时，不会添加 where 子句。需要注意的是，第一个<if/>标签中的 SQL 片断，可以不包含 and。不过，写上 and 也不错， 系统会将多出的 and 去掉。但其它<if/>中 SQL 片断的 and，必须要求写上。否则 SQL 语句将拼接出错 
+使用 `<where/>` 标签，在有查询条件时，可以自动添加上 where 子句；没有查询条件时，不会添加 where 子句。需要注意的是，第一个 `<if/>` 标签中的 SQL 片断，可以不包含 and。不过，写上 and 也不错， 系统会将多出的 and 去掉。但其它 `<if/>` 中 SQL 片断的 and，必须要求写上。否则 SQL 语句将拼接出错 
 
-语法： <where>其他动态 sql <where/>
+语法： `<where>` 其他动态 sql `<where/>`
 
 ```xml
 <select id="selectStudentWhere" resultType="com.bjpowernode.domain.Student">
@@ -596,9 +592,9 @@ resultType中的属性名太长，可以使用别名来简化书写，先定义�
 </select>
 ```
 
-### <foreach>标签
+### `<foreach>` 标签
 
-<foreach>标签用于实现对于数组与集合的遍历，主要用于 sql 语句中的 in 情况。对其使用，需要注意：
+`<foreach>` 标签用于实现对于数组与集合的遍历，主要用于 sql 语句中的 in 情况。对其使用，需要注意：
 
 - collection 表示要遍历的集合类型, list ，array 等
 
@@ -624,11 +620,11 @@ resultType中的属性名太长，可以使用别名来简化书写，先定义�
 </select>
 ```
 
-### 代码片段标签 <sql>
+### 代码片段标签 `<sql>`
 
-<sql>标签用于定义 SQL 片断，以便其它 SQL 标签复用。而其它标签使用该 SQL 片断，需要使用 <include>子标签
+`<sql>` 标签用于定义 SQL 片断，以便其它 SQL 标签复用。而其它标签使用该 SQL 片断，需要使用 `<include>` 子标签
 
-该<sql>标签可以定义 SQL 语句中的任何部分，所以<include>子标签可以放在动态 SQL 的任何位置。
+该 `<sql>` 标签可以定义 SQL 语句中的任何部分，所以 `<include>` 子标签可以放在动态 SQL 的任何位置。
 
 ```xml
 <!--创建 sql 片段 id:片段的自定义名称-->
