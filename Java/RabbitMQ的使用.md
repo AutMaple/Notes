@@ -172,3 +172,73 @@ public class RabbitMqConfig {
 }
 ```
 
+## RabbitMQ 在 java 中的使用
+
+### 发送消息到队列
+
+```java
+ConnectionFactory connectionFactory = new ConnectionFactory();
+connectionFactory.setHost("localhost");
+try(Connection connection = connectionFactory.newConnection();
+    Channel channel = connection.createChannel()){
+    channel.queueDeclare(QUEUE_NAME, false, false, false,null);
+    String message = "Hello World";
+    channel.basicPublish("", QUEUE_NAME, null, message.getBytes(StandardCharsets.UTF_8));
+    System.out.println("[x] Sent '"+ message + "'");
+}
+```
+
+### 从消息队列中接收消息
+
+```java
+ConnectionFactory factory = new ConnectionFactory();
+factory.setHost("localhost");
+Connection connection = factory.newConnection();
+Channel channel = connection.createChannel();
+channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+System.out.println("[*] Waiting for messages. To exit press Ctrl+C");
+```
+
+Why don't we use a try-with-resource statement to automatically close the channel and the connection? By doing so we would simply make the program move on, close everything, and exit! This would be awkward because we want the process to stay alive while the consumer is listening asynchronously for messages to arrive.
+
+在接收消息的代码中，为什么不使用 try-with-resource 语句来自动关闭 channel 和 connection ? 如果我们使用 try-with-resource 语句的话，代码会正常的运行并关闭所有该关闭的资源并退出，但是这样会变得很麻烦，因为我们想要在异步监听消息到来的时候接收消息程序一直在运行
+
+服务器会将消息异步的传输给消息接收程序，因此需要一个回调函数(在 Java 中回调函数使用接口来实现)来缓存消息，RabbitMQ 提供了一个 DeliverCallback 接口供我们实现
+
+```java
+DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+    String message = new String(delivery.getBody(), "UTF-8");
+    System.out.println(" [x] Received '" + message + "'");
+};
+channel.basicConsume(QUEUE_NAME, true, deliverCallback, consumerTag -> { });
+```
+
+完整的程序
+
+```java
+ConnectionFactory factory = new ConnectionFactory();
+factory.setHost("localhost");
+Connection connection = factory.newConnection();
+Channel channel = connection.createChannel();
+channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+System.out.println("[*] Waiting for messages. To exit press Ctrl+C");
+DeliverCallback callback = ((consumerTag, delivery) -> {
+    String message = new String(delivery.getBody(), StandardCharsets.UTF_8);
+    System.out.println("[x] Receive '" + message + "'");
+});
+channel.basicConsume(QUEUE_NAME, true, callback, consumerTag ->{});
+```
+
+## 工作队列
+
+The main idea behind Work Queues (aka: *Task Queues*) is to avoid doing a resource-intensive task immediately and having to wait for it to complete. Instead we schedule the task to be done later.
+
+工作队列背后的主要思想是避免立即执行资源密集型的任务并等待任务的完成，而是安排这些任务推后执行
+
+ We encapsulate a *task* as a message and send it to a queue. A worker process running in the background will pop the tasks and eventually execute the job. When you run many workers the tasks will be shared between them.
+
+RabbitMQ 将任务封装成一个消息放入到队列中，而后台运行的处理进程将会弹出队列中的任务并执行这些任务，当有多个后台任务处理程序时，这些程序将共享队列中的任务。
+
+One of the advantages of using a Task Queue is the ability to easily parallelise work.  If we are building up a backlog of work, we can just add more workers and that way, scale easily.
+
+使用工作队列的好处之一就是可以轻松地并行工作。如果我们积累了大量的工作，我们只需要添加对应的处理程序，程序规模的控制非常简单
