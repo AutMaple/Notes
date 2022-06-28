@@ -1,3 +1,26 @@
+# WPF 简介
+
+WPF 的功能是用来编写应用程序的表示层，至于业务层和数据层的开发，有专门的技术。比如业务层的技术；WCF(Windows Communication Foundation) 和 WF (Windows Workflow Foundation)
+
+WF 的主要作用是设计工作流，而设计工作流的编程语言正是 WPF 总的界面设计语言：XAML, 也就是说学习完 WPF 之后，WF 也会了一半
+
+WP F的布局理念就是把一个布局元素作为 ContentControl 或 HeaderedContentControl 族控件的 Content，再在布局元素里添加要被布局的子级控件，如果 UI 局部需要更复杂的布局，那就在这个区域放置一个子级的布局元素，形成布局元素的嵌套。
+
+## 表示层应用程序
+
+开发表示层应用程序不可避免的四个模块：
+
+- 数据模型：现实世界中事物和逻辑的抽象
+- 业务逻辑：数据模型之间的关系和交互
+- 用户界面：由控件构成，与用户进行交互的界面，用于把数据展示给用户并响应用户的输入
+- 界面逻辑：控件与控制之间的关系和交互
+
+![image-20220628103719999](D:\Java\Notes\C#\WPF\Attachment\image-20220628103719999.png)
+
+## XAML
+
+XAML(Extensible Application Markup Language) 是 WPF 技术中专门用于设计 UI 语言    
+
 # WPF 项目结构图
 
 ```text
@@ -95,3 +118,56 @@ public decimal Value
 ```
 
 属性的名称通常会加上 Property 后缀，但是在使用时，不需要加上 Property 后缀，例如 ValuePropery 在 xaml 控件中使用时，只需要声明 Value 属性即可
+
+## WPF 的 UI 元素类型
+
+| 名称                   | 描述                           |
+| ---------------------- | ------------------------------ |
+| ContentControl         | 单一内控件                     |
+| headeredContentControl | 带标题的单一内容控件           |
+| ItemsControl           | 以条目集合为内容的控件         |
+| HeaderedItemsControl   | 带标题的以条目集合为内容的控件 |
+| Decorator              | 控件装饰元素                   |
+| Panel                  | 面板类元素                     |
+| Adorder                | 文字点缀元素                   |
+| Flow Text              | 流式文字元素                   |
+| TextBox                | 文本输入框                     |
+| TextBlock              | 静态文字                       |
+| Shape                  | 图形元素                       |
+
+## Decorator 族元素
+
+| 元素             | 元素                   | 元素            | 元素                   |
+| ---------------- | ---------------------- | --------------- | ---------------------- |
+| ButtonChrome     | ClassicBorderDecorator | ListBoxChrome   | SystemDropShadowChrome |
+| Border           | InkPresenter           | BulletDecorator | Viewbox                |
+| AdornerDecorator |                        |                 |                        |
+
+## Shape 族元素
+
+友好的用户界面离不开各种图形的搭配，Shape 族元素（它们只是简单的视觉元素，不是控件）就是专门用来在 UI 上绘制图形的一类元素。这类元素没有自己的内容，我们可以使用 Fill 属性为它们设置填充效果，还可以使用 Stroke 属性为它们设置边线的效果。
+本族元素的特点如下：
+
+- 均派生自 Shape 类。
+- 用于 2D 图形绘制。
+- 无内容属性。
+- 使用 Fill 属性设置填充，使用 Stroke 属性设置边线。
+
+## Panel 族元素
+
+所有用于 UI 布局的元素都属于这一族，该族控件非常的重要
+
+本族元素的特点如下：
+
+- 均派生自 Panel 抽象类。
+- 主要功能是控制 UI 布局。
+- 内容属性为 Children。
+- 内容可以是多个元素，Panel元素将控制它们的布局。
+
+### Grid 布局控件
+
+对于 Grid 的行高和列宽，可以设置三种值：
+
+- 绝对值： double + 单位
+- 比例值: double + *。WPF 会自动根据对应的比例分配宽和高
+- 自动值: Auto。根据元素的内容自动调整宽和高。分别却宽和高的最大值

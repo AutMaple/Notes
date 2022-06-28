@@ -140,7 +140,7 @@ Use the [Mode](https://docs.microsoft.com/en-us/dotnet/api/system.windows.data.b
 
 [Binding Markup Extension](https://docs.microsoft.com/en-us/dotnet/desktop/wpf/advanced/binding-markup-extension?view=netframeworkdesktop-4.8)
 
-```xml
+```xaml
 <object property="{Binding}" .../>  
 -or-  
 <object property="{Binding  bindProp1=value1[, bindPropN=valueN]*}" ...  
@@ -151,7 +151,113 @@ Use the [Mode](https://docs.microsoft.com/en-us/dotnet/api/system.windows.data.b
 <object property="{Binding path[, bindPropN=valueN]*}" .../>
 ```
 
+展示层和逻辑层的沟通使用 Data Binding。通过 DataBinding, 加工好的数据会自动送到用户界面并加以显示，被用户修改过的数据也会自动传回逻辑层
 
+FrameworkElement 对 BindingOperation.SetBindng(...) 方法进行了封装，封装的结果也叫 SetBinding, 只是参数列表发生了变化
+
+```csharp
+public BindingExpressionBase SetBinding(DependencyProperty dp, BindingBase binding){
+    return BindingOperation.SetBinding(this, db, binding);
+}
+```
+
+因此可以通过如下的方式简写数据绑定
+
+```csharp
+public void test() {
+    this.textBoxName.SetBinding(TextBox.TextProperty, new Binding("Name"){Source = stu = new Student()});
+}
+```
+
+### Data Binding 触发的时机
+
+通过 UpdateSourceTrigger 属性设置界面更新的时机。UpdateSourceTrigger 的值是 UpdateSourceTrigger 美剧，可选的值是PropertyChanged、LostFocus、Explicit和 Default
+
+顺便提一句，Binding 还具有 NotifyOnSourceUpdated 和 NotifyOnTargetUpdated 两个 bool 类型的属性。如果设为 true，则当源或目标被更新后 Binding 会激发相应的 SourceUpdated 事件和 TargetUpdated 事件。实际工作中，我们可以通过监听这两个事件来找出有哪些数据或控件被更新了。
+
+### Binding 的 Path
+
+Path 的实际类型是 PropertyPath
+
+```xaml
+<TextBox x:Name="textBox1" Text={Binding Path=Value, ElementName=slider1}/>
+```
+
+等价于
+
+```csharp
+Binding binding = new Binding() {Path=new PropertyPath("Value"), Source=this.slider1};
+this.textBox1.SetBinding(TextBox.TextProperty, binding);
+```
+
+或者是简写
+
+```csharp
+Binding binding = new Binding("Value") {Source = this.slider1};
+this.textBox1.SetBinding(TextBox.TextProperty, binding);
+```
+
+当使用一个集合或者 DataView 作为 Binding 源时，如果我们想把它的默认元素当作 Path 使用，则需要使用这样的语法：
+
+```csharp
+List<string> stringList = new List<string>() {"Time", "Tome", "Blog"};
+this.textBox1.SetBinding(TextBox.TextProperty, new Binding("/"){Source = stringList});
+this.textBox1.SetBinding(TextBox.TextProperty, new Binding("/Length"){Source = stringList});
+this.textBox1.SetBinding(TextBox.TextProperty, new Binding("/[2]"){Source = stringList});
+```
+
+如果集合元素的属性仍然还是一个集合，我们想把子级集合中的元素当作Path，则可以使用多级斜线的语法（即一路“斜线”下去），例如：
+
+```csharp
+class City{
+    public string Name{get;set;}
+}
+
+class Province{
+    public string Name{get;set;}
+    public List<City> CityList{get;set;}
+}
+
+class Country{
+    public string Name{get;set;}
+    public List<Porvince> ProvinceList{get;set;}
+}
+
+// Binding
+List<Country> countryList = new List<Country> {/* 初始化 ....*/};
+this.textBox1.SetBinding(TextBox.TextProperty("/Name"){Source = contryList});
+```
+
+### 没有 Path 的 Binding
+
+有的时候我们会在代码中看到一些 Path 是一个 “.” 或者干脆没有 Path 的 Binding，着实让人摸不着头脑。原来，这是一种比较特殊的情况——**Binding源本身就是数据且不需要 Path 来指明**。典型的，string、int 等基本类型就是这样，他们的实例本身就是数据，我们无法指出通过它的哪个属性来访问这个数据，这时我们只需将 Path 的值设置为 “.” 就可以了。在 XAML 代码里这个“.”可以省略不写，但在 C# 代码里却不能省略
+
+当 Binding 的 Source 本身就是数据、不需要使用属性来暴露数据时，Binding 的 Path 可以设置为 “.” ，亦可以省略不写。现在 Source 也可以省略不写了，这样，当某个 DataContext 是一个简单类型对象的时候，我们完全可能看到一个“既没有 Path 又没有 Source 的 ”Binding”：
+
+```xaml
+<Window x:Class="WPFTemplate.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:local="clr-namespace:WPFTemplate"
+        mc:Ignorable="d"
+        Title="MainWindow"
+        Height="450"
+        Width="800">
+  <StackPanel>
+    <StackPanel.DataContext>
+      <sys:String>Hello DataContext</sys:String>
+    </StackPanel.DataContext>
+    <TextBlock Text="{Binding}" Margin="5"/>
+    <TextBlock Text="{Binding}" Margin="5"/>
+    <TextBlock Text="{Binding}" Margin="5"/>
+  </StackPanel>
+</Window>
+```
+
+你可能会想，Binding 是怎样自动向 UI 元素树的上层寻找 DataContext 对象并把它作为 Source 的呢？其实，“Binding 沿着 UI 元素树向上找”只是WPF给我们的一个错觉，Binding 并没有那么智能。之所以会有这种效果是因为 DataContext 是一个*依赖属性*，**依赖属性有一个很重要的特点就是当你没有为控件的某个依赖属性显式赋值时，控件会把自己容器的属性值“借过来”当作自己的属性值**。外层容器的 DataContex 就相当于一个数据的制高点，只要吧数据放上去，别的元素就都能够看见。另外，DataContext 本身是一个依赖属性，可以通过 Binding 把它关联到一个数据源上
 
 # Button 
 
