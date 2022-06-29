@@ -230,6 +230,8 @@ this.textBox1.SetBinding(TextBox.TextProperty("/Name"){Source = contryList});
 
 ### 没有 Path 的 Binding
 
+当数据源本身就代表数据的时候，paht 直接使用 "." 来代替
+
 有的时候我们会在代码中看到一些 Path 是一个 “.” 或者干脆没有 Path 的 Binding，着实让人摸不着头脑。原来，这是一种比较特殊的情况——**Binding源本身就是数据且不需要 Path 来指明**。典型的，string、int 等基本类型就是这样，他们的实例本身就是数据，我们无法指出通过它的哪个属性来访问这个数据，这时我们只需将 Path 的值设置为 “.” 就可以了。在 XAML 代码里这个“.”可以省略不写，但在 C# 代码里却不能省略
 
 当 Binding 的 Source 本身就是数据、不需要使用属性来暴露数据时，Binding 的 Path 可以设置为 “.” ，亦可以省略不写。现在 Source 也可以省略不写了，这样，当某个 DataContext 是一个简单类型对象的时候，我们完全可能看到一个“既没有 Path 又没有 Source 的 ”Binding”：
@@ -258,6 +260,50 @@ this.textBox1.SetBinding(TextBox.TextProperty("/Name"){Source = contryList});
 ```
 
 你可能会想，Binding 是怎样自动向 UI 元素树的上层寻找 DataContext 对象并把它作为 Source 的呢？其实，“Binding 沿着 UI 元素树向上找”只是WPF给我们的一个错觉，Binding 并没有那么智能。之所以会有这种效果是因为 DataContext 是一个*依赖属性*，**依赖属性有一个很重要的特点就是当你没有为控件的某个依赖属性显式赋值时，控件会把自己容器的属性值“借过来”当作自己的属性值**。外层容器的 DataContex 就相当于一个数据的制高点，只要吧数据放上去，别的元素就都能够看见。另外，DataContext 本身是一个依赖属性，可以通过 Binding 把它关联到一个数据源上
+
+一般情况下，数据从哪里来哪里就是 Binding 的 Source，数据到哪里去，哪里就是 Binding 的 Target
+
+### Binding 数据校验和转换
+
+Binding 用于数据有效性校验的关卡是它的 ValidationRules 属性
+
+Binding 用于数据类型转换的关卡是它的 Converter 属性
+
+#### 数据校验
+
+Binding 进行校验时的默认行为是认为来自 Source 的数据总是正确的，只有来自 Target 的数据（因为 Target 多为 UI 控件，所以等价于用户输入的数据）才有可能有问题，为了不让有问题的数据污染 Source 所以需要校验。换句话说，**Binding 只在 Target 被外部方法更新时校验数据，而来自Binding 的 Source 数据更新 Target 时是不会进行校验的**。如果想改变这种行为，或者说当来自 Source 的数据也有可能出问题时，我们就需要将校验条件的 ValidatesOnTargetUpdated 属性设为 true。
+
+你可能会想：当校验错误的时候 Validate 方法返回的 ValidationResult 对象携带着一条错误消息，如何显示这条消息呢？想要做到这一点，需要用到后面才会详细讲解的知识——路由事件（Routed Event）
+
+首先，在创建 Binding 时要把 Binding 对象的 NotifyOnValidationError 属性设为 true，这样，当数据校验失败的时候 Binding 会像报警器一样发出一个信号，这个信号会以 Binding 对象的 Target 为起点在 UI 元素树上传播。信号每到达一个结点，如果这个结点上设置有对这种信号的侦听器（事件处理器），那么这个侦听器就会被触发用以处理这个信号。信号处理完后，程序员还可以选择是让信号继续向下传播还是就此终止——这就是路由事件，信号在 UI 元素树上的传递过程就称为路由（Route）。
+
+#### 数据转换
+
+实现数据转换需要创建一个类并实现 IValueConverter 接口
+
+```csharp
+public interface IValueConverter {
+    object Convert(object value, Type targetType, object parameter, CultureInfo culture);
+    object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture);
+}
+```
+
+当数据从 Binding 的 Source 流向 Target 的时候，Convert 方法会被调用，反之，ConvertBack 方法会被调用
+
+在 xaml 中要使用这些转换类，首先需要以资源的形式在 Resources 中创建 Converter 实例
+
+```xaml
+<Window.Resources>
+	<local:CategoryToSourceConverter x:Key="cts"/>
+    ....
+</Window.Resources>
+```
+
+### MultiBinding 多路绑定
+
+MultiBinding 与 Binding 一样均以 BindingBase 为基类，也就是说，凡是能使用 Binding 对象的场合都能使用 MultiBinding。MultiBinding 具有一个名为 Bindings 的属性，其类型是 `Collection<BindingBase>`，通过这个属性 MultiBinding 把一组 Binding 对象聚合起来，处在这个集合中的 Binding 对象可以拥有自己的数据校验与转换机制，**它们汇集起来的数据将共同决定传往 MultiBinding 目标的数据**
+
+![image-20220629113550304](D:\Java\Notes\C#\WPF\Attachment\image-20220629113550304.png)
 
 # Button 
 
@@ -538,6 +584,16 @@ If the debugger never breaks, it means that the converter is not used. This usua
 
 - **Control Template**：The Control Template defines the visual appearance of a control.
 - **Data Template**：A Data Template defines and specifies the appearance and structure of a collection of data. It provides the flexibility to format and define the presentation of the data on any UI element. It is mostly used on data related Item controls such as ComboBox, ListBox, etc.
+
+ControlTemplate 决定了控件的外观；DataTemplate 是数据内容的表现形式，决定数据显示的样式
+
+DataTemplate 常用的地方：
+
+- ContentControl 的 ContentTemplate 属性，相当于给 ContentControl 的内容穿衣服
+- ItemsControl 的 ItemTemplate 属性，相当于给 ItemsControl 的数据条目穿衣服
+- GridViewColumn 的 CellTemplate 属性，相当于给 GridViewColumn 单元格里的数据穿衣服
+
+![image-20220629154651171](D:\Java\Notes\C#\WPF\Attachment\image-20220629154651171.png)
 
 ## Data Template
 
