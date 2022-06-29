@@ -53,3 +53,9 @@ RabbitMQ 是一款使用 Erlang 语言开发的，实现 AMQP (高级消息队�
 | Q    | 队列       | Queue    | 存储交换机发送过来的消息                         |
 | type | 交换机类型 | type     | direct 表示直接根据路由 (orange/black) 发送消息  |
 
+## Exchange 交换机的类型
+
+- direct
+- topic
+- headers
+- fanout: 该类型的交换机会将它收到的消息转发给它所知道的所有队列

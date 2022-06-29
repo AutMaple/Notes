@@ -48,6 +48,12 @@ rabbitmqctl list_permissions -p vhostpath
 rabbitmqctl delete_vhost vhost vhostpath
 # 移除所有数据，要在 rabbitmqctl stop_app 之后使用:
 rabbitmqctl reset
+
+# 列出交换机的类型
+rabbitmqctl list_exchanges
+
+# 列出交换机与队列所有的绑定
+rabbitmqctl list_bindings
 ```
 
 ## 启动 RabbitMQ
