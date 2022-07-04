@@ -117,3 +117,122 @@ DevTools 是 Spring 开发人员提供的一个便利的开发工具集，其中
 ## DevTools 工作原理
 
 DevTool 作为项目的一部分，当应用程序运行的时候，应用程序会被两个类加载器加载到 JVM 中，其中一个类加载器会加载我们的 java 代码、属性文件以及资源文件，这些文件都是经常变化。另一个类加载器会加载依赖库，而这些库基本上是不会发生变化的。当 DevTools 检测到变更时，只会重新加载经常变化的那部分文件，并重新启动 Spring 的应用上下文，而那些依赖库则不会重新加载。这种方式可以减少应用的启动时间，同时，如果应用的依赖发生变化则需要我们重新启动应用。
+
+# SpringMVC 请求注解映射
+
+| 注解            | 描述                  |
+| --------------- | --------------------- |
+| @RequestMapping | 通用的请求处理        |
+| @GetMapping     | 处理 HTTP Get 请求    |
+| @PostMapping    | 处理 HTTP Post 请求   |
+| @PutMapping     | 处理 HTTP Put 请求    |
+| @DeleteMapping  | 处理 HTTP Delete 请求 |
+| @PatchMapping   | 处理 HTTP Patch 请求  |
+
+处理特定类型请求的注解是在 Spring 4.3 中引入的
+
+**注意：通常在类上使用 @RequestMapping 这个通用的注解来指定请求的基本路径；在方法上使用 @GetMapping 等这些处理具体请求的注解。**
+
+# 参数校验
+
+Spring 支持 Bean 的校验，并且通过 SpringBoot，只需要一个 Spring Boot Web Starter 依赖就可以将实现了 Validation API 的 Hibernate 引入到项目中来，使用示例：
+
+```java
+package tacos;
+import java.util.List;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import lombok.Data;
+@Data
+public class Taco {
+    @NotNull
+    @Size(min=5, message="Name must be at least 5 characters long")
+    private String name;
+    
+    @Size(min=1, message="You must choose at least 1 ingredient")
+    private List<String> ingredients;
+}
+```
+
+当将请求中的参数封装成 Taco 对象的时候，如果对应的字段不符合要求，会报错。
+
+参数校验常用的注解：
+
+| 注解              | 描述                                                         |
+| ----------------- | ------------------------------------------------------------ |
+| @NotNull          | 被修饰的字段不能为 null                                      |
+| @Size             | 设置字符串的长度                                             |
+| @NotBlank         | 字符串不能为空字符串和 null 值                               |
+| @Min              | 设置数字的最小值                                             |
+| @Max              | 设置数字的最大值                                             |
+| @Email            | 验证字符串的值是一个邮箱                                     |
+| @AssertTrue       | 限制被修饰的字段的值为 true                                  |
+| @NotEmpty         | 被修饰的字段不能为 null和不能为空，该注解可以修饰 String, Collection, Map, 或者数组类型 |
+| @Positive         | 表示数字只能够为正数                                         |
+| @PositiveOrZero   | 表示数字只能够为正数和 0                                     |
+| @Negative         | 表示数字只能够为负数                                         |
+| @Negative         | 表示数字只能够为负数或者为 0                                 |
+| @Past             | 验证日期是否过期, 不包括现在                                 |
+| @PastOrPresent    | 验证日期是否过期, 包括现在                                   |
+| @Future           | 验证日期是否为未来的某个时间，不包括现在                     |
+| @FuturePresent    | 验证日期是否为未来的某个时间，包括现在                       |
+| @Pattern          | 该注解支持自定义正则表达式进行验证                           |
+| @Length           | 验证字符串的长度在 [min, max] 之间                           |
+| @Range            | 验证被修饰的元素必须在 [min, max] 之间                       |
+| @CreditCardNumber | 验证合法的信用卡号                                           |
+| @Digits           | 可以设置最大整数位和最大的小数位                             |
+| @Validated        | 表示要对该注解的所修饰的字段进行校验                         |
+| @Valid            | 表示要对该注解的所修饰的字段进行校验                         |
+
+所有的注解都包含一个 message 属性, 该属性用于定义校验失败时返回的提示信息
+
+上面的注解可以用在集合存储的元素上
+
+```java
+List<@NotBlank String> preferences; // 添加进 List 的所有元素都会被校验
+```
+
+同时这些注解也支持 Java 8 中的 *Optional* 类型：
+
+```java
+private LocalDate dateOfBirth;
+
+public Optional<@Past LocalDate> getDateOfBirth() {
+    return Optional.of(dateOfBirth);
+}
+```
+
+这段代码中，验证框架会自动解包 LocalDate 的值并验证其合法性
+
+```java
+@PostMapping
+public void addAll(
+  @RequestBody 
+  @NotEmpty(message = "Input movie list cannot be empty.")
+  List<@Valid Movie> movies) {
+    movieService.addAll(movies);
+}
+```
+
+如果传入一个空的 Movie List，那么验证将不会通过，同时 @Valid 保证传入的每个 Movie 都会验证其是否为空
+
+```java
+@PutMapping("/add")
+public String addUserInfo(@Validated UserInfoReq req) {
+    log.info("添加用户成功: {}", req.toString());
+    return "success";
+}
+```
+
+@Validated 注解修饰的 UserInfoReq，当请求到达时，会自动验证 UserInfoReq 类中需要验证的字段
+
+## @Validateed VS @Valid
+
+- @Valid：标准 JSR-303 规范的标记型注解，用来标记验证属性和方法返回值，进行级联和递归校验
+- @Validated：Spring 的注解，是标准 JSR-303 的一个变种（补充），提供了一个分组功能，可以在入参验证时，根据不同的分组采用不同的验证机制
+
+- @Validated 注解可以用于类级别，用于支持 Spring 进行方法级别的参数校验。@Valid 可以用在属性级别约束，用来表示级联校验。
+
+- @Validated 只能用在类、方法和参数上，而 @Valid 可用于方法、字段、构造器和参数上
+
+在 Controller 中校验方法参数时，使用 @Valid 和 @Validated 并无特殊差异（若不需要分组校验的话）
