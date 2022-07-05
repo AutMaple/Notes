@@ -6,8 +6,6 @@
 
 @Configuration 注解所修饰的类中，可以使用 @Bean 注解来修饰方法，表明该方法的返回值将作为一个 Bean 注入到 Spring 的应用上下文中。**默认情况下，这些 Bean 的名字与 @Bean 所修饰方法的方法名相同**
 
-// TODO 弄清楚接下来的代码 Spring 是如何进行注入的
-
 ```java
 @Configuration
 public class ServiceConfiguration {
@@ -33,6 +31,8 @@ public class ServiceConfiguration {
 ```
 
 相对于基于 XML 的配置⽅式，基于 Java 的配置会带来多项额外的收益，包括更强的类型安全性以及更好的重构能⼒
+
+**在代码中调用 @Bean 注解修饰的方法，都会被拦截，并返回 Spring 容器中该方法返回对象**
 
 # 自动配置
 
@@ -181,7 +181,7 @@ public class Taco {
 | @Range            | 验证被修饰的元素必须在 [min, max] 之间                       |
 | @CreditCardNumber | 验证合法的信用卡号                                           |
 | @Digits           | 可以设置最大整数位和最大的小数位                             |
-| @Validated        | 表示要对该注解的所修饰的字段进行校验                         |
+| @Validated        | 表示要对该注解的所修饰的字段进行校验, 但是该注解可以进行分组校验 |
 | @Valid            | 表示要对该注解的所修饰的字段进行校验                         |
 
 所有的注解都包含一个 message 属性, 该属性用于定义校验失败时返回的提示信息
@@ -236,3 +236,96 @@ public String addUserInfo(@Validated UserInfoReq req) {
 - @Validated 只能用在类、方法和参数上，而 @Valid 可用于方法、字段、构造器和参数上
 
 在 Controller 中校验方法参数时，使用 @Valid 和 @Validated 并无特殊差异（若不需要分组校验的话）
+
+# Spring Data JPA 注解
+
+| 注解            | 描述                                                         |
+| --------------- | ------------------------------------------------------------ |
+| @Entity         | 用在类上，用于表示该类是一个实体类                           |
+| @Table          | 用在类上，用于将该类持久化到数据库中对应的表中               |
+| @Id             | 声明某个字段为数据库中的 Id 字段                             |
+| @GeneratedValue | 用于 Id 的自动生成                                           |
+| @Column         | 将类中的字段与表中的字段进行关联                             |
+| @PrePersist     | 该注解修饰的方法会在持久化之前调用                           |
+| @ManyToMany     | 用于表示多对多的关系，一般用于修饰集合。意思是集合中的元素和 Entity 之间是一个多对多的关系 |
+| @Transactional  | 开启事务，如果用在类上，那么该类的所有方法都会开启事务，用在方法上则所修饰的方法被执行时开启事务。类和方法都有该注解，方法上的配置优先级更高 |
+
+## Repository 接口
+
+若只是简单的对单表进行 CRUD 操作只需要继承 JpaRepository 接口,传递了两个参数:1.实体类,2.实体类中主键类型
+
+```java
+public interface PersonRepository extends JpaRepository<Person, Long> {}
+```
+
+继承 `JpaSpecificationExecutor<T>` 接口, 泛型内传入实体类,只要简单实现 `toPredicate` 方法就可以实现复杂的查询
+
+该接口提供了几个方法
+
+```java
+public interface JpaSpecificationExecutor<T> {
+    T findOne(Specification<T> spec);
+
+    List<T> findAll(Specification<T> spec);
+
+    Page<T> findAll(Specification<T> spec, Pageable pageable);
+
+    List<T> findAll(Specification<T> spec, Sort sort);
+
+    long count(Specification<T> spec);
+}
+```
+
+方法中的 `Specification` 就是需要我们传进去的参数，它是一个接口, 也是我们实现复杂查询的关键,其中只有一个方法 `toPredicate`
+
+```java
+public interface Specification<T> {
+    Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb);
+}
+```
+
+### 常用的 Repository 接口
+
+| 接口           | 描述                                                         |
+| -------------- | ------------------------------------------------------------ |
+| CrudRepository | 该接口定义了很多 CRUD 的方法，该类需要两个参数：实体类，实体类的主键 |
+|                |                                                              |
+|                |                                                              |
+
+## 自定义 Repositroy 接口中的方法
+
+如果官方提供的方法不足以满足我们的要求，我们可以自定义接口中的方法，但是方法的名字不是随便定义的，需要使用官方指定的 DSL 领域特定语言来声明方法名，遵循 spring 以及 JPQL 定义的方法命名，这样 **Spring Data 就能够自动根据方法名来推测用户的行为**，从而在生成 Repository 的实现类时，自动生成对应的 SQL 语句用于执行。
+
+```java
+public interface PersonRepository extends JpaRepository<Person, Long> {
+    Person findByName(String name);
+}
+```
+
+命名的机制：find…By, read…By, query…By, count…By 和 get…By。By 后面的字句跟着的就是查询的条件，用于构建条件字句的关键字如下：
+
+1. And----findByLastnameAndFirstname
+2. Or----findByLastnameOrFirstname
+3. Is,Equals----findByFirstnameIs,findByFirstnameEquals
+4. Between----findByStartDateBetween
+5. LessThan----findByAgeLessThan
+6. LessThanEqual----findByAgeLessThanEqual
+7. GreaterThan----findByAgeGreaterThan
+8. GreaterThanEqual----findByAgeGreaterThanEqual
+9. After----findByStartDateAfter
+10. Before----findByStartDateBefore
+11. IsNull----findByAgeIsNull
+12. IsNotNull,NotNull----findByAge(Is)NotNull
+13. Like----findByFirstnameLike
+14. NotLike----findByFirstnameNotLike
+15. StartingWith----findByFirstnameStartingWith
+16. EndingWith----findByFirstnameEndingWith
+17. Containing----findByFirstnameContaining
+18. OrderBy----findByAgeOrderByLastnameDesc
+19. Not----findByLastnameNot
+20. In----findByAgeIn(Collection ages)
+21. NotIn----findByAgeNotIn(Collection age)
+22. TRUE----findByActiveTrue()
+23. FALSE----findByActiveFalse()
+24. IgnoreCase----findByFirstnameIgnoreCase
+
