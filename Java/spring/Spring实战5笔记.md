@@ -120,14 +120,18 @@ DevTool 作为项目的一部分，当应用程序运行的时候，应用程序
 
 # SpringMVC 请求注解映射
 
-| 注解            | 描述                  |
-| --------------- | --------------------- |
-| @RequestMapping | 通用的请求处理        |
-| @GetMapping     | 处理 HTTP Get 请求    |
-| @PostMapping    | 处理 HTTP Post 请求   |
-| @PutMapping     | 处理 HTTP Put 请求    |
-| @DeleteMapping  | 处理 HTTP Delete 请求 |
-| @PatchMapping   | 处理 HTTP Patch 请求  |
+| 注解            | 描述                                                         |
+| --------------- | ------------------------------------------------------------ |
+| @RequestMapping | 通用的请求处理, @RequestMapping注解有一个 produces 属性。这指明 DesignTacoController 中的所有方法只会处理 Accept 请求头中包含其设置的请求，如请求头中设置了 Accept:application/json, 表明该请求希望返回值是 json 格式的数据 |
+| @GetMapping     | 处理 HTTP Get 请求                                           |
+| @PostMapping    | 处理 HTTP Post 请求                                          |
+| @PutMapping     | 处理 HTTP Put 请求                                           |
+| @DeleteMapping  | 处理 HTTP Delete 请求                                        |
+| @PatchMapping   | 处理 HTTP Patch 请求                                         |
+| @ResponseBody   | 表示请求的返回值直接写入响应体中，而不是将数据放入 Model 中，然后再交给 View 进行视图的渲染。 |
+| @RestController | 该注解是 @Controller 和 @ResponseBody 注解的组合体           |
+| @CrossOrigin    | 配置跨域请求                                                 |
+| @PathVariable   | 提取请求路径中的指定的参数赋值给其修饰的方法参数             |
 
 处理特定类型请求的注解是在 Spring 4.3 中引入的
 
@@ -184,7 +188,7 @@ public class Taco {
 | @Validated        | 表示要对该注解的所修饰的字段进行校验, 但是该注解可以进行分组校验 |
 | @Valid            | 表示要对该注解的所修饰的字段进行校验                         |
 
-所有的注解都包含一个 message 属性, 该属性用于定义校验失败时返回的提示信息
+**所有的注解都包含一个 message 属性, 该属性用于定义校验失败时返回的提示信息**
 
 上面的注解可以用在集合存储的元素上
 
@@ -248,6 +252,7 @@ public String addUserInfo(@Validated UserInfoReq req) {
 | @Column         | 将类中的字段与表中的字段进行关联                             |
 | @PrePersist     | 该注解修饰的方法会在持久化之前调用                           |
 | @ManyToMany     | 用于表示多对多的关系，一般用于修饰集合。意思是集合中的元素和 Entity 之间是一个多对多的关系 |
+| @ManyToOne      | 设置多对一的关系，所修饰的字段和实体类是一对多的关系, 字段为一，实体类为多 |
 | @Transactional  | 开启事务，如果用在类上，那么该类的所有方法都会开启事务，用在方法上则所修饰的方法被执行时开启事务。类和方法都有该注解，方法上的配置优先级更高 |
 
 ## Repository 接口
@@ -329,3 +334,165 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
 23. FALSE----findByActiveFalse()
 24. IgnoreCase----findByFirstnameIgnoreCase
 
+# Spring 环境抽象
+
+Spring 的环境抽象是各种配置属性的一站式服务。它抽取了原始的属性，这样需要这些属性的bean就可以从Spring本⾝中获取了。Spring环境会拉取多个属性源，包括：
+
+- JVM 系统属性
+- 操作系统环境变量
+- 命令行参数
+- 应用属性配置文件
+
+Spring 会将这些属性聚合到⼀个源中，通过这个源可以注⼊到 Spring 的 bean 中。下图解释了属性源如何流入 Spring 抽象环境并注入到 Spring Bean 中的
+
+![image-20220705203550422](/home/autmaple/Documents/Notes/Attachment/image-20220705203550422.png)
+
+Spring Boot 自动配置的 bean 都可以通过 Spring 环境提取的属性进行配置
+
+## 服务器端口
+
+```yaml
+server:
+	port: 0
+```
+
+当我们把服务器的端口设置为 0 时，Spring 会任意选择一个端口来启动服务。在我们运行自动化集成测试的时候，这会非常有用，因为这样能够保证并发运行的测试不会与硬编码的端口号冲突。如果不关心应用在哪个端口启动，那么这种配置方式也非常有用，因为此时应用将会变成通过服务注册中心来进行查找的微服务
+
+### 开发 HTTPS 服务器
+
+在开发 HTTPS 服务器的时候，通常将服务器的端口设置为 8443。
+
+```yaml
+server:
+    port: 8443
+    ssl:
+        key-store: file:///path/to/mykeys.jks
+        key-store-password: letmein
+        key-password: letmein
+```
+
+key-store 可以通过如下命令生成
+
+```shell
+$ keytool -keystore mykeys.jks -genkey -alias tomcat -keyalg RSA
+```
+
+## 创建自己的配置属性
+
+SpringBoot 提供 @ConfigurationProperties 注解来支持用户自定义配置属性。只需要将该注解放在类上，并声明对应的前缀，我们就能够在 applicaiton.yaml 文件中进行配置了，例如
+
+```java 
+@Controller
+@RequestMapping("/orders")
+@SessionAttributes("order")
+@ConfigurationProperties(prefix="taco.orders")
+public class OrderController {
+    private int pageSize = 20;
+    public void setPageSize(int pageSize) {
+    	this.pageSize = pageSize;
+    }
+    ...
+    @GetMapping
+    public String ordersForUser(@AuthenticationPrincipal User user, Model model) {
+        Pageable pageable = PageRequest.of(0, pageSize);
+        model.addAttribute("orders", orderRepo.findByUserOrderByPlacedAtDesc(user, pageable));
+        return "orderList";
+    }
+}
+```
+
+这样我们就可以在 application.yaml 文件中通过 taco.orders.pageSize 属性动态的配置页面的大小了, pageSize 的默认属性为 20。
+
+```yamL
+taco:
+	orders:
+		pageSize: 10
+```
+
+实际上 @ConfigurationProperties 通常会放到一种特定类型的 bean 中，这种 bean 的作用就是持有配置数据。这样的话，特定的配置细节就能从 Controller 和其他应用程序类中抽离出来，多个bean 也能更容易地共享一些通用的配置
+
+```java
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+import lombok.Data;
+
+@Component
+@ConfigurationProperties(prefix="taco.orders")
+@Data
+public class OrderProps {
+	private int pageSize = 20;
+}
+```
+
+这个类还用到了 @Component 注解，这样 Spring 的组件扫描功能会自动发现它并将其创建为 Spring 应用上下文中的 bean 。这是非常重要的，因为我们下一步要将 OrderProps 作为 bean 注入到OrderController 中。
+
+```java
+@Controller
+@RequestMapping("/orders")
+@SessionAttributes("order")
+public class OrderController {
+    private OrderRepository orderRepo;
+    private OrderProps props;
+    public OrderController(OrderRepository orderRepo,OrderProps props) {
+        this.orderRepo = orderRepo;
+        this.props = props;
+    }
+    ...
+    @GetMapping
+    public String ordersForUser(@AuthenticationPrincipal User user, Model model) {
+        Pageable pageable = PageRequest.of(0, props.getPageSize());
+        model.addAttribute("orders",
+        orderRepo.findByUserOrderByPlacedAtDesc(user, pageable));
+        return "orderList";
+    }
+    ...
+}
+```
+
+现在，OrderController 不需要负责处理自己的配置属性了。这样能够让 OrderController 中的代码更加整洁一些，并且能够让其他的 bean 重用 OrderProps 中的属性。除此之外，我们可以将订单相关的属性全部放到一个地方，也就是 OrderProps 类中。如果我们需要添加、删除、重命名或者以其他方式更改其中的属性，我们只需要在 OrderProps 中进行变更就可以了。
+
+# @Profile 注解
+
+该注解可以指定某些类只在特定 profile 配置文件激活的时候才会作为 Bean 注入到 Spring 容器中
+
+```java
+@Bean
+@Profile("dev")
+public CommandLineRunner dataLoader(IngredientRepository repo,
+    UserRepository userRepo, PasswordEncoder encoder) {
+    ...
+}
+```
+
+上面的 Bean 只有在 application.yaml 文件中配置了如下属性才会被注入到 Spring 容器中
+
+```yaml
+spring:
+	profiles:
+		active:
+			- dev
+```
+
+如果一个 Bean 在多个环境下生效，可以进行如下配置
+
+```java
+@Bean
+@Profile({"dev", "qa"})
+public CommandLineRunner dataLoader(IngredientRepository repo,
+    UserRepository userRepo, PasswordEncoder encoder) {
+    ...
+}
+```
+
+如果某个类在某个环境下不注入 Spring 容器
+
+```java
+@Bean
+@Profile({"!dev", "!qa"})
+public CommandLineRunner dataLoader(IngredientRepository repo,
+    UserRepository userRepo, PasswordEncoder encoder) {
+    ...
+}
+```
+
+在这里，CommandLineRunner（包括 DevelopmentConfig 中定义的其他 bean）只有在 prod 和 qa 均没有激活的情况下才会创建。
