@@ -122,7 +122,7 @@ DevTool 作为项目的一部分，当应用程序运行的时候，应用程序
 
 | 注解            | 描述                                                         |
 | --------------- | ------------------------------------------------------------ |
-| @RequestMapping | 通用的请求处理, @RequestMapping注解有一个 produces 属性。这指明 DesignTacoController 中的所有方法只会处理 Accept 请求头中包含其设置的请求，如请求头中设置了 Accept:application/json, 表明该请求希望返回值是 json 格式的数据 |
+| @RequestMapping | 通用的请求处理                                               |
 | @GetMapping     | 处理 HTTP Get 请求                                           |
 | @PostMapping    | 处理 HTTP Post 请求                                          |
 | @PutMapping     | 处理 HTTP Put 请求                                           |
@@ -132,10 +132,46 @@ DevTool 作为项目的一部分，当应用程序运行的时候，应用程序
 | @RestController | 该注解是 @Controller 和 @ResponseBody 注解的组合体           |
 | @CrossOrigin    | 配置跨域请求                                                 |
 | @PathVariable   | 提取请求路径中的指定的参数赋值给其修饰的方法参数             |
+| @RequestBody    | 用于将请求体中的数据封装到该注解所修饰的实体列中             |
+| @ResponseStatus | 设置请求成功之后返回的状态码                                 |
 
 处理特定类型请求的注解是在 Spring 4.3 中引入的
 
 **注意：通常在类上使用 @RequestMapping 这个通用的注解来指定请求的基本路径；在方法上使用 @GetMapping 等这些处理具体请求的注解。**
+
+### 处理 HTTP 请求注解的参数
+
+@RequestMapping 等注解有一些参数，用于对请求进行过滤。
+
+#### produces 参数
+
+produces 属性指明所修饰的方法或者类只会处理请求头中 Accept 参数与注解中设置的参数相匹配的请求。Accept 参数用于表明本次请求希望服务端返回的数据格式
+
+
+
+```java
+@PostMapping(produces="application/json")
+@ResponseStatus(HttpStatus.CREATED)
+public Taco postTaco(@RequestBody Taco taco) {
+	return tacoRepo.save(taco);
+}
+```
+
+如请求头中传递了 Accept:application/json 参数, 且 Produces 中设置 application/json, 那么 Controller 才会处理对应的请求
+
+该参数可以设置多个
+
+#### consumes 参数
+
+consumes 参数指明所修饰的方法或者类只处理请求头中 ContentType 参数与注解中设置的参数相匹配的请求。ContentType 参数用于告诉服务端本次请求携带的数据的格式。
+
+```java
+@PostMapping(consumes="application/json")
+@ResponseStatus(HttpStatus.CREATED)
+public Taco postTaco(@RequestBody Taco taco) {
+	return tacoRepo.save(taco);
+}
+```
 
 # 参数校验
 
@@ -496,3 +532,164 @@ public CommandLineRunner dataLoader(IngredientRepository repo,
 ```
 
 在这里，CommandLineRunner（包括 DevelopmentConfig 中定义的其他 bean）只有在 prod 和 qa 均没有激活的情况下才会创建。
+
+# 启用超媒体(Hypermedia)
+
+客户端可能会以硬编码的形式对 `/design/recent` 发送 GET 请求，以便于获取最近创建的 taco。类似的，客户端会以硬编码的形式将 taco 列表中的 ID 拼接到 `/design` 上形成获取特定 taco 资源的 URL
+
+但是这种硬编码的方式非常不灵活，如果后端 API 接口的 URL 发生变化，那么前端这边也需要修改对应的代码，不符合设计模式的规范。
+
+超媒体作为应用状态引擎(Hypermedia as the Engine of Applcation State, HATEOAS) 是一种创建自描述 API 的方式。**API 所返回的资源中会包含相关资源的链接**，客户端只需要了解最少的 API URL 信息就能导航整个 API。这种⽅式能够掌握 API 所提供资源之间的关系，客户端能够基于 API 中的 URL 之间的关系对它们进⾏遍历
+
+举例来说，假设某个客户端想要请求最近设计的taco的列表，按照原始的形式，在没有超链接的情况下，客户端以JSON格式接收到的taco列表会如下所⽰（为了简洁，这⾥只保留了第⼀个taco，剩余的省略了）：
+
+```json
+[
+ {
+     "id": 4,
+     "name": "Veg-Out",
+     "createdAt": "2018-01-31T20:15:53.219+0000",
+     "ingredients": [
+         {"id": "FLTO", "name": "Flour Tortilla", "type": "WRAP"},
+         {"id": "COTO", "name": "Corn Tortilla", "type": "WRAP"},
+         {"id": "TMTO", "name": "Diced Tomatoes", "type": "VEGGIES"},
+         {"id": "LETC", "name": "Lettuce", "type": "VEGGIES"},
+         {"id": "SLSA", "name": "Salsa", "type": "SAUCE"}
+     ]
+ },
+ ...
+]
+```
+
+如果客户端想要获取某个 taco 或者对其进⾏其他 HTTP 操作，就需要将它的 id 属性以硬编码的⽅式拼接到⼀个路径为 `/design` 的 URL 上.与之类似，如果客户端想要对某个配料执⾏ HTTP 请求，就需要将该配料 id 属性的值拼接到路径为 `/ingredients` 的 URL 上。在这两种情况下，都需要在路径上添加 `http://` 或 `https://` 前缀以及 API 的主机名。
+
+**如果 API 启⽤了超媒体功能，那么 API 将会描述⾃⼰的 URL，从⽽减轻客户端对其进⾏硬编码的痛苦**
+
+```json
+{
+  "_embedded": {
+    "tacoResourceList": [
+      {
+        "name": "Veg-Out",
+        "createdAt": "2018-01-31T20:15:53.219+0000",
+        "ingredients": [
+          {
+            "name": "Flour Tortilla",
+            "type": "WRAP",
+            "_links": {
+              "self": { "href": "http://localhost:8080/ingredients/FLTO" }
+            }
+          },
+          {
+            "name": "Corn Tortilla",
+            "type": "WRAP",
+            "_links": {
+              "self": { "href": "http://localhost:8080/ingredients/COTO" }
+            }
+          },
+          {
+            "name": "Diced Tomatoes",
+            "type": "VEGGIES",
+            "_links": {
+              "self": { "href": "http://localhost:8080/ingredients/TMTO" }
+            }
+          },
+          {
+            "name": "Lettuce",
+            "type": "VEGGIES",
+            "_links": {
+              "self": { "href": "http://localhost:8080/ingredients/LETC" }
+            }
+          },
+          {
+            "name": "Salsa",
+            "type": "SAUCE",
+            "_links": {
+              "self": { "href": "http://localhost:8080/ingredients/SLSA" }
+            }
+          }
+        ],
+        "_links": {
+          "self": { "href": "http://localhost:8080/design/4" }
+        }
+      }
+    ]
+  },
+  "_links": {
+    "recents": {
+      "href": "http://localhost:8080/design/recent"
+    }
+  }
+}
+```
+
+这种特殊⻛格的 HATEOAS 被称为 HAL（超⽂本应⽤语⾔，Hypertext Application Language）。这是⼀种在 JSON 响应中嵌⼊超链接的简单通⽤格式。
+
+这个新 taco 列表中的每个元素都包含了⼀个名为 `_links` 的属性，为客户端提供导航 API 的超链接
+
+如果客户端应⽤需要对列表中的 taco 执⾏ HTTP 请求，那么在开发的时候不需要关⼼ taco 资源的 URL 是什么样⼦。相反，它只需要请求“self”链接就可以了，该属性将会映射⾄ `http://localhost:8080/design/4`。如果客户端想要处理特定的配料，只需要查找该配料的 `self` 链接即可。
+
+Spring HATEOAS 项⽬为 Spring 提供了超链接的⽀持。它提供了⼀些类和资源装配器(assembler)，在 Spring MVC 控制器返回资源之前能够为其添加链接。
+
+```xml
+<dependency>
+ <groupId>org.springframework.boot</groupId>
+ <artifactId>spring-boot-starter-hateoas</artifactId>
+</dependency>
+```
+
+Spring HATEOAS 提供了两个主要的类型来表⽰超链接资源：Resource 和 Resources。Resource 代表⼀个资源，⽽ Resources 代表资源的集合。这两种类型都能携带其他资源的链接。当从 Spring MVC REST 控制器返回时，它们所携带的链接将会包含到客户端所接收到的 JSON（或XML）中。使用示例如下：
+
+```java
+@GetMapping("/recent")
+public Resources<Resource<Taco>> recentTacos() {
+    PageRequest page = PageRequest.of(0, 12, Sort.by("createdAt").descending());
+    List<Taco> tacos = tacoRepo.findAll(page).getContent();
+    Resources<Resource<Taco>> recentResources = Resources.wrap(tacos);
+    recentResources.add(new Link("http://localhost:8080/design/recent", "recents"));
+    return recentResources;
+}
+```
+
+## ControllerLinkBuilder
+
+ControllerLinkBuilder 能⾃动探知主机名是什么，这样就能避免对主机名进⾏硬编码。同时，它还提供了流畅的 API，允许我们相对于控制器的基础 URL 构建链接。借助ControllerLinkBuilder，我们可以将recentTacos()中硬编码的Link创建改造成如下的形式：
+
+```java
+Resources<Resource<Taco>> recentResources = Resources.wrap(tacos);
+recentResources.add(
+ ControllerLinkBuilder.linkTo(DesignTacoController.class)
+     .slash("recent")
+     .withRel("recents"));
+```
+
+我们不仅不需要硬编码主机名，⽽且不再需要指定“/design”。在这⾥，我们向 DesignTacoController 请求获取⼀个链接，它的基础路为 `/design` 。ControllerLinkBuilder 使⽤控制器的基础路径作为我们创建的 Link 对象的基础。
+
+是 ControllerLinkBuilder 还有另外⼀个⽅法，**能够消除链接 URL 上的所有硬编码**。此时，我们不再需要调⽤ slash()，⽽是调⽤ linkTo()，并将控制器中的⼀个⽅法传递给它，这样 ControllerLinkBuilder 就能推断出控制器的基础路径和该⽅法的映射路径。如下的代码就以这种⽅式使⽤了linkTo()⽅法：
+
+```java
+Resources<Resource<Taco>> recentResources = Resources.wrap(tacos);
+recentResources.add(
+ linkTo(methodOn(DesignTacoController.class).recentTacos())
+ .withRel("recents"));
+```
+
+## 资源适配器
+
+参考：Spring 实战5.PDF P276
+
+如果要向返回结果中的列表中的每一个元素添加链接可以将实体类对象转换成一个 ResourceSupport
+
+```java
+@GetMapping("/recent")
+public Resources<TacoResource> recentTacos() {
+    PageRequest page = PageRequest.of(0, 12, Sort.by("createdAt").descending());
+    List<Taco> tacos = tacoRepo.findAll(page).getContent();
+    List<TacoResource> tacoResources = new TacoResourceAssembler().toResources(tacos);
+    Resources<TacoResource> recentResources = new Resources<TacoResource>(tacoResources);
+    recentResources.add( linkTo(methodOn(DesignTacoController.class).recentTacos())
+   .withRel("recents"));
+    return recentResources;
+}
+```
+
