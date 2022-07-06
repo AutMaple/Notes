@@ -693,3 +693,32 @@ public Resources<TacoResource> recentTacos() {
 }
 ```
 
+# 集成流
+
+集成流是由一个或多个如下介绍的组件组成的。在继续编写代码之前，我们先看一下这些组件在集成流中所扮演的角色。
+
+- 通道（channel）：将消息从一个元素传递到另一个元素。
+- 过滤器（filter）：基于某些断言，条件化地允许某些消息通过流。
+- 转换器（transformer）：改变消息的值和/或将消息载荷从一种类型转换成另一种类型。
+- 路由器（router）：将消息路由至一个或多个通道，通常会基于消息的头信息进行路由。
+- 切分器（splitter）：将传入的消息切割成两个或更多的消息，然后将每个消息发送至不同的通道；
+- 聚合器（aggregator）：切分器的反向操作，将来自不同通道的多个消息合并成一个消息。
+- 服务激活器（service activator）：将消息传递给某个Java方法来进行处理，并将返回值发布到输出通道上。
+- 通道适配器（channel adapter）：将通道连接到某些外部系统或传输方式，可以接受输入，也可以写出到外部系统。
+- 网关（gateway）：通过接口将数据传递到集成流中。
+
+## 消息通道
+
+消息通道是消息穿行集成通道的一种方式，它们是连接 Spring Integration 其他组成部分的管道
+
+Spring Integration 提供了多种通道实现:
+
+- PublishSubscribeChannel：发送到 PublishSubscribeChannel 的消息会被传递到一个或多个消费者中。如果有多个消费者，它们都会接收到消息。
+- QueueChannel：发送到 QueueChannel 的消息会存储到一个队列中，会按照先进先出（First In First Out，FIFO）的方式被拉取出来。如果有多个消费者，只有其中的一个消费者会接收到消息
+- PriorityChannel：与 QueueChannel 类似，但它不是 FIFO 的方式，而是会基于消息的 priority 头信息被消费者拉取出来。
+- RendezvousChannel：与 QueueChannel 类似，但是发送者会一直阻塞通道，直到消费者接收到消息为止，实际上会同步发送者和消费者。
+- DirectChannel：与 PublishSubscribeChannel 类似，但是消息只会发送至一个消费者，它会在与发送者相同的线程中调用消费者。这种方式允许事务跨通道。
+- ExecutorChannel：类似于 DirectChannel，但是消息分发是通过 TaskExecutor 实现的，这样会在与发送者独立的线程中执行。这种通道类型不支持事务跨通道。
+- FluxMessageChannel：反应式流的发布者消息通道，基于 Reactor 项目的 Flux。
+
+在 Java 配置和 Java DSL 中，输入通道都是自动创建的，默认使用的是 DirectChannel

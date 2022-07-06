@@ -928,3 +928,53 @@ Shovel 的主要优势在于：
 - 高度定制。当 Shovel 成功连接后，可以对其进行配置以执行相关的 AMQP 命令。
 
 **当某个队列中的消息堆积严重时，比如超过某个设定的阈值，就可以通过 Shovel 将队列中的消息移交给另一个集群**
+
+# SpringBoot 集成 RabbitMQ
+
+## 常用注解
+
+| 注解            | 描述                                                         |
+| --------------- | ------------------------------------------------------------ |
+| @RabbitListener | 该注解放在方法上，当接收到 RabbitMQ 指定消息队列的消息时，调用其修饰的方法进行处理。该注解适用于 push 这种被动的的模式。 |
+|                 |                                                              |
+|                 |                                                              |
+
+ ## 配置消息转换器
+
+默认情况下，消息转换是通过 SimpleMessageConverter 来实现的，它能够将简单类型（如String）和 Serializable 对象转换成 Message 对象。但是，Spring 为 RabbitTemplate 提供了多个消息转换器，内容如下：
+
+- Jackson2JsonMessageConverter：使用 Jackson 2 JSON 实现对象和 JSON 的相互转换。
+- MarshallingMessageConverter：使用 Spring 的 Marshaller 和 Unmarshaller 进行转换。
+- SerializerMessageConverter：使用 Spring 的 Serializer 和 Deserializer 转换 String 和任意种类的原生对象。
+- SimpleMessageConverter：转换 String、字节数组和 Serializable 类型。
+- ContentTypeDelegatingMessageConverter：基于 contentType 头信息，将转换功能委托给另外一个 MessageConverter。
+- MessagingMessageConverter：将消息转换功能委托给另外一个 MessageConverter，并将头信息的转换委托给 AmqpHeaderConverter。
+
+对于基于JSON的转换，我们可以按照如下的方式来配置 Jackson2JsonMessageConverter：
+```java
+@Bean
+public MessageConverter messageConverter() {
+	return new Jackson2JsonMessageConverter();
+}
+```
+
+Spring Boot 的自动配置功能会发现这个 bean，并将它注入 RabbitTemplate 中，替换默认的消息转换器
+
+## MessageProperties 对象
+
+在使用 convertAndSend() 的时候，我们无法快速访问 MessageProperties 对象。不过，此时 MessagePostProcessor 可以帮助我们：
+
+```java
+@Override
+public void sendOrder(Order order) {
+    rabbit.convertAndSend("tacocloud.order.queue", order, new MessagePostProcessor() {
+        @Override
+        public Message postProcessMessage(Message message) throws AmqpException {
+            MessageProperties props = message.getMessageProperties();
+            props.setHeader("X_ORDER_SOURCE", "WEB");
+            return message;
+        }
+    });
+}
+```
+
