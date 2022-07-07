@@ -722,3 +722,6 @@ Spring Integration 提供了多种通道实现:
 - FluxMessageChannel：反应式流的发布者消息通道，基于 Reactor 项目的 Flux。
 
 在 Java 配置和 Java DSL 中，输入通道都是自动创建的，默认使用的是 DirectChannel
+
+
+
