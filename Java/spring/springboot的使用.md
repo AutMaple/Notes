@@ -7,7 +7,7 @@
 | 注解                           | 描述                                                         |
 | ------------------------------ | ------------------------------------------------------------ |
 | @EnableConfigurationProperties | 将配置了 @ConfigurationProperties 注解的类注入到 IOC 容器中  |
-| @ConfigurationProperties       | 指定类的属性通过配置文件中对应的属性来进行初始化，比较中要的一个属性就是 prefix |
+| @ConfigurationProperties       | 声明类的属性通过 application.yaml 配置文件中对应的属性来进行初始化，比较重要的一个参数就是 prefix |
 |                                |                                                              |
 
 ## @EnableConfigurationProperties
