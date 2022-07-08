@@ -1,4 +1,38 @@
+# Mybatis 介绍
+
+MyBatis 是一个基于 SqlSessionFactory 构建的框架。对于 SqlSessionFactory 而言，它的作用是生成 SqlSession 接口对象，这个接口对象是 MyBatis 操作的核心，而在 MyBatis-Spring 的结合中甚至可以“擦除”这个对象，使其在代码中“消失”，这样做的意义是重大的，因为 SqlSession 是一个功能性的代码，“擦除”它之后，就剩下了业务代码，这样就可以使得代码更具可读性。因为 SqlSessionFactory 的作用是单一的，只是为了创建核心接口 SqlSession，所以在 MyBatis 应用的生命周期中理当只存在一个 SqlSessionFactory 对象，并且往往会使用单例模式。而构建 SqlSessionFactory 是通过配置类（Configuration）来完成的
+
+![image-20220708122012608](../../Attachment/image-20220708122012608.png)
+
+从图 5-5 可以了解 MyBatis 可配置的内容。
+
+- properties（属性）：属性文件在实际应用中一般采用 Spring 进行配置
+- settings（设置）：它的配置将改变 MyBatis 的底层行为，可以配置映射规则，如自动映射和驼峰映射、执行器（Executor）类型、缓存等内容，比较复杂，具体配置项可参考 MyBatis [官方网站](http://www.mybatis.org/mybatis-3/zh/configuration.html#settings)。 
+
+- typeAliases（类型别名）：因为使用类全限定名会比较长，所以 MyBatis 会对常用的类提供默认的别名，此外还允许我们通过 typeAliases 配置自定义的别名。
+
+- typeHandlers（类型处理器）：这是 MyBatis 的重要配置之一，在 MyBatis 写入和读取数据库的过程中对于不同类型的数据（对于 Java 是 JavaType，对于数据库则是 JdbcType）进行自定义转换，在大部分的情况下我们不需要使用自定义的 typeHandler，因为在 MyBatis 自身就已经定义了比较多的 typeHandler，MyBatis 会自动识别 javaType 和 jdbcType，从而实现各种类型的转换。一般来说，typeHandler 的使用集中在枚举类型上。
+
+- objectFactory（对象工厂）：这是一个在 MyBatis 生成返回的 POJO 时会调用的工厂类。一般我们使用 MyBatis 默认提供的对象工厂类(DefaultObjectFactory)就可以了，而不需要任何配置。
+
+- plugins（插件）：有时候也称为拦截器，是 MyBatis 最强大也是最危险的组件，它通过动态代理和责任链模式来完成，可以修改 MyBatis 底层的实现功能。掌握它需要比较多的 MyBatis 知识，可参考相关的书籍和资料。
+
+- environments（数据库环境）：可以配置数据库连接内容和事务。一般而言，这些交由 Spring 托管。
+
+- databaseIdProvider（数据库厂商标识）：允许 MyBatis 配置多类型数据库支持，不常用。
+
+- mappers（映射器）：是 MyBatis 最核心的组件，它提供 SQL 和 POJO 映射关系，这是 MyBatis 开发的核心。
+
 # Mybatis 的使用
+
+## 常用的注解
+
+| 注解            | 描述                                                  |
+| --------------- | ----------------------------------------------------- |
+| @Alias          | 指定类的别名，别名可在 Mapper 的 sql 语句中进行使用   |
+| @MappedJdbcType | 声明某个字段的类型为 JdbcType 主要用在 typeHandler 中 |
+| @MappedType     | 申明某个字段为 JavaType 主要用在 typeHandler 中       |
+| @Mapper         | 声明一个类是 Repository 层的对象                      |
 
 ## Mybatis 的作用
 
@@ -643,3 +677,50 @@ resultType 中的属性名太长，可以使用别名来简化书写，先定义
 </select>
 ```
 
+## typeHandler
+
+```java
+// 声明 JdbcType 为整型
+@MappedJdbcTypes(JdbcType.INTEGER) 
+// 声明 JavaType 为 SexEnum
+@MappedTypes(value=SexEnum.class) 
+public class SexTypeHandler extends BaseTypeHandler<SexEnum> { 
+ 
+    // 通过列名读取性别
+    @Override 
+    public SexEnum getNullableResult(ResultSet rs, String col) throws SQLException { 
+        int sex = rs.getInt(col); 
+        if (sex != 1 && sex != 2) { 
+        	return null; 
+        } 
+        return SexEnum.getEnumById(sex); 
+    } 
+    // 通过下标读取性别
+    @Override 
+    public SexEnum getNullableResult(ResultSet rs, int idx) throws SQLException { 
+        int sex = rs.getInt(idx); 
+        if (sex != 1 && sex != 2) { 
+        	return null; 
+        } 
+        return SexEnum.getEnumById(sex); 
+    } 
+
+
+    // 通过存储过程读取性别
+    @Override 
+    public SexEnum getNullableResult(CallableStatement cs, int idx) throws SQLException { 
+        int sex = cs.getInt(idx); 
+        if (sex != 1 && sex != 2) { 
+        	return null; 
+        } 
+        return SexEnum.getEnumById(sex); 
+    } 
+    // 设置非空性别参数
+    @Override 
+    public void setNonNullParameter(PreparedStatement ps, int idx, SexEnum sex, JdbcType jdbcType) throws SQLException { 
+    	ps.setInt(idx, sex.getId()); 
+    } 
+}
+```
+
+在 MyBatis 中对于 typeHandler 的要求是实现 `TypeHandler<T>` 接口，而它自身为了更加方便也通过抽象类 `BaseTypeHandler<T>` 实现了 `TypeHandler<T>` 接口，所以这里直接继承抽象类 `BaseTypeHandler<T>` 就可以了。注解 `@MappedJdbcTypes` 声明 JdbcType 为数据库的整型，@MappedTypes 声明 JavaType 为 SexEnum，这样 MyBatis 即可据此对对应的数据类型进行转换了。
