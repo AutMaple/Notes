@@ -180,6 +180,5 @@ userMapper.update(user, wrapper);
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl // 将执行的完整 sql 语句进行输出
-   
 ```
 

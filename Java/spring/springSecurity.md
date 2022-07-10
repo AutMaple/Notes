@@ -1,5 +1,88 @@
 # SpringSecurity 的使用
 
+在 Java Web 工程中，一般使用 Servlet 过滤器（Filter）对请求进行拦截，然后在 Filter 中通过自己的 验证逻辑来 决定是否放 行请求。同 样地， Spring Security 也 是基于这个 原理，在进入到 DispatcherServlet 前就可以对 Spring MVC 的请求进行拦截，然后通过一定的验证，从而决定是否放行请求访问系统。
+
+为了对请求进行拦截，Spring Security 提供了过滤器 DelegatingFilterProxy 类给予开发者配置。
+
+在 Web 工程中可以使用 @EnableWebSecurity 来驱动 Spring Security 的启动，如果属于非 Web 工程，可以使用 @EnableGlobalAuthentication ，而事实上 @EnableWebSecurity 上已经标注了 @EnableGlobalAuthentication 并且依据自己的需要加入了许多 Web 的特性。
+
+## SpringSecurity 的原理
+
+一旦启用了 Spring Security，Spring IoC 容器就会为你创建一个名称为 springSecurityFilterChain 的 Spring Bean。它的类型为 FilterChainProxy，事实上它也实现了 Filter 接口，只是它是一个特殊的拦截器。在 Spring Security 操作的过程中它会提供 Servlet 过滤器 DelegatingFilterProxy，这个过滤器会通过 Spring Web IoC 容器去获取 Spring Security
+所自动创建的 FilterChainProxy 对象，这个对象上存在一个拦截器列表（List），列表上存在用户验证的拦截器、跨站点请求伪造等拦截器，这样它就可以提供多种拦截功能。于是焦点又落到了
+FilterChainProxy 对象上，通过它还可以注册 Filter，也就是允许注册自定义的 Filter 来实现对应的拦截逻辑，以满足不同的需要。当然，Spring Security 也实现了大部分常用的安全功能，并提供了相应的机制来简化开发者的工作，所以大部分情况下并不需要自定义开发，使用它提供的机制即可。
+
+## 自定义配置
+
+为了给 FilterChainProxy 对象加入自定义的初始化，SpringSecurity 提供了 SecurityConfigurer 接口，通过它就能够实现对 Spring Security 的配置。只是有了这个接口还不太方便，因为它只是能够提供接口定义的功能，为了更方便，Spring 对 Web 工程还提供了专门的接口 WebSecurityConfigurer，并且在这个接口的定义上提供了一个抽象类 WebSecurityConfigurerAdapter。开发者通过继承它就能得到 Spring Security 默认的安全功能。也可以通过覆盖它提供的方法，来自定义自己的安全拦截方案。这里需要研究 WebSecurityConfigurerAdapter 中默认存在的 3 个方法:
+
+```java
+/**
+* 用来配置用户签名服务，主要是 user-details 机制，你还可以给予用户赋予角色
+* @param auth 签名管理器构造器,用于构建用户具体权限控制
+*/
+protected void configure(AuthenticationManagerBuilder auth);
+/**
+* 用来配置 Filter 链
+*@param web Spring Web Security 对象
+*/
+public void configure(WebSecurity web);
+/**
+* 用来配置拦截保护的请求，比如什么请求放行，什么请求需要验证
+* @param http http 安全请求对象
+*/
+protected void configure(HttpSecurity http) throws Exception;
+```
+
+- WebSecurity 参数的方法主要是配置 Filter 链的内容，可以配置 Filter 链忽略哪些内容。WebSecurityConfigurerAdapter 提供的是空实现，也就是没有任何的配置。
+
+- AuthenticationManagerBuilder 参数的方法，则是定义用户（user）、密码（password）和角色（role），在默认的情况下 Spring 不会为你创建任何的用户和密码，也就是有登录页面而没有可登录的用户。
+- HttpSecurity 参数的方法，则是指定用户和角色与对应 URL 的访问权限，也就是开发者可以通过覆盖这个方法来指定用户或者角色的访问权限。
+
+在 WebSecurityConfigurerAdapter 提供的验证方式下满足通过用户验证或者 HTTP 基本验证的任何请求，Spring Security 都会放行。
+
+## 自定义用户认证服务
+
+Spring Security 提供了一个 UserDetailsService 接口，通过它可以获取用户信息，而这个接口只有一个 loadUserByUsername 方法需要实现，这个方法定义返回 UserDetails 接口对象
+
+```java
+@Service
+public class UserDetailsServiceImpl implements UserDetailsService {
+    // 注入服务接口
+    @Autowired
+    private UserRoleService userRoleService = null;
+
+    @Override
+    @Transactional
+    public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
+        // 获取数据库用户信息
+        DatabaseUser dbUser = userRoleService.getUserByName(userName);
+        // 获取数据库角色信息
+        List<DatabaseRole> roleList = userRoleService.findRolesByUserName(userName);
+        // 将信息转换为 UserDetails 对象
+        return changeToUser(dbUser, roleList);
+    }
+    private UserDetails changeToUser(DatabaseUser dbUser, List<DatabaseRole> roleList) {
+        // 权限列表
+        List<GrantedAuthority> authorityList = new ArrayList<>();
+        // 赋予查询到的角色
+        for (DatabaseRole role : roleList) {
+        	GrantedAuthority authority = new SimpleGrantedAuthority(role.getRoleName());
+        	authorityList.add(authority);
+        }
+        // 创建 UserDetails 对象，设置用户名、密码和权限
+        UserDetails userDetails = new User(dbUser.getUserName(),dbUser.getPwd(), authorityList); // org.springframework.security.core.userdetails.User
+        return userDetails;
+    }
+}
+```
+
+## CSRF 跨域请求伪造
+
+CSRF 攻击的原理是通过在第三方网站中放置对应请求的链接(如交易的请求)，当点击对应的请求时，会携带该请求对应的 Cookie，而服务器无法识别改次请求是来自第三方网站，认为改次请求是用户主动的行为，从而导致用户账户中的钱莫名减少或者增多的情况。
+
+Spring Security 提供了方案来处理 CSRF 过滤器。在默认的情况下，它会启用这个过滤器来防止 CSRF 攻击。对于不关闭 CSRF 的 Spring Security，每次 HTTP 请求的表单（Form）就要求存在 CSRF 参数。当访问表单的时候，Spring Security 就生成 CSRF 参数，放入表单中，这样当提交表单到服务器时，就要求连同 CSRF 参数一并提交到服务器。Spring Security 就会对 CSRF 参数进行判断，判断是否与其生成的保持一致。如果一致，它就不会认为该请求来自 CSRF 攻击；如果 CSRF 参数为空或者与服务器的不一致，它就认为这是一个来自 CSRF 的攻击而拒绝请求。因为这个参数不在 Cookie 中，所以第三方网站是无法伪造的，这样就可避免 CSRF 攻击。
+
 ## SpringSecurity 的起源
 
 Spring Security 是 Spring 家族中的一个安全管理框架，实际上，在 Spring Boot 出现之前，Spring Security 就已经发展了多年了，但是使用的并不多，安全管理这个领域，一直是 Shiro 的天下。
@@ -492,3 +575,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 }
 ```
+
+## 在配置文件中配置用户名和密码
+
+```properties
+#自定义用户名和密码
+spring.security.user.name=myuser
+spring.security.user.password=123456
+```
+
+有了安全配置的属性，即使没有加入 @EnableWebSecurity，Spring Boot 也会根据配置的项自动启动安全机制
+

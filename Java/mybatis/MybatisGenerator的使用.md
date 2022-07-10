@@ -161,7 +161,7 @@ public Criteria createCriteria() {
 
 因此 `createCriteria` 方法只适合生成一个简单的 where 子句
 
-**注意：** 官网建议只使用 `or` 方法，因为该方法写出来的代码可读性更强
+**注意： 官网建议只使用 `or` 方法，因为该方法写出来的代码可读性更强**
 
 ## 使用示例
 

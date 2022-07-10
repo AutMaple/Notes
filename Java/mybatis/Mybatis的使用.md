@@ -33,6 +33,7 @@ MyBatis 是一个基于 SqlSessionFactory 构建的框架。对于 SqlSessionFac
 | @MappedJdbcType | 声明某个字段的类型为 JdbcType 主要用在 typeHandler 中 |
 | @MappedType     | 申明某个字段为 JavaType 主要用在 typeHandler 中       |
 | @Mapper         | 声明一个类是 Repository 层的对象                      |
+| @Param          | 指定 Mapper 文件中 sql 语句拼接时的参数名             |
 
 ## Mybatis 的作用
 
@@ -331,8 +332,6 @@ StudentMapper.xml
 </mapper>
 ```
 
-
-
 ### 传递多个参数
 
 传递多个参数可以在 dao 接口的方法参数中加上 `@Param` 注解。
@@ -455,7 +454,7 @@ xml 配置文件中的配置
 
 Mybatis 中优先级从大到小:
 
-方法参数传递的属性 ==> resource/url 属性中指定的配置文件 ==> properties 元素中指定的属性
+**方法参数传递的属性 ==> resource/url 属性中指定的配置文件 ==> properties 元素中指定的属性**
 
 ### 类型别名
 
@@ -495,7 +494,7 @@ resultType 中的属性名太长，可以使用别名来简化书写，先定义
 </select>
 ```
 
-一行多列的数据可以使用 Map 数据类型或者类名。使用 Map 时，列名为 Map 的 key, 列值为 Map 的 value。使用类时，根据类名与列名是否相等来赋值
+一行多列的数据可以使用 Map 数据类型或者类名。使用 Map 时，列名为 Map 的 key, 列值为 Map 的 value。使用类时，根据类的属性名与列名是否相等来赋值
 
 传递类名
 

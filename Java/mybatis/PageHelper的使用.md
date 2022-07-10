@@ -20,7 +20,7 @@ PageHelper 的原理是通过实现 mybatis 的 interceptor 接口, 拦截 sql �
 
 ### 分页插件不支持带有 `for update` 语句的分页
 
-对于带有 `for update` 的sql，会抛出运行时异常，对于这样的sql建议手动分页，毕竟这样的sql需要重视。
+对于带有 `for update` 的sql，会抛出运行时异常，对于这样的 sql 建议手动分页，毕竟这样的 sql 需要重视。
 
 ### 分页插件不支持嵌套结果映射
 

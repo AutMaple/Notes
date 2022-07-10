@@ -129,11 +129,17 @@ DevTool 作为项目的一部分，当应用程序运行的时候，应用程序
 | @DeleteMapping  | 处理 HTTP Delete 请求                                        |
 | @PatchMapping   | 处理 HTTP Patch 请求                                         |
 | @ResponseBody   | 表示请求的返回值直接写入响应体中，而不是将数据放入 Model 中，然后再交给 View 进行视图的渲染。 |
-| @RestController | 该注解是 @Controller 和 @ResponseBody 注解的组合体           |
+| @RestController | 该注解是 @Controller 和 @ResponseBody 注解的组合体，用于将 Controller 返回的对象转换成 JSON 数据集 |
 | @CrossOrigin    | 配置跨域请求                                                 |
 | @PathVariable   | 提取请求路径中的指定的参数赋值给其修饰的方法参数             |
 | @RequestBody    | 用于将请求体中的数据封装到该注解所修饰的实体列中             |
 | @ResponseStatus | 设置请求成功之后返回的状态码                                 |
+| @DateTimeFormat | 对 HTTP 请求传递的日期进行格式化                             |
+| @NumberFormat   | 对 HTTP 请求传递的数字进行格式化                             |
+| @InitBinder     | 它的作用是在执行控制器方法前，处理器会先执行表 @InitBinder 标注的方法 |
+| @RequestHeader  | 将请求头中某个参数的值注入到注解修饰的字段中                 |
+| @Async          | 使用线程池中的线程来异步执行该注解所修饰的方法               |
+| @EnableAsync    | 代表 Spring 开启异步。实现 AsyncConfigurer 接口来提供线程池  |
 
 处理特定类型请求的注解是在 Spring 4.3 中引入的
 
@@ -146,8 +152,6 @@ DevTool 作为项目的一部分，当应用程序运行的时候，应用程序
 #### produces 参数
 
 produces 属性指明所修饰的方法或者类只会处理请求头中 Accept 参数与注解中设置的参数相匹配的请求。Accept 参数用于表明本次请求希望服务端返回的数据格式
-
-
 
 ```java
 @PostMapping(produces="application/json")
@@ -276,6 +280,14 @@ public String addUserInfo(@Validated UserInfoReq req) {
 - @Validated 只能用在类、方法和参数上，而 @Valid 可用于方法、字段、构造器和参数上
 
 在 Controller 中校验方法参数时，使用 @Valid 和 @Validated 并无特殊差异（若不需要分组校验的话）
+
+### 参数转换
+
+在 Spring MVC 中，是通过 WebDataBinder 机制来获取参数的，它的主要作用是解析 HTTP 请求的上下文，然后在控制器的调用之前转换参数并且提供验证的功能，为调用控制器方法做准备。处理器会从 HTTP 请求中读取数据，然后通过三种接口来进行各类参数转换，这三种接口是 Converter 、 Formatter 和 GenericConverter。在 Spring MVC 的机制中这三种接口的实现类都采用了注册机的机制，默认的情况下 Spring MVC 已经在注册机内注册了许多的转换器，这样就可以实现大部分的数据类型的转换，所以在大部分的情况下无须开发者再提供转换器，这就是在上述章节中可以得到整型(Integer)、长整型（Long）、字符串（String）等各种各样参数的原因。同样地，**当需要自定义转换规则时，只需要在注册机上注册自己的转换器就可以了。**
+
+![image-20220708232908341](../../Attachment/image-20220708232908341.png)
+
+实现对应的接口，并将实现类标明为一个 Component 就行，SpringBoot 会自动管理这些实现类，将它们放在合适的地方
 
 # Spring Data JPA 注解
 
