@@ -1,3 +1,81 @@
+# SpringSecurity
+
+SpringSecurity 中的认证(Authentication)和授权(Authorization) 是分开的，因此无论使用什么认证方式，都不会影响授权，这种独立带来的好处就是 SpringSecurity 可以非常方便的整合一些外部的认证方式。
+
+## 认证(Authentication)
+
+在 SpringSecurity 中，用户的认证信息被保存在 Authentication 的实现类中
+
+```java
+public interface Authentication extends Principal, Serializable {
+    // 用于获取用户的权限
+    Collection<? extends GrantedAuthority> getAuthorities();
+    
+    // 用来获取用户的凭证，一般来说是密码
+    Object getCredentials();
+    
+    // 用来获取用户携带的详细信息，可能是当前请求之类等
+    Object getDetails();
+    
+    // 用来获取当前用户，例如是一个用户名或者一个用户实体
+    Object getPrincipal();
+    // 判断是否认证成功，如果返回 true 则之后的每个请求将不会在通过 AuthenticationMananger 进行认证，从而提升执行效率
+    boolean isAuthenticated();
+    
+    void setAuthenticated(boolean isAuthenticated) throws IllegalArgumentException;
+}
+```
+
+Authentication 的结构图
+
+![image-20220711102915779](../../Attachment/image-20220711102915779.png)
+
+当用户使用用户名/密码登录或者使用 Remember-me 功能登录时，都会对应一个不同的 Authentication 实例。
+
+SpringSecurity 中的认证工作主要是由 AuthenticationManager 接口来负责
+
+```java
+public interface AuthenticationManager {
+	Authentication authenticate(Authentication authentication) throws AuthenticationException;
+}
+```
+
+该方法有三个不同的返回值：
+
+- 返回 Authentication 表示认证成功
+- 抛出 AuthenticationException 异常表示用户输入了无效的凭证
+- null 表示不能够确定
+
+AuthenticationManager 最主要的实现类是 ProviderManager, ProviderManager 管理了众多的 AuthenticationProvider 实例。AuthenticationProvider 有点类似于 AuthenticationManager。但是它多了一个 supports 方法用来判断是否支持给定的 Authentication 类型
+
+![image-20220711114554098](../../Attachment/image-20220711114554098.png)
+
+```java
+public interface AuthenticationProvider {
+	Authentication authenticate(Authentication authentication) throws AuthenticationException;
+	boolean supports(Class<?> authentication);
+}
+```
+
+由于 Authentication 拥有众多不同的实现类，这些不同的实现类又由不同的 AuthenticationProvider 来处理，所以 AuthenticationProvider 会有一个 supports 方法，用来判断当前的 Authentication Provider 是否支持对应的 Authentication。
+
+在一次完整的认证流程中，可能会同时存在多个 AuthenticationProvider (例如，项目同时支持 form 表单登录和短信验证码登录)，多 AuthenticationProvider 统一由 ProviderManager 来管理。同时，ProviderManager 具有一个可选的 parent, 如果所有的 AuthenticationProvider 都认证失败，那么就会调用 parent 进行认证。parent 相当于一个备用认证方式，即各个 AuthenticationProvider 都无法处理认证问题的时候，就由 parent 出场收拾残局。
+
+## 授权(Authorization)
+
+在 Spring Security 的授权体系中，有两个关键的接口
+
+- AccessDecisionManager
+- AccessDecisionVoter
+
+AccessDecisionVoter 是一个投票器，投票器会检查用户是否具备应有的角色，进而投出赞成、反对或者弃权票；
+
+AccessDecisionManager 则是一个决策器，来决定此次访问是否被允许。
+
+AccessDecisionVoter 和 AccessDecisionManager 都有众多的实现类，在 AccessDecisionManager 中会挨个遍历 AccessDecisionVoter,进而决定是否允许用户访问，因而 AccessDecisionVoter 和 AccessDecisionManager 两者的关系类似于 AuthenticationProvider 和ProviderManager 的关系。
+
+在 Spring Security 中，用户请求一个资源（通常是一个网络接口或者一个 Java 方法）所需要的角色会被封装成一个 ConfigAttribute 对象，在ConfigAttribute 中只有一个 getAttribute 方法，该方法返回一个 String 字符串，就是角色的名称。一般来说，角色名称都带有一个 ROLE 前缀，投票器 AccessDecisionVoter 所做的事情，其实就是比较用户所具备的角色和请求某个资源所需的 ConfigAttribute 之间的关系。
+
 # SpringSecurity 的使用
 
 在 Java Web 工程中，一般使用 Servlet 过滤器（Filter）对请求进行拦截，然后在 Filter 中通过自己的 验证逻辑来 决定是否放 行请求。同 样地， Spring Security 也 是基于这个 原理，在进入到 DispatcherServlet 前就可以对 Spring MVC 的请求进行拦截，然后通过一定的验证，从而决定是否放行请求访问系统。
@@ -5,6 +83,289 @@
 为了对请求进行拦截，Spring Security 提供了过滤器 DelegatingFilterProxy 类给予开发者配置。
 
 在 Web 工程中可以使用 @EnableWebSecurity 来驱动 Spring Security 的启动，如果属于非 Web 工程，可以使用 @EnableGlobalAuthentication ，而事实上 @EnableWebSecurity 上已经标注了 @EnableGlobalAuthentication 并且依据自己的需要加入了许多 Web 的特性。
+
+## 过滤器(Filter)
+
+SpringSecurity 的认证和授权等功能都是基于过滤器来实现的，常见的过滤器以及默认加载的过滤器如下表
+
+| 过滤器                                   | 描述                                                         | 默认加载 |
+| ---------------------------------------- | ------------------------------------------------------------ | -------- |
+| ChannelProcessingFilter                  | 过滤请求协议，如 HTTPS 和 HTTP                               | NO       |
+| WebAsyncManagerIntergrationFilter        | 将 WebAsyncManager 与 SpringSecurity 上下文进行集成          | YES      |
+| SecurityContextPersistenceFilter         | 在处理请求之前，将安全信息加载到 SecurityContextHolder 中以方便后续使用。请求结束后，再擦除 SecurityContextHolder 中的信息 | YES      |
+| HeaderWriterFilter                       | 头信息加入到响应中                                           | YES      |
+| CorsFilter                               | 处理跨域问题                                                 | NO       |
+| CsrfFilter                               | 处理 CSRF 攻击                                               | YES      |
+| LogoutFilter                             | 处理注销登录                                                 | YES      |
+| OAuth2AuthorizationRequestRedirectFilter | 处理 OAuth2 认证重定向                                       | NO       |
+| Saml2WebSsoAuthenticationRequestFilter   | 处理 SAML 认证                                               | NO       |
+| X509AuthenticationFilter                 | 处理 X509 认证                                               | NO       |
+| AbstractPreAuthenticatedProcessingFilter | 处理预认证问题                                               | NO       |
+| CasAuthenticationFilter                  | 处理 CAS 单点登录                                            | NO       |
+| OAuth2LoginAuthenticationFilter          | 处理 OAuth2 认证                                             | NO       |
+| Saml2WebSsoAuthenticationFilter          | 处理 SAML 认证                                               | NO       |
+| UsernamePasswordAuthenticationFilter     | 处理表单登录                                                 | YES      |
+| OpenIDAuthenticationFilter               | 处理 OpenID 认证                                             | NO       |
+| DefaultLoginPageGeneratingFilter         | 配置默认登录页面                                             | YES      |
+| DefaultLogoutPageGeneratingFilter        | 配置默认注销页面                                             | YES      |
+| ConcurrentSessionFilter                  | 处理 Session 有效期                                          | NO       |
+| DigestAuthenticationFilter               | 处理 HTTP 摘要认证                                           | NO       |
+| BearerTokenAuthenticationFilter          | 处理 OAuth2 认证时的 AccessToken                             | NO       |
+| BasicAuthenticationFilter                | 处理 HttpBasic 登录                                          | YES      |
+| RequestCacheAwareFilter                  | 处理请求缓存                                                 | YES      |
+| SecurityContextHolderAwareRequestFilter  | 包装原始请求                                                 | YES      |
+| JaasApiIntegrationFilter                 | 处理 JAAS 认证                                               | NO       |
+| RememberMeAuthenticationFilter           | 处理 RememberMe 登录                                         | NO       |
+| AnonymousAuthenticationFilter            | 处理匿名认证                                                 | YES      |
+| OAuth2AuthorizaiotnCodeGrantFilter       | 处理 OAuth2 认证中的授权码                                   | NO       |
+| SessionManagementFilter                  | 处理 Session 并发问题                                        | YES      |
+| ExceptionTranslationFilter               | 处理异常认证/授权的情况                                      | YES      |
+| FilterSecurityInterceptor                | 处理授权                                                     | YES      |
+| SwitchUserFilter                         | 处理账户切换                                                 | NO       |
+
+上面的这些过滤器按照既定的优先级排列，最终形成一个过滤器链。我们在使用 SpringSecurity 的时候，也可以自定义过滤器，并通过 @Order 注解去调整自定义过滤器在过滤器链中的位置
+
+**注意: **默认过滤器并不是直接放在 Web 项目的原生过滤器链中，而是通过一个 FilterChainProxy 来统一管理。Spring Security 中的过滤器链通过FilterChainProxy 嵌入到 Web 项目的原生过滤器链中，如图1-1所示。
+
+![image-20220711125725169](../../Attachment/image-20220711125725169.png)
+
+在 Spring Security 中，这样的过滤器链不仅仅只有一个，可能会有多个，如图 1-2 所示。当存在多个过滤器链时，多个过滤器链之间要指定优先级，当请求到达后，会从 FilterChainProxy 进行分发，先和哪个过滤器链匹配上，就用哪个过滤器链进行处理。当系统中存在多个不同的认证体系时，那么使用多个过滤器链就非常有效。
+
+![image-20220711125915308](../../Attachment/image-20220711125915308.png)
+
+FilterChainProxy 作为一个顶层管理者，将统一管理 Security Filter。FilterChainProxy 本身将通过 Spring 框架提供的DelegatingFilterProxy 整合到原生过滤器链中，所以图 1-2 还可以做进一步的优化，如图 1-3 所示。
+
+![image-20220711130108279](../../Attachment/image-20220711130108279.png)
+
+## 登录数据保存
+
+当用户登录成功后，Spring Security 会将登录成功的用户信息保存到 SecurityContextHolder 中。SecurityContextHolder 中的数据保存默认是通过 ThreadLocal 来实现的，使用 ThreadLocal 创建的变量只能被当前线程访问，不能被其他线程访问和修改，也就是**用户数据和请求线程绑定在一起**。当登录请求处理完毕后，Spring Security 会将 SecurityContextHolder 中的数据拿出来保存到 Session 中，同时将SecurityContextHolder 中的数据清空。以后每当有请求到来时，Spring Security 就会先从 Session 中取出用户登录数据，保存到SecurityContextHolder 中，方便在该请求的后续处理过程中使用，同时在请求结束时将 SecurityContextHolder 中的数据拿出来保存到 Session中，然后将 SecurityContextHolder 中的数据清空。
+
+这一策略非常方便用户在 Controller 或者 Service 层获取当前登录用户数据，但是带来的另外一个问题就是，在子线程中想要获取用户登录数据就比较麻烦。Spring Security 对此也提供了相应的解决方案，如果开发者使用 @Asyc 注解来开启异步任务的话，那么只需要添加如下配置，使用 Spring Security 提供的异步任务代理，就可以在异步任务中从 SecurityContextHolder 里边获取当前登录用户的信息：
+
+```java
+@Configuration
+public class ApplicationConfiguration extends AsyncConfigurerSupport{
+    @Override
+	public Executor getAsyncExecutor(){
+		return new DelegatingSecurityContextExecutorService(Executors.newFixedThreadPool(5));
+    }
+}
+```
+
+### 登录用户数据的获取
+
+在 Spring Security 中，用户登录信息本质上还是保存在 HttpSession 中，但是为了方便使用，Spring Security 对 HttpSession 中的用户信息进行了封装，封装之后，开发者若再想获取用户登录数据就会有两种不同的思路：
+
+- 从 SecurityContextHolder 中获取。
+- 从当前请求对象中获取
+
+无论是哪种获取方式，都离不开一个重要的对象：Authentication。在 Spring Security 中，Authentication 对象主要有两方面的功能：
+
+- 作为 AuthenticationManager 的输入参数，提供用户身份认证的凭证，当它作为一个输入参数时，它的 isAuthenticated 方法返回 false, 表示用户还未认证。
+- 代表已经经过身份认证的用户，此时的 Authentication 可以从 SecurityContext 中获取。
+
+一个 Authentication 对象主要包含三个方面的信息：
+
+1. principal: 定义认证的用户。如果用户使用用户名/密码的方式登录，principal 通常就是一个 UserDetails 对象。
+2. credentials: 登录凭证，一般就是指密码。当用户登录成功之后，登录凭证会被自动擦除，以防止泄漏。
+3. authorities: 用户被授予的权限信息。
+
+在 Spring Security 中，只要能够拿到 Authentication 对象，就可以获取到登录用户的详细信息
+
+### 从 SecurityContextHolder 中获取 Authentication
+
+```java
+@GetMapping("/info")
+public void userInfo(){
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String username = authentication.getName();
+    Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+    System.out.println(username);
+    System.out.println("authorities: " + authorities);
+}
+```
+
+## SecurityContextHolder
+
+SecurityContextHolder、ContextHolder、Authentication 三者之间的关系
+
+![image-20220711155041707](../../Attachment/image-20220711155041707.png)
+
+### 从当前请求对象中获取
+
+```java
+@GetMapping("/authentication")
+public void authentication(Authentication authentication){
+    System.out.println("authentication: " + authentication);
+}
+
+@GetMapping("/principal")
+public void principal(Principal principal){
+    System.out.println("principal: " + principal);
+}
+
+```
+
+开发者可以直接在 Controller 的请求参数中放入 Authentication 对象来获取登录用户信息。通过前面的讲解，大家已经知道 Authentication 是Principal 的子类，所以也可以直接在请求参数中放入 Principal 来接收当前登录用户信息。需要注意的是，即使参数是 Principal, 真正的实例依然是 Authentication 的实例。
+
+用过 Spring MVC 的读者都知道，Controller 中方法的参数都是当前请求 HttpServletRequest 带来的。毫无疑问，前面的 Authentication 和Principal 参数也都是 HttpServletRequest 带来的，那么这些数据到底是何时放入 HttpServletRequest 的呢？又是以何种形式存在的呢？接下来我们一起分析一下。
+
+如果使用了 Spring Security 框架，那么我们在 Controller 参数中拿到的 HttpServletRequest实例将是 Servlet3SecurityContextHolderAwareRequestWrapper, 很明显，这是被 Spring Security 封装过的请求。
+
+![image-20220711161908612](../../Attachment/image-20220711161908612.png)
+
+在 Servlet 规范中，最早有三个和安全管理相关的方法：
+
+```java
+public String getRemoteUser();
+public boolean isUserInRole(String role);
+public java.security.Principal getUserprincipal();
+```
+
+- getRemoteUser 方法用来获取登录用户名。
+
+- isUserInRole 方法用来判断当前登录用户是否具备某一个指定的角色。
+
+- getUserPrincipal 方法用来获取当前认证主体。
+
+从 Servlet3.0 开始，在这三个方法的基础之上，又增加了三个和安全管理相关的方法：
+
+```java
+public boolean authenticate(HttpServletResponse response) throws IOException,ServletException;
+public void login(String username,String password)throws ServletException;
+public void logout (throws ServletException;
+```
+
+- authenticate 方法可以判断当前请求是否认证成功。
+- login 方法可以执行登录操作。
+- logout 方法可以执行注销操作。
+
+SecurityContextHolderAwareRequestWrapper 类主要实现了 Servlet3.0 之前和安全管理相关的三个方法，也就是 getRemoteUser()、 isUserInRole(String) 以及 getUserPrincipal()。Servlet3.0 中新增的三个安全管理相关的方法，则在Servlet3SecurityContextHolderAwareRequestWrapper 类中实现。获取用户登录信息主要和前面三个方法有关，因此这里我们主要来看一下SecurityContextHolderAwareRequestWrapper 类中相关方法的实现。
+
+SecurityContextHolderAwareRequestWrapper 类其实非常好理解：
+
+- getAuthentication: 该方法用来获取当前登录对象 Authentication, 获取方式就是我们前面所讲的从 SecurityContextHolder 中获取。如果不是匿名对象就返回，否则就返回nul。
+- getRemoteUser: 该方法返回了当前登录用户的用户名，如果 Authentication 对象中存储的 Principal 是当前登录用户对象，则返回用户名；如果 Authentication 对象中存储的 Principal 是当前登录用户名（字符串），则直接返回即可。
+- getUserPrincipal: 该方法返回当前登录用户对象，其实就是 Authentication 的实例。
+- isGranted:该方法是一个私有方法，作用是判断当前登录用户是否具备某一个指定的角色。判断逻辑也很简单，先对传入进来的角色进行预处理，有的情况下可能需要添加 ROLE 前缀，然后调用 Authentication#getauthorities 方法，获取当前登录用户所具备的所有角色，最后再和传入进来的参数进行比较。
+- isUserInRole: 该方法调用 isGranted 方法，进而实现判断当前用户是否具备某一个指定角色的功能。
+
+看到这里，相信读者己经明白了，在使用了Spring Security之后，我们通过 HttpServletRequest 就可以获取到很多当前登录用户信息了，代码如下：
+
+```java
+@GetMapping("/requestInfo")
+public void info(HttpServletRequest request){
+    String remoteUser = request.getRemoteUser();
+     Authentication authentication = (Authentication) request.getUserPrincipal();
+    boolean flag = request.isUserInRole("admin");
+    System.out.println("remoteUser: " + remoteUser);
+    System.out.println("authentication: " + authentication);
+    System.out.println("Is admin: " + flag);
+}
+```
+
+对请求的 HttpServletRequest 包装之后，接下来在过滤器链中传递的 HttpServletRequest 对象，它的 getRemoteUser()、isUserInRole(String) 以及 getUserPrincipal() 方法就可以直接使用了。
+
+HttpServletRequest 中 getUserPrincipal() 方法有了返回值之后，最终在 Spring MVC 的 ServletRequestMethodArgumentResolver#resolveArgument(Class<?>,HttpServletRequest) 进行默认参数解析，自动解析出 Principal 对象。开发者在 Controller 中既可以通过 Principal 来接收参数，也可以通过 Authentication 对象来接收。
+
+## UserDetails 接口
+
+该接口用于规范开发者自定义用户对象，接口定义如下
+
+```java
+public interface UserDetails extends Serializable {
+    // 获取用户的权限
+    Collection<? extends GrantedAuthority> getAuthorities();
+    String getPassword();
+    String getUsername();
+    boolean isAccountNonExpired();
+    boolean isAccountNonLocked();
+    // 判断凭证是否过期
+    boolean isCredentialsNonExpired();
+    // 判断当前账号是否可用
+    boolean isEnabled();
+}
+```
+
+## UserDetailsService 接口
+
+UserDetailsService 接口负责提供用户数据源，该接口只有一个查询用户的方法
+
+```java
+public interface UserDetailsService{
+    UserDetails loadUserByUsername(String username) throws UsernameNotFoundException;
+}
+```
+
+继承链如下：
+
+![image-20220711142006734](../../Attachment/image-20220711142006734.png)
+
+
+
+- UserDetailsManager 在 UserDetailsService 的基础上，继续定义了添加用户、更新用户、删除用户、修改密码以及判断用户是否存在共 5 种方法。
+- JdbcDaoImpl 在 UserDetailsService 的基础上，通过 spring-jdbc 实现了从数据库中查询用户的方法。
+- InMemoryUserDetailsManager 实现了 UserDetailsManager 中关于用户的增删改查方法，不过都是基于内存的操作，数据并没有持久化。
+- JdbcUserDetailsManager 继承自 JdbcDaoImpl 同时又实现了 UserDetailsManager 接口，因此可以通过 JdbcUserDetailsManager 实现对用户的增删改查操作，这些操作都会持久化到数据库中。不过 JdbcUserDetailsManager 有一个局限性，就是操作数据库中用户的 SQL 都是提前写好的，不够灵活，因此在实际开发中 JdbcUserDetailsManager 使用并不多。
+
+如果引入 SpringSecurity 的依赖而不进行任何的配置，那么默认使用 InMemoryUserDetailsManager 提供的用户。有两个比较重要的条件促使系统自动提供一个 InMemoryUserDetailsManager 的实例：
+
+1. 当前 classpath 下存在 AuthenticationManager 类。
+2. 当前项目中，系统没有提供 AuthenticationManager、AuthenticationProvider、UserDetailsService 以及ClientRegistrationRepository 实例。
+
+默认情况下，上面的条件都满足时，SrpingSecurity 才会提供一个 InMemoryUserDetailsManager 实例。并且会创建一个用户名为 user ，密码随机生成的一个用户，并在启动应用的时候，在日志中打印随机生成的密码。如果不想要随机生成的用户，可以在配置文件中进行如下的配置：
+
+```yaml
+spring:
+  security:
+    user:
+      name: autmaple
+      password: 111000
+      roles:
+        - admin
+        - user
+```
+
+## 认证用户自定义
+
+自定义用户其实就是使用 UserDetailsService 的不同实现类来提供用户数据，同时将配置好的 UserDetailsService 配置给 Authentication ManagerBuilder,系统再将 UserDetailsService 提供给 AuthenticationProvider 使用。
+
+## AuthenticationSuccessHandler 和 AuthenticationFailureHandler 
+
+设置用户认证成功之后的处理器
+
+```java
+public class LoginSuccessHandler implements AuthenticationSuccessHandler {
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        Authentication authentication) throws IOException, ServletException {
+        response.setContentType("application/json;charset=utf-8");
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("status", 200);
+        data.put("msg", "登录成功");
+        ObjectMapper mapper = new ObjectMapper();
+        String res = mapper.writeValueAsString(data);
+        response.getWriter().write(res);
+    }
+}
+```
+
+```java
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests()
+                .anyRequest().authenticated()
+                .and()
+                .formLogin()
+                .loginPage("/login")
+                .loginProcessingUrl("/doLogin")
+                .successHandler(new LoginSuccessHandler());
+    }
+}
+```
 
 ## SpringSecurity 的原理
 
