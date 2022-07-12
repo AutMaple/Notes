@@ -367,6 +367,78 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
+## 过滤器链
+
+### ObjectPostProcessor
+
+ObjectPostProcessor 是 Spring Security 中使用频率最高的组件之一，它是一个对象后置处理器，也就是当一个对象创建成功后，如果还有一些额外的事情需要补充，那么可以通过 ObjectPostProcessor 来进行处理。这个接口中默认只有一个方法 postProcess,该方法用来完成对对象的二次处理，代码如下：
+
+```java
+public interface ObjectPostProcessor<T>{
+      <O extends T>O postProcess (O object);
+}
+```
+
+ObjectPostProcessor 有两个实现类：
+
+- AutowireBeanFactoryObjectPostProcessor: 由于Spring Security 中大量采用了 Java 配置，许多过滤器都是直接 new 出来的，这些直接new 出来的对象并不会自动注入到 Spring 容器中。Spring Security 这样做的本意是为了简化配置，但是却带来了另外一个问题就是，大量 new 出来的对象需要我们手动注册到 Spring 容器中去。AutowireBeanFactoryObjectPostProcessor 对象所承担的就是这件事，一个对象 new 出来之后，只要调用 AutowireBeanFactoryObjectPostProcessor#postProcess 方法，就可以成功注入到 Spring 容器中，它的实现原理就是通过调用 Spring 容器中的 AutowireCapableBeanFactory 对象将一个 new 出来的对象注入到 Spring 容器中去。
+- CompositeObjectPostProcessor: 这是 ObjectPostProcessor 的另一个实现，一个对象可以有一个后置处理器，开发者也可以自定义多个对象后置处理器。CompositeObjectPostProcessor 是一个组合的对象后置处理器，它里边维护了一个 List 集合，集合中存放了某一个对象的所有后置处理器，当需要执行对象的后置处理器时，会遍历集合中的所有 ObjectPostProcessor 实例，分别调用实例的 postProcess 方法进行对象后置处理。在 Spring Security 框架中，最终使用的对象后置处理器其实就是 CompositeObjectPostProcessor ,它里边的集合默认只有一个对象，就是 AutowireBeanFactoryObjectPostProcessor
+
+在 Spring Security 中，开发者可以灵活地配置项目中需要哪些 Spring Security 过滤器，一旦选定过滤器之后，每一个过滤器都会有一个对应的配置器，叫作 xxxConfigurer (例如 CorsConfigurer、CsrfConfigurer 等)。过滤器都是在 xxxConfigurer 中 new 出来的，然后在 postProcess 方法中处理一遍，就将这些过滤器注入到 Spring 容器中了。
+
+这是对象后置处理器 ObjectPostProcessor 的主要作用。
+
+#### ObjectPostProcessor 的使用
+
+前面介绍了 ObjectPostProcessor 的基本概念。相信读者己经明白，所有的过滤器都由对应的配置类来负责创建，配置类在将过滤器创建成功之后，会调用父类的 postProcess 方法，该方法最终会调用到 CompositeObjectPostProcessor 对象的 postProcess 方法，在该方法中，会遍历 CompositeObjectPostProcessor 对象所维护的 List 集合中存储的所有 ObjectPostProcessor 对象，并调用其postProcess方法对对象进行后置处理。默认情况下，CompositeObjectPostProcessor 对象中所维护的 List 集合中只有一个对象那就是 AutowireBeanFactoryObjectPostProcessor,调用 AutowireBeanFactoryObjectPostProcessor 的 postProcess 方法可以将对象注册到Spring 容器中去。
+
+开发者可以自定义 ObjectPostProcessor 对象，并添加到 CompositeObjectPostProcessor 所维护的 List 集合中，此时，当一个过滤器在创建成功之后，就会被两个对象后置处理器处理，第一个是默认的对象后置处理器，负责将对象注册到 Spring 容器中：第二个是我们自定义的对象后置处理器，可以完成一些个性化配置。
+
+自定义 ObjectPostProcessor 对象比较典型的用法是动态权限配置，为了便于大家理解，笔者这里先通过一个大家熟悉的案例来展示 ObjectPostProcessor 的用法
+
+```java
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests()
+                .anyRequest().authenticated()
+                .and()
+                .formLogin()
+                .withObjectPostProcessor(new ObjectPostProcessor<UsernamePasswordAuthenticationFilter>() {
+                    @Override
+                    public <O extends UsernamePasswordAuthenticationFilter> O postProcess(O object) {
+                        object.setUsernameParameter("name");
+                        object.setPasswordParameter("passwd");
+                        object.setAuthenticationSuccessHandler((req, res, auth) -> {
+                            res.getWriter().write("Login Success");
+                        });
+                        return object;
+                    }
+                }).and().csrf().disable();
+    }
+}
+```
+
+
+
+### SecurityFilterChain
+
+```java
+public interface SecurityFilterchain{
+    boolean matches (HttpServletRequest request);
+	List<Filter>getFilters();
+}
+```
+
+- matches: 该方法用来判断 request 请求是否应该被当前过滤器链所处理。
+- getFilters: 该方法返回一个 List 集合，集合中存放的就是 Spring Security 中的过滤器。换言之，如果 matches 方法返回 true, 那么 request 请求就会在 getFilters 方法所返回的 Filter 集合中被处理。
+
+SecurityFilterChain 只有一个默认的实现类就是 DefaultSecurityFilterChain, 其中定义了两个属性，并具体实现了 SecurityFilterChain 中的两个方法。
+
+## HttpSecurity
+
+HttpSecurity 的主要作用是用来构建一条过滤器链，并反映到代码上，也就是构建一个 DefaultSecurityFilterChain 对象。一个 DefaultSecurityFilterChain 对象包含一个路径匹配器和多个 Spring Security 过滤器，HttpSecurity 中通过收集各种各样的 xxxConfigurer,将 Spring Security 过滤器对应的配置类收集起来，并保存到父类 AbstractConfiguredSecurityBuilder 的 configurers 变量中，在后续的构建过程中，再将这些 xxxConfigurer 构建为具体的 Spring Security 过滤器，同时添加到 HttpSecurity 的 filters 对象中。
+
 ## SpringSecurity 的原理
 
 一旦启用了 Spring Security，Spring IoC 容器就会为你创建一个名称为 springSecurityFilterChain 的 Spring Bean。它的类型为 FilterChainProxy，事实上它也实现了 Filter 接口，只是它是一个特殊的拦截器。在 Spring Security 操作的过程中它会提供 Servlet 过滤器 DelegatingFilterProxy，这个过滤器会通过 Spring Web IoC 容器去获取 Spring Security
