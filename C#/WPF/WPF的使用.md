@@ -1,4 +1,4 @@
-# 文档
+文档
 
 - [Controls](https://docs.microsoft.com/en-us/dotnet/desktop/wpf/controls/?view=netframeworkdesktop-4.8&viewFallbackFrom=netdesktop-6.0)
 - [控件的使用](https://docs.microsoft.com/en-us/dotnet/desktop/wpf/overview/?view=netdesktop-6.0#wpf-controls-by-function)
@@ -593,7 +593,9 @@ DataTemplate 常用的地方：
 - ItemsControl 的 ItemTemplate 属性，相当于给 ItemsControl 的数据条目穿衣服
 - GridViewColumn 的 CellTemplate 属性，相当于给 GridViewColumn 单元格里的数据穿衣服
 
-![image-20220629154651171](D:\Java\Notes\C#\WPF\Attachment\image-20220629154651171.png)
+![image-20220714161739631](../../Attachment/image-20220714161739631.png)
+
+在使用 ControlTemplate 定义控件的外观时，可以指定 Content 的位置，Content 即显示数据的区域，而 Content 的样式则由 DataTemplate 来指定
 
 ## Data Template
 
