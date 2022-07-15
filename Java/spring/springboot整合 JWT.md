@@ -1,4 +1,4 @@
-# SpringBoot 中整合 J W T
+# SpringBoot 中整合 JWT
 
 ## 添加依赖
 
