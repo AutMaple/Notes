@@ -15,7 +15,7 @@ WP F的布局理念就是把一个布局元素作为 ContentControl 或 Headered
 - 用户界面：由控件构成，与用户进行交互的界面，用于把数据展示给用户并响应用户的输入
 - 界面逻辑：控件与控制之间的关系和交互
 
-![image-20220628103719999](D:\Java\Notes\C#\WPF\Attachment\image-20220628103719999.png)
+![image-20220628103719999](.\Attachment\image-20220628103719999.png)
 
 ## XAML
 

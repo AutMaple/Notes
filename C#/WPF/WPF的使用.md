@@ -303,7 +303,7 @@ public interface IValueConverter {
 
 MultiBinding 与 Binding 一样均以 BindingBase 为基类，也就是说，凡是能使用 Binding 对象的场合都能使用 MultiBinding。MultiBinding 具有一个名为 Bindings 的属性，其类型是 `Collection<BindingBase>`，通过这个属性 MultiBinding 把一组 Binding 对象聚合起来，处在这个集合中的 Binding 对象可以拥有自己的数据校验与转换机制，**它们汇集起来的数据将共同决定传往 MultiBinding 目标的数据**
 
-![image-20220629113550304](D:\Java\Notes\C#\WPF\Attachment\image-20220629113550304.png)
+![image-20220629113550304](.\Attachment\image-20220629113550304.png)
 
 # Button 
 
