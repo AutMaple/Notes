@@ -387,7 +387,7 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
 
 # Spring 环境抽象
 
-Spring 的环境抽象是各种配置属性的一站式服务。它抽取了原始的属性，这样需要这些属性的bean就可以从Spring本⾝中获取了。Spring环境会拉取多个属性源，包括：
+Spring 的环境抽象是各种配置属性的一站式服务。它抽取了原始的属性，这样需要这些属性的 bean 就可以从 Spring 本⾝中获取了。Spring 环境会拉取多个属性源，包括：
 
 - JVM 系统属性
 - 操作系统环境变量
@@ -396,7 +396,7 @@ Spring 的环境抽象是各种配置属性的一站式服务。它抽取了原�
 
 Spring 会将这些属性聚合到⼀个源中，通过这个源可以注⼊到 Spring 的 bean 中。下图解释了属性源如何流入 Spring 抽象环境并注入到 Spring Bean 中的
 
-![image-20220705203550422](/home/autmaple/Documents/Notes/Attachment/image-20220705203550422.png)
+![image-20220705203550422](../../Attachment/image-20220705203550422.png)
 
 Spring Boot 自动配置的 bean 都可以通过 Spring 环境提取的属性进行配置
 
