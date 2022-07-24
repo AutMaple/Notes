@@ -686,27 +686,28 @@ public class JavaConfig {
 
 ### 常用注解
 
-| 注解            | 说明                                                         |
-| --------------- | ------------------------------------------------------------ |
-| @Autowired      | 根据 Type 自动进行注入，目标类中可以没有 setter 方法         |
-| @Qualifier      | 配合 Autowired 使用，指定注入的类型。当类型有多个时，就需要指定使用哪一个 |
-| @Resource       | 默认根据 Type 自动进行注入，也可以配置根据 Name 进行自动注入。 同时 Resource 注解位于 `javax.annotation`包中 |
-| @Value          | 配置基本数据类型的自动注入, 可以注入配置文件中的值           |
-| @Scope          | 声明 Bean 的生存方式，singleton 还是 prototype               |
-| @Component      | 声明对应类为一个 Bean 对象，交给 Spring 容器管理             |
-| @Repository     | 声明 Dao 包中的类为一个 Bean 对象，交给 Spring 容器管理      |
-| @Service        | 声明 Service 包中的类为一个 Bean 对象，交给 Spring 容器管理  |
-| @Controller     | 声明 Controller 包中的类为一个 Bean 对象，交给 Spring 容器管理 |
-| @RestController | 该注解声明该类是一个直接返回数据的 Controller，该注解是 @ResponseBody 和 @Controller 的组合 |
-| @Configuration  | 申明该类是一个配置类                                         |
-| @ComponentScan  | 指定扫描那个包下的 Component                                 |
-| @Import         | 导入配置类                                                   |
-| @Aspect         | 声明标注类是一个切面                                         |
-| @Before         | 目标方法执行之前执行                                         |
-| @After          | 目标方法执行完毕之后执行，不论其是否报错都会执行             |
-| @Around         | 可以在方法执行前后设置相关的信息，即在方法执行之前调用一次，方法执行完毕以后再调用一次 |
-| @AfterReturning | 方法返回之后执行                                             |
-| @AfterThrowing  | 目标方法抛出异常时执行                                       |
+| 注解              | 说明                                                         |
+| ----------------- | ------------------------------------------------------------ |
+| @Autowired        | 根据 Type 自动进行注入，目标类中可以没有 setter 方法         |
+| @Qualifier        | 配合 Autowired 使用，指定注入的类型。当类型有多个时，就需要指定使用哪一个 |
+| @Resource         | 默认根据 Type 自动进行注入，也可以配置根据 Name 进行自动注入。 同时 Resource 注解位于 `javax.annotation`包中 |
+| @Value            | 配置基本数据类型的自动注入, 可以注入配置文件中的值           |
+| @Scope            | 声明 Bean 的生存方式，singleton 还是 prototype               |
+| @Component        | 声明对应类为一个 Bean 对象，交给 Spring 容器管理             |
+| @Repository       | 声明 Dao 包中的类为一个 Bean 对象，交给 Spring 容器管理      |
+| @Service          | 声明 Service 包中的类为一个 Bean 对象，交给 Spring 容器管理  |
+| @Controller       | 声明 Controller 包中的类为一个 Bean 对象，交给 Spring 容器管理 |
+| @RestController   | 该注解声明该类是一个直接返回数据的 Controller，该注解是 @ResponseBody 和 @Controller 的组合 |
+| @Configuration    | 申明该类是一个配置类                                         |
+| @ComponentScan    | 指定扫描那个包下的 Component                                 |
+| @Import           | 导入配置类                                                   |
+| @Aspect           | 声明标注类是一个切面                                         |
+| @Before           | 目标方法执行之前执行                                         |
+| @After            | 目标方法执行完毕之后执行，不论其是否报错都会执行             |
+| @Around           | 可以在方法执行前后设置相关的信息，即在方法执行之前调用一次，方法执行完毕以后再调用一次 |
+| @AfterReturning   | 方法返回之后执行                                             |
+| @AfterThrowing    | 目标方法抛出异常时执行                                       |
+| @ControllerAdvice | 该注解是 @Controller 注解的一个特殊化，该注解修饰的类中被指定注解修饰的方法可以被**所有的 @Controller 所共享**，并且可以使用 @Order 注解指定多个 @ControllerAdvice 的执行顺序。这些注解包括：@ExceptionHandler, @InitBinder, @ModelAttribute, |
 
 #### @Autowired 注解
 

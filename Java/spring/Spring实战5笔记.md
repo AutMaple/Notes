@@ -738,5 +738,22 @@ Spring Integration 提供了多种通道实现:
 
 在 Java 配置和 Java DSL 中，输入通道都是自动创建的，默认使用的是 DirectChannel
 
+## SpringDoc 和 Swagger2 注解的对应关系
+
+[SpringDoc 官网](https://springdoc.org/)
+
+| Swagger2                                | SpringDoc                                                    |
+| --------------------------------------- | ------------------------------------------------------------ |
+| @API                                    | @Tag                                                         |
+| @ApiIgnore                              | @Parameter(hidden=true) 或者 @Operation(hidden=true) 或者 @Hidden |
+| @ApiImplicitParam                       | @Parameter                                                   |
+| @ApiImplicitParams                      | @Parameters                                                  |
+| @ApiModel                               | @Schema                                                      |
+| @ApiModelProperty(hidden=true)          | @Schema(accessMode=READ_ONLY)                                |
+| @apiModelProperty                       | @Schema                                                      |
+| @ApiOperation(value=“foo”, notes=“bar”) | @Operation(summery=“foo”, description=“bar”)                 |
+| @ApiParam                               | @Parameter                                                   |
+| @ApiResponse(code=404, message=“foo”)   | @ApiResponse(responseCode=“404”, description=“foo”)ns        |
+
 
 
