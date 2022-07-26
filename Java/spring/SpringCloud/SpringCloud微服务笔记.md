@@ -74,6 +74,16 @@ Spring Cloud Alibaba 是 Spring Cloud 的第二代实现，主要由 Nacos、Sen
 - Spring Cloud CLI：用于在 Groovy 中快速创建 Spring Cloud 应用的 Spring Boot CLI 插件。
 - ......
 
+## SpringCloud 注解
+
+| 注解                   | 作用                                                         |
+| ---------------------- | ------------------------------------------------------------ |
+| @EnableDiscoveryClient | 将应用声明为一个 Eureka 客户端                               |
+| @EnableDiscoveryServer | 将应用声明为一个 Eureka 服务端                               |
+| @LoadBalanced          | 主要用于修饰 RestTemplate 和 WebClient，被该注解修饰之后，注解会为它们配置 LoadBalancerClient，从而实现客户端负载均衡 |
+
+
+
 # Actuator 监控与管理
 
 spring-boot-starter-actuator 模块能够自动为 Spring Boot 构建的应用提供一系列用于监控的端点。spring-boot-starter-actuator 模块的实现对于实施微服务的中小团队来说，可以有效地省去或大大减少监控系统在采集应用指标时的开发量
@@ -162,7 +172,7 @@ spring:
 eureka:
   instance:
     hostname: localhost
-    prefer-ip-address: true # 将 Hostname 替换成 IP 地址，在 Eureka 客户端中设置
+    prefer-ip-address: true # 将 Hostname 替换成 IP 地址，在 Eureka 客户端最好将这个配置加上，不然获取到的 host 可能不能够访问
   client:
     service-url:
       defaultZone: http://localhost:9000/eureka # 设置服务注册中心的地址
@@ -172,4 +182,13 @@ eureka:
 
 #### 高可用注册中心
 
-Eureka Server 的高可用实际上就是将自己作为服务向其他服务注册中心注册自己，这样就可以形成一组互相注册的服务注册中心，以实现服务清单的互相同步，达到高可用的效果
+Eureka Server 的高可用实际上就是将自己作为服务向其他服务注册中心注册自己，这样就可以形成一组互相注册的服务注册中心，以实现服务清单的互相同步，达到高可用的效果.
+
+# Ribbon 负载均衡
+
+服务发现的任务交给 Eureka 的客户端完成，而服务的消费任务则交给 Ribbon 完成。Ribbon 是一个基于 HTTP 和 TCP 的客户端负载均衡器，它可以在通过客户端中配置的 ribbonServerList 服务端列表去轮询访问以达到均衡负载的作用
+
+当 Ribbon 与 Eureka 联合使用时，Ribbon 的服务实例清单 RibbonServerList 会被 DiscoveryEnabledNIWSServerList 重写，扩展成从 Eureka 注册中心中获取服务端列表。同时它也会用 NIWSDiscoveryPing 来取代 IPing，它将职责委托给 Eureka 来确定服务端是否已经启动
+
+Ribbon 在 Eureka 服务发现的基础上，实现了一套对服务实例的选择策略，从而实现对服务的消费
+
