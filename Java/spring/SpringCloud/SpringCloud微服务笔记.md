@@ -40,6 +40,15 @@
 
 Spring Cloud是一个基于Spring Boot实现的微服务架构开发工具。它为微服务架构中涉及的配置管理、服务治理、断路器、智能路由、微代理、控制总线、全局锁、决策竞选、分布式会话和集群状态管理等操作提供了一种简单的开发方式。
 
+Spring Cloud 本身并不是一个拿来即可用的框架，它是一套微服务规范，共有两代实现。
+
+Spring Cloud Netflix 是 Spring Cloud 的第一代实现，主要由 Eureka、Ribbon、Feign、Hystrix 等组件组成。
+Spring Cloud Alibaba 是 Spring Cloud 的第二代实现，主要由 Nacos、Sentinel、Seata 等组件组成。
+
+**参考文章：**
+
+[Spring Cloud教程](https://blog.csdn.net/qq_41854911/article/details/122792522)
+
 ## Spring Cloud 组件
 
 - Spring Cloud Config：配置管理工具，支持使用 Git 存储配置内容，可以使用它实现应用配置的外部化存储，并支持客户端配置信息刷新、加密/解密配置内容等。
