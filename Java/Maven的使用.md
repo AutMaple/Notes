@@ -44,7 +44,7 @@ Maven 可以把 jar 包所依赖的其它 jar 包自动下载并引入项目
 
 ## maven 的核心概念
 
-maven 的核心概念有：POM、约定的目录结构、坐标、依赖管理、仓库管理、生命周期、插件和目标、继承、聚合
+maven 的核心概念有：POM(Project Object Model)、约定的目录结构、坐标、依赖管理、仓库管理、生命周期、插件和目标、继承、聚合
 
 - POM: 是一个文件 => pom.xml, pom 翻译过来就是项目对象模型。maven 将一个项目当作一个模型使用。该文件用于控制 maven 构建项目的过程,管理 jar 依赖
 - 约定的目录结构：maven 项目的目录和文件的位置是规定好的
@@ -54,7 +54,7 @@ maven 的核心概念有：POM、约定的目录结构、坐标、依赖管理�
 - 生命周期：maven 工具构建项目的过程，就是生命周期
 - 插件和目标：执行 maven 构建的时候使用的工具就是插件
 - 继承: 解决不同模块依赖同一个资源的不同版本的问题，用于对资源版本的统一,简化配置
-- 聚合: 同时管理多个模块，控制它们的更新,在 pom.xml 中配置：`<packaging>pom</packaging>`,就表明该模块专门用于管理。聚合主要用于快速构建项目
+- 聚合: 同时管理多个模块，控制它们的更新,在 pom.xml 中配置：`<packaging>pom</packaging>`, 就表明该模块专门用于管理。聚合主要用于快速构建项目
 
 ### pom.xml 文件
 
@@ -76,7 +76,6 @@ pom.xml 文件是 maven 的灵魂
 | build        | 表示于构建相关的配置, 如设置编译插件的 jdk 版本              |
 | parent       | 在 Maven 中，如果多个模块都需要声明相同的配置，例如：groupId、version、有相同的依赖、或者相同的组件配置等，也有类似 Java 的继承机制，用 parent 声明要继承的父工程的 pom 配置。 |
 | modules      | 在 Maven 的多模块开发中，为了统一构建整个项目的所有模块，可以提供一个额外的模块，该模块打包方式为 pom，并且在其中使用 modules 聚合的其它模块，这样通过本模块就可以一键自动识别模块间的依赖关系来构建所有模块，叫 Maven 的聚合。 |
-|              |                                                              |
 
 ### 依赖的作用范围
 
@@ -126,8 +125,6 @@ Hello/
 ```shell
 mvn help:system
 ```
-
-
 
 ## 全局变量
 
@@ -415,4 +412,58 @@ Maven 仓库的作用是存放 jar 包。仓库分为本地仓库和中央仓库
 ```shell
 mvn [command] -D skipT
 ```
+
+## dependencyManagemant
+
+dependencyManagemant 的作用是用来声明依赖，但是不会将对应的依赖导入到项目中。
+
+### 特点
+
+- 子项目不会继承 dependencyManagement 节点中声明的依赖。
+- 但如果子项目想导入某个父 pom 中 dependencyManagement 节点中的依赖，只需要填写 **groupId 和 artifactId** ,不需要填写版本号，maven 会自动去父 pom 的 dependencyManagement 中找对应的 version，包括 scope、exclusions 等
+
+使用 **dependencyManagement** 组件后，所有的子项目只需要在父 pom 的 “公共依赖声明池” 中挑选自己想要的依赖，而不用关心版本。这样即不会继承到不需要的依赖，又统一了依赖的版本
+
+如果某个子项目不想使用公共的版本号，只需要在 dependency 中加上版本号，子项目就会使用自定义的版本号，不会继承父类版本号。
+
+## 依赖版本的查找
+
+Maven 会沿着父子层次向上走，直到找到一个拥有 dependencyManagement 组件的项目，然后在其中查找，如果找到则返回申明的依赖，没有继续往下找。
+
+Maven 会先在本地 Repository 中查找依赖，如果依赖存在，则使用该依赖，如果不存在，则通过 pom.xml 中的 Repository 配置从远程下载依赖到本地 Repository 中。默认情况下，Maven 将使用 *Maven Central Repository* 作为远端 Repository。但是在 pom.xml 中为什么没有看到这样的配置信息呢？原因在于，任何一个 Maven 工程都默认地继承自一个 [Super POM](http://books.sonatype.com/mvnref-book/reference/pom-relationships-sect-pom.html#pom-relationships-sect-super-pom)，Repository 的配置信息便包含在其中。
+
+## dependencies 与 dependencyManagement 的区别
+
+**dependencies**
+
+- 引入依赖
+- 即使子项目中不写 dependencies ，子项目仍然会从父项目中继承 **dependencies** 中的所有依赖项
+
+**dependencyManagement**
+
+- 声明依赖，并不引入依赖。
+- 子项目默认不会继承父项目 **dependencyManagement** 中的依赖
+- 只有在子项目中写了该依赖项，并且没有指定具体版本，才会从父项目中继承（version、exclusions、scope 等读取自父 pom）
+- 子项目如果指定了依赖的具体版本号，会优先使用子项目中指定版本，不会继承父 pom 中申明的依赖
+
+## 反应堆 reactor
+
+在一个多模块的 Maven 项目中，反应堆是指所有模块组成的一个构建结构。模块间的依赖关系会将反应堆构成一个有向非循环图(Directed Acyclic Graph, DAG)，各个模块是该图的节点，依赖关系构成了有向边。这个图不允许出现循环，因此，当出现模块 A 依赖于 B，而 B 又依赖于 A 的情况时，Maven 就会报错。
+
+Maven 会根据自己的 Reactor 机制决定哪个模块应该先执行，哪个模块应该后执行。比如，在父工程中执行 `mnv clean install` 命令并且 webapp 模块依赖于 core 模块，那么 Maven 会先在 core 模块上执行 “mvn clean install”，再在 webapp 模块上执行相同的命令。
+
+当在 webapp 中执行 `mvn clean install`，Maven 发现 webapp 自己依赖于 core，此时 Maven 会在本地的 Repository 中去找 core，如果存在，那么你很幸运，如果不存在，那么对不起，运行失败，说找不到 core，因为 Maven 并不会先将 core 模块安装到本地 Repository。此时你需要做的是，切换到 core 目录，执行 `mvn clean install` 将 core 模块安装到本地 Repository，再切换回 webapp 目录，执行 `mvn clean install`，万事才大吉。
+
+在父模块下执行 `mvn clean install`， Maven 会在每个模块上执行该命令，然后又发现 webapp 依赖于 core，此时他们之间有一个协调者（即父工程），它知道将 core 作为 webapp 的依赖，于是会先在 core 模块上执行 `mvn clean install`，当在 webapp 上执行命令时，无论先前的 core 模块是否存在于本地 Repository 中，父工程都能够获取到 core 模块（如果不存在于本地 Repository，它将现场编译 core 模块，再将其做为 webapp 的依赖，比如此时使用 `mvn clean package` 也是能够构建成功的），所以一切成功。
+
+## paren 节点的 relativePath 节点
+
+relativePath 用于指定父 pom.xml 文件的位置，它的默认值是 `../pom.xml`
+
+### Maven 寻找父模块 pom.xml 文件的顺序
+
+1. 首先会在当前项目中查找 parent 节点中的坐标对应的 pom.xml 文件
+2. 根据相对路径查找 parent 节点中的坐标对应的 pom.xml 文件
+3. 在本地仓库查找 parent 节点中的坐标对应的 pom.xml 文件
+4. 在远程仓库查找 parent 节点中的坐标对应的 pom.xml 文件
 
