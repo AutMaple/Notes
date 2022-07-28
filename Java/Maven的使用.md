@@ -426,7 +426,7 @@ dependencyManagemant 的作用是用来声明依赖，但是不会将对应的�
 
 如果某个子项目不想使用公共的版本号，只需要在 dependency 中加上版本号，子项目就会使用自定义的版本号，不会继承父类版本号。
 
-## 依赖版本的查找
+## 依赖版本的查找  
 
 Maven 会沿着父子层次向上走，直到找到一个拥有 dependencyManagement 组件的项目，然后在其中查找，如果找到则返回申明的依赖，没有继续往下找。
 
@@ -467,3 +467,31 @@ relativePath 用于指定父 pom.xml 文件的位置，它的默认值是 `../po
 3. 在本地仓库查找 parent 节点中的坐标对应的 pom.xml 文件
 4. 在远程仓库查找 parent 节点中的坐标对应的 pom.xml 文件
 
+## Scope 为 import 的作用
+
+```xml
+<dependencyManagement>
+	<dependencies>
+		<dependency>
+			<!-- Import dependency management from Spring Boot -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-dependencies</artifactId>
+			<version>2.1.12.RELEASE</version>
+			<type>pom</type>
+			<scope>import</scope>
+		</dependency>
+	</dependencies>
+</dependencyManagement>
+```
+
+`<scope>import</scope>`，它的意思是将 `spring-boot-dependencies` 中 `dependencyManagement` 的 `dependencies`，全部引入到当前工程的`dependencyManagement` 中，官方文档的解释
+
+>import
+>This scope is only supported on **a dependency of type pom** in the `<dependencyManagement>` section. It indicates the dependency to be replaced with the effective list of dependencies in the specified POM’s
+>`<dependencyManagement>` section. Since they are replaced, dependencies with a scope of import do not actually participate in limiting the transitivity of a dependency.
+
+`import` 只能用在 `dependencyManagement` 块中，它将 `spring-boot-dependencies` 中 `dependencyManagement` 下的 `dependencies` 插入到当前工程的 `dependencyManagement` 中，所以不存在依赖传递。
+
+### 无 import
+
+当没有 `<scope>import</scope>` 时，意思是将 `spring-boot-dependencies` 的 `dependencies` 全部插入到当前工程的 `dependencies` 中，并且会依赖传递。
