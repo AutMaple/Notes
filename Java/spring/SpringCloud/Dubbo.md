@@ -145,6 +145,6 @@ Nacos 可以使开发者从微服务平台建设的视角管理数据中心的�
 
 ## 高可用性
 
-Nacos 提供了类似于 ZooKeeper 的集群架构，包含一个 Leader 节点和多个 Follower 节点。和 ZooKeeper 不同的是，它的数据一致性算法采用的是 Raft,同样采用了该算法的中间件有 Redis Sentinel 的 Leader 选举、Etcd等。
+Nacos 提供了类似于 ZooKeeper 的集群架构，包含一个 Leader 节点和多个 Follower 节点。和 ZooKeeper 不同的是，它的数据一致性算法采用的是 Raft,同样采用了该算法的中间件有 Redis Sentinel 的 Leader 选举、Etcd 等。
 
 ![image-20220728121104645](../../../Attachment/image-20220728121104645.png)

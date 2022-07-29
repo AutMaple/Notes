@@ -77,7 +77,9 @@ Spring Cloud Alibaba 是 Spring Cloud 的第二代实现，主要由 Nacos、Sen
 ### 现在使用的技术
 
 - 网关：Spring Cloud Gateway
-- 负载均很：Spring Cloud LoadBalancer
+- 负载均衡：Spring Cloud LoadBalancer
+- 注册中心: Spring Cloud Alibaba Nacos
+- 远程调用: Spring Cloud OpenFeign
 
 ## SpringCloud 注解
 
