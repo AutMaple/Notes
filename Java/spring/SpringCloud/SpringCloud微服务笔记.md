@@ -122,9 +122,27 @@ spring-boot-starter-actuator 模块中已经实现的一些原生端点。根据
 - 度量指标类：获取应用程序运行过程中用于监控的度量指标，比如内存信息、线程池信息、HTTP请求统计等。
 - 操作控制类：提供了对应用的关闭等操作类功能。
 
+Actuator 可以通过 URL `/actuator/` 挂载一些监控点
+
+许多网关作为反向代理需要一个 URL 来探测后端集群应用是否存活，`/actuator/health` 端点可以提供给网关使用，从而检测后端服务的存活情况
+
+### yaml 配置
+
+Actuator 默认把所有访问点暴露给JMX(Java Management Extensions)，但处于安全原因，只有 `health` 和 `info`会暴露给 Web。Actuator提供的所有访问点均在[官方文档](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#actuator)列出，要暴露更多的访问点给Web，需要在`application.yml`中加上配置：
+
+```yaml
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info, health, beans, env, metrics
+```
+
+要特别注意暴露的URL的安全性，例如，`/actuator/env` 可以获取当前机器的所有环境变量，不可暴露给公网。
+
 ### 应用配置类
 
-由于 Spring Boo为了改善传统 Spring 应用繁杂的配置内容，采用了包扫描和自动化配置的机制来加载原本集中于 XML 文件中的各项内容。虽然这样的做法让我们的代码变得非常简洁，但是整个应用的实例创建和依赖关系等信息都被离散到了各个配置类的注解上，这使我们分析整个应用中资源和实例的各种关系变得非常困难。而这类端点可以帮助我们轻松获取一系列关于 Spring 应用配置内容的详细报告，比如自动化配置的报告、Bean 创建的报告、环境属性的报告等。
+由于 Spring Boot 为了改善传统 Spring 应用繁杂的配置内容，采用了包扫描和自动化配置的机制来加载原本集中于 XML 文件中的各项内容。虽然这样的做法让我们的代码变得非常简洁，但是整个应用的实例创建和依赖关系等信息都被离散到了各个配置类的注解上，这使我们分析整个应用中资源和实例的各种关系变得非常困难。而这类端点可以帮助我们轻松获取一系列关于 Spring 应用配置内容的详细报告，比如自动化配置的报告、Bean 创建的报告、环境属性的报告等。
 
 - `/autoconfig`： 该端点用来获取应用自动化配置的报告，其中包括所有自动化配置的候选项。同时还列出了每个候选项是否满足自动化配置的各个先决条件
 - `/beans`：该端点用来获取应用上下文中创建的所有 Bean
@@ -152,7 +170,7 @@ spring-boot-starter-actuator 模块中已经实现的一些原生端点。根据
 
 - `/dump`：该端点用来暴露程序运行中的线程信息。它使用 java.lang.management.ThreadMXBean 的 dumpAllThreads 方法来返回所有含有同步信息的活动线程详情。
 
-- /trace：该端点用来返回基本的 HTTP 跟踪信息。默认情况下，跟踪信息的存储采用org.springframework.boot.actuate.trace.InMemoryTraceRepository 实现的内存方式，始终保留最近的 100 条请求记录
+- `/trace`：该端点用来返回基本的 HTTP 跟踪信息。默认情况下，跟踪信息的存储采用org.springframework.boot.actuate.trace.InMemoryTraceRepository 实现的内存方式，始终保留最近的 100 条请求记录
 
 ### 操作控制类
 
@@ -320,6 +338,107 @@ OpenFeign 是 Spring Cloud 对 Feign 的二次封装，它具有 Feign 的所有
 | @PostMapping        | Spring MVC 注解，用来映射 POST 请求，它是一个组合注解，相当于 @RequestMapping(method = RequestMethod.POST) |
 
 > Spring Cloud Finchley 及以上版本一般使用 OpenFeign 作为其服务调用组件。由于 OpenFeign 是在 2019 年 Feign 停更进入维护后推出的，因此大多数 2019 年及以后的新项目使用的都是 OpenFeign，而 2018 年以前的项目一般使用 Feign。
+
+### OpenFeign 日志
+
+我们可以通过配置调整日志级别，这样有利于我们从 feign 中了解请求和响应的细节，对接口的调用情况进行监控。
+
+`OpenFeign` 日志级别分类四种
+
+- **NONE** ：默认的，不显示任何日志；
+- **BASIC** ：仅记录请求方法、URL、响应状态码及执行时间；
+- **HEADERS** ：除了 BASIC 中定义的信息之外，还有请求和响应的头信息；
+- **FULL（推荐使用）** ：除了 HEADERS 中定义的信息之外，还有请求和响应的正文及元数据。
+
+```yaml
+feign:
+  client:
+    config:
+      # 全局设置
+      default:
+        # NONE: 不开启日志(默认)
+        # BASIC:记录请求方法、URL、响应状态、执行时间
+        # HEADERS: 在BASIC基础上 加载请求/响应头
+        # FULL: 在HEADERS基础上 增加body和请求元数据
+        logger-level: FULL
+        
+logging:
+  level:
+    com.autmaple.springcloud.service: debug # 其他接口的日志级别可单独设置
+```
+
+## OpenFeign 的配置
+
+```yaml
+feign:
+  compression:
+    request:
+      # 开启请求压缩
+      enabled: true
+      # 希望返回的类型，默认也是以下列表
+      mime-types: text/xml,application/xml,application/json
+      # 请求超过此大小才进行压缩
+      min-request-size: 2048
+    response:
+      # 是否可解压响应
+      enabled: true
+      # 可使用Gzip解压缩
+      useGzipDecoder: true
+  client:
+    config:
+      # 全局设置
+      default:
+        # 发生请求读取结果的超时时间
+        read-timeout: 10000
+        # 连接超时时间
+        connection-timeout: 2000
+        # 重试机制,需要实现 Retryer 接口
+        retryer: com.autmaple.consumer.service.MyRetryer
+      # 单独设置
+      provider-get: # 服务名称
+        connectTimeout: 1000
+        readTimeout: 6000
+      # 不同服务的超时时间设置
+      CLOUD-PAYMENT-SERVICE:
+        read-timeout: 10000
+```
+
+注意：
+
+- 连接超时 (connectTimeout) 和 读取超时 (readTimeout) 同时配置时，超时才会生效
+- 可根据服务名称单独定义超时
+
+## Spring Cloud LoadBalancer 
+
+[官方文档](https://docs.spring.io/spring-cloud-commons/docs/current/reference/html/#spring-cloud-loadbalancer)
+
+Spring Cloud LoadBalancer是 Spring Cloud 官方自己提供的客户端负载均衡器,抽象和实现，用来替代 Ribbon。
+
+Spring Cloud 提供了自己的客户端负载平衡器抽象和实现。对于负载均衡机制，增加了 ReactiveLoadBalancer 接口，并提供了基于 round-robin 轮询和 Random 随机的实现。如果想要实现自己的负载均衡策略需要实现 ReactiveLoadBalancer 接口
+
+Spring Cloud Alibaba 整合在 spring-cloud-starter-alibaba-nacos-discovery 本身就依赖 spring-cloud-loadbalancer。
+
+>注意如果是 Hoxton 之前的版本，默认负载均衡器为 Ribbon，需要移除 Ribbon 引用和增加配置 spring.cloud.loadbalancer.ribbon.enabled: false。
+
+创建 RestTemplateConfig 配置类，标注 @LoadBalanced 注解，默认使用的 ReactiveLoadBalancer 实现是 RoundRobinLoadBalancer。
+
+```java
+@Configuration
+public class RestTemplateConfig {
+    @LoadBalanced
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate() ;
+    }
+}
+```
+
+注解
+
+| 注解                 | 描述                                                   |
+| -------------------- | ------------------------------------------------------ |
+| @LoadBalnced         | 该注解修饰的 RestTemplate 将会称为一个负载均衡的客户端 |
+| @LoadBalancedClients | 该注解用于同时配置多个负载均衡客户端                   |
 
 # 服务熔断和降级组件
 
@@ -506,7 +625,7 @@ Spring Cloud Config 默认使用 Git 存储配置信息，因此使用 Spirng Cl
 
 Spring Cloud Config 工作原理如下图:
 
-![img](../../../Attachment/70585cea9216c9a36ab6903e7fa846fe.png)
+![Configuration Introduction](../../../Attachment/azure-appconfiguration-configserver-0.png)
 
 Spring Cloud Config 工作流程如下：
 
