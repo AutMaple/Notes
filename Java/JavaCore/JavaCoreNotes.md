@@ -63,7 +63,7 @@ The methods in the Math class use the routines in the computer’s floating-poin
 
 If completely predictable results are more important than performance, use the StrictMath class instead. It implements the algorithms from the “Freely Distributable Math Library” (www.netlib.org/fdlibm), guaranteeing identical results on all platforms.
 
-![java 基本数据类型转换图](/home/autmaple/Documents/Notes/Attachment/image-20220601213204426.png)
+![java 基本数据类型转换图](../../Attachment/image-20220601213204426.png)
 
 The solid arrow denotes conversions without information loss, The dotted arrows denotes conversions that may lose precision.
 
@@ -85,8 +85,7 @@ int x = 0;
 x = (int)(x + 3.5)
 ```
 
-A switch expression with an integer or String operand must always have a
-default since it must yield a value, no matter what the operand value is. The right-hand argument of the shift operators is reduced modulo 32 (unless the left-hand argument is a long, in which case the right-hand argument is reduced modulo 64). For example, the value of 1 << 35 is the same as 1 << 3 or 8
+A switch expression with an integer or String operand must always have a default since it must yield a value, no matter what the operand value is. The right-hand argument of the shift operators is reduced modulo 32 (unless the left-hand argument is a long, in which case the right-hand argument is reduced modulo 64). For example, the value of 1 << 35 is the same as 1 << 3 or 8
 
 # 浮点数运算精度问题
 
