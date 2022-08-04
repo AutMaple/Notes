@@ -546,3 +546,31 @@ private String moto;
 
 在不添加 JsonAlias 和 JsonProperty 这两个注解时，key 的匹配默认是大小写敏感的
 
+# Filter 和 Interceptor
+
+请求流程如下图所示：
+
+![image-20220804203208041](../../Attachment/image-20220804203208041.png)
+
+在请求处理和响应过程中过滤器和拦截器等组件的执行流程及关系:
+
+1. 请求首先到达 Servlet 容器(如 Tomcat)，将请求转给 web 容器。
+2. web 容器调用 Servlet 过滤器，
+3. 将请求转交给 Spring 的 DispatcherServlet, 请求就转交给 Spring 上下文。
+4. DispatcherServlet 就可以调用 Spring 的拦截器对请求进行拦截处理，最后交给资源控制器。
+5. 最终由资源控制器结合业务模型进行业务处理，然后沿着与进入相反的方向朝外做相应进行处理，最终返回给客户端。
+
+## Filter 和 Inteceptor 的区别
+
+- Interceptor 的控制粒度更精细，可以详细到具体的路径，而 Filter 是一种粗粒度的控制，他几乎是对所有的请求进行过滤。
+- Interceptor 通常用于权限控制，日志打印, 参数校验；Filter 通常用于解决编码问题,跨域问题
+
+## 总结
+
+1. 过滤器是被容器调用的，容器启动会调用过滤器的 init() 方法。
+2. 过滤器是针对所有请求的，包括普通的 jsp 页面，比如首页。
+3. 多个过滤器执行顺序是按照在 web.xml 中配置的顺序执行的。
+4. 拦截器是 Spring 上下文执行的，是在容器启动之后，请求被转给 Spring 的时候。
+5. 多个拦截器 preHandle 执行顺序按照在容器中配置的顺序进行执行。
+6. 多个拦截器 postHandle 执行顺序按照在容器中配置的倒序进行执行。
+7. 多个拦截器 afterCompletion 执行顺序按照在容器中配置的倒序进行执行，并且在所有 postHandle 执行完成之后执行。
