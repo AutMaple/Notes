@@ -1,6 +1,6 @@
 # JVM 内存结构
 
-![jvm系列(二):JVM内存结构- 纯洁的微笑- 博客园](/home/autmaple/Documents/Notes/Attachment/331425-20160623115845438-670228585.png)
+![jvm系列(二):JVM内存结构- 纯洁的微笑- 博客园](../Attachment/331425-20160623115845438-670228585.png)
 
 JVM 内存结构图如上，分为五个部分：方法区(里面包含有运行时常量池)，堆，java 栈， 本地方法区，程序技术器
 
@@ -18,7 +18,7 @@ JVM 内存结构图如上，分为五个部分：方法区(里面包含有运行
 
 描述的是 Java 方法执行的内存模型，每次方法调用的数据都是通过栈传递的。实际上，Java 虚拟机栈是由一个个栈帧组成，而每个栈帧中都拥有：**局部变量表、操作数栈、动态链接、方法出口信息**。
 
-![栈帧中局部变量表,操作数栈,动态链接,方法出口的理解_北冥SP的博客-CSDN博客_栈帧方法出口](/home/autmaple/Documents/Notes/Attachment/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQwMTIxNTgw,size_16,color_FFFFFF,t_70.png)
+![栈帧中局部变量表,操作数栈,动态链接,方法出口的理解_北冥SP的博客-CSDN博客_栈帧方法出口](../Attachment/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQwMTIxNTgw,size_16,color_FFFFFF,t_70.png)
 
 局部变量表主要存放了编译期可知的各种数据类型（boolean、byte、char、short、int、float、long、double）、对象引用（reference 类型，它不同于对象本身，可能是一个指向对象起始地址的引用指针，也可能是指向一个代表对象的句柄或其他与此对象相关的位置）。
 
@@ -62,7 +62,7 @@ Java 堆是垃圾收集器管理的主要区域，因此也被称作 **GC 堆（
 
 下图所示的 Eden 区、两个 Survivor 区 `S0` 和 `S1` 都属于新生代，中间一层属于老年代，最下面一层属于永久代。
 
-![hotspot-heap-structure](/home/autmaple/Documents/Notes/Attachment/hotspot-heap-structure.0323dca9.jpg)
+![hotspot-heap-structure](../Attachment/hotspot-heap-structure.0323dca9.jpg)
 
 **JDK 8 版本之后 `PermGen` 已被 `Metaspace`(元空间) 取代，元空间使用的是直接内存。**
 
@@ -136,7 +136,7 @@ JDK 1.4 中新加入的 `NIO`(New Input/Output) 类，引入了一种基于通�
 
 ## 对象的创建
 
-![Java 对象的创建过程（五步）、对象的内存布局、对象的访问定位- 傑0327 - 博客园](/home/autmaple/Documents/Notes/Attachment/1161857-20200427141816383-595743373.png)
+![Java 对象的创建过程（五步）、对象的内存布局、对象的访问定位- 傑0327 - 博客园](../Attachment/1161857-20200427141816383-595743373.png)
 
 ### 1. 类加载检查
 
@@ -150,7 +150,7 @@ JDK 1.4 中新加入的 `NIO`(New Input/Output) 类，引入了一种基于通�
 
 选择以上两种方式中的哪一种，取决于 Java 堆内存是否规整。而 Java 堆内存是否规整，取决于 GC 收集器的算法是"标记-清除"，还是"标记-整理"（也称作"标记-压缩"），值得注意的是，复制算法内存也是规整的
 
-![内存分配的两种方式](/home/autmaple/Documents/Notes/Attachment/内存分配的两种方式.d8534630.png)
+![内存分配的两种方式](../Attachment/内存分配的两种方式.d8534630.png)
 
 **内存分配并发问题（补充内容，需要掌握）**
 
@@ -187,11 +187,11 @@ Hotspot 虚拟机的对象头包括两部分信息，第一部分用于存储对
 
 1. **句柄：** 如果使用句柄的话，那么 Java 堆中将会划分出一块内存来作为句柄池，reference 中存储的就是对象的句柄地址，而句柄中包含了对象实例数据与类型数据各自的具体地址信息；
 
-   ![对象的访问定位-使用句柄](/home/autmaple/Documents/Notes/Attachment/对象的访问定位-使用句柄.aa7060e3.png)
+   ![对象的访问定位-使用句柄](../Attachment/对象的访问定位-使用句柄.aa7060e3.png)
 
 2. **直接指针：** 如果使用直接指针访问，那么 Java 堆对象的布局中就必须考虑如何放置访问类型数据的相关信息，而 reference 中存储的直接就是对象的地址。
 
-![对象的访问定位-直接指针](/home/autmaple/Documents/Notes/Attachment/对象的访问定位-直接指针.9bfd6702.png)
+![对象的访问定位-直接指针](../Attachment/对象的访问定位-直接指针.9bfd6702.png)
 
 **这两种对象访问方式各有优势。使用句柄来访问的最大好处是 reference 中存储的是稳定的句柄地址，在对象被移动时只会改变句柄中的实例数据指针，而 reference 本身不需要修改。使用直接指针访问方式最大的好处就是速度快，它节省了一次指针定位的时间开销**
 
@@ -310,7 +310,7 @@ Java 的自动内存管理主要是针对对象内存的回收和对象内存的
 
 堆空间的基本结构：
 
-![img](/home/autmaple/Documents/Notes/Attachment/01d330d8-2710-4fad-a91c-7bbbfaaefc0e.c5bf5d75.png)
+![img](../Attachment/01d330d8-2710-4fad-a91c-7bbbfaaefc0e.c5bf5d75.png)
 
 大部分情况，对象都会首先在 Eden 区域分配，在一次新生代垃圾回收后，如果对象还存活，则会进入 `s0` 或者 `s1`，并且对象的年龄还会加 1(Eden 区 -> Survivor 区后对象的初始年龄变为 1)，当它的年龄增加到一定程度（默认为大于 15 岁），就会被晋升到老年代中。对象晋升到老年代的年龄阈值，可以通过参数 `-XX:MaxTenuringThreshold` 来设置默认值，这个值会在虚拟机运行过程中进行调整，可以通过`-XX:+PrintTenuringDistribution` 来打印出当次 GC 后的 Threshold。
 
@@ -404,7 +404,7 @@ graph
 
 下图中的 `Object 6 ~ Object 10` 之间虽有引用关系，但它们到 GC Roots 不可达，因此为需要被回收的对象。
 
-![可达性分析算法](/home/autmaple/Documents/Notes/Attachment/jvm-gc-roots.39234b20.png)
+![可达性分析算法](../Attachment/jvm-gc-roots.39234b20.png)
 
 **哪些对象可以作为 GC Roots 呢？**
 
@@ -453,19 +453,19 @@ graph
 1. **效率问题**
 2. **空间问题（标记清除后会产生大量不连续的碎片）**
 
-![img](/home/autmaple/Documents/Notes/Attachment/标记-清除算法.c1fbd0fe.jpeg)
+![img](../Attachment/标记-清除算法.c1fbd0fe.jpeg)
 
 ### 标记-复制算法
 
 为了解决效率问题，“标记-复制”收集算法出现了。它可以将内存分为大小相同的两块，每次使用其中的一块。当这一块的内存使用完后，就将还存活的对象复制到另一块去，然后再把使用的空间一次清理掉。这样就使每次的内存回收都是对内存区间的一半进行回收。
 
-![复制算法](/home/autmaple/Documents/Notes/Attachment/90984624.e8c186ae.png)
+![复制算法](../Attachment/90984624.e8c186ae.png)
 
 ### 标记-整理算法
 
 根据老年代的特点提出的一种标记算法，标记过程仍然与“标记-清除”算法一样，但后续步骤不是直接对可回收对象回收，而是让所有存活的对象向一端移动，然后直接清理掉端边界以外的内存。
 
-![jvm垃圾回收算法- 二叉树的博客- 博客园](/home/autmaple/Documents/Notes/Attachment/1613061-20190402233901904-174836171.png)
+![jvm垃圾回收算法- 二叉树的博客- 博客园](../Attachment/1613061-20190402233901904-174836171.png)
 
 ### 为什么标记复制比标记整理快
 
@@ -489,7 +489,7 @@ Serial（串行）收集器是最基本、历史最悠久的垃圾收集器了�
 
 **新生代采用标记-复制算法，老年代采用标记-整理算法。**
 
-![Java垃圾收集器——Serial，Parallel，CMS，G1收集器概述- 从此寂静无声- 博客园](/home/autmaple/Documents/Notes/Attachment/764719-20191024100325437-1474024004.png)
+![Java垃圾收集器——Serial，Parallel，CMS，G1收集器概述- 从此寂静无声- 博客园](../Attachment/764719-20191024100325437-1474024004.png)
 
 虚拟机的设计者们当然知道 Stop The World 带来的不良用户体验，所以在后续的垃圾收集器设计中停顿时间在不断缩短（仍然还有停顿，寻找最优秀的垃圾收集器的过程仍然在继续）。
 
@@ -501,7 +501,7 @@ Serial（串行）收集器是最基本、历史最悠久的垃圾收集器了�
 
 **新生代采用标记-复制算法，老年代采用标记-整理算法。**
 
-![ParNew 回收器——并行回收_实践求真知-CSDN博客](/home/autmaple/Documents/Notes/Attachment/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2NoZW5ncWl1bWluZw==,size_16,color_FFFFFF,t_70.png)
+![ParNew 回收器——并行回收_实践求真知-CSDN博客](../Attachment/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2NoZW5ncWl1bWluZw==,size_16,color_FFFFFF,t_70.png)
 
 它是许多运行在 Server 模式下的虚拟机的首要选择，除了 Serial 收集器外，只有它能与 `CMS` 收集器（真正意义上的并发收集器，后面会介绍到）配合工作。
 
@@ -560,7 +560,7 @@ JDK 1.8 默认使用的是 Parallel Scavenge + Parallel Old，如果指定了 `-
 - **重新标记：** 重新标记阶段就是为了修正并发标记期间因为用户程序继续运行而导致标记产生变动的那一部分对象的标记记录，这个阶段的停顿时间一般会比初始标记阶段的时间稍长，远远比并发标记阶段时间短
 - **并发清除：** 开启用户线程，同时 GC 线程开始对未标记的区域做清扫。
 
-![CMS收集器实测，发现不一样的知识点！ - 知乎](/home/autmaple/Documents/Notes/Attachment/v2-a6e19af024d64b6ba482f00b066fa6f3_1440w.jpg)
+![CMS收集器实测，发现不一样的知识点！ - 知乎](../Attachment/v2-a6e19af024d64b6ba482f00b066fa6f3_1440w.jpg)
 
 从它的名字就可以看出它是一款优秀的垃圾收集器，主要优点：**并发收集、低停顿**。但是它有下面三个明显的缺点：
 
@@ -691,7 +691,7 @@ ClassFile {
 }
 ```
 
-![img](/home/autmaple/Documents/Notes/Attachment/16d5ec47609818fc.jpeg)
+![img](../Attachment/16d5ec47609818fc.jpeg)
 
 ### 魔数(Magic Number)
 
@@ -756,7 +756,7 @@ cp_info        constant_pool[constant_pool_count-1];//常量池
 
 在常量池结束之后，紧接着的两个字节代表访问标志，这个标志用于识别一些类或者接口层次的访问信息，包括：这个 Class 是类还是接口，是否为 `public` 或者 `abstract` 类型，如果是类的话是否声明为 `final` 等等。
 
-![类访问和属性修饰符](/home/autmaple/Documents/Notes/Attachment/访问标志.png)
+![类访问和属性修饰符](../Attachment/访问标志.png)
 
 ### 当前类（This Class）、父类（Super Class）、接口（Interfaces）索引集合
 
@@ -782,7 +782,7 @@ field_info     fields[fields_count];//一个类会可以有个字段
 
 **field info(字段表) 的结构:**
 
-![字段表的结构 ](/home/autmaple/Documents/Notes/Attachment/字段表的结构.png)
+![字段表的结构 ](../Attachment/字段表的结构.png)
 
 - **access_flags:** 字段的作用域（`public` ,`private`,`protected`修饰符），是实例变量还是类变量（`static`修饰符）,可否被序列化（transient 修饰符）,可变性（final）,可见性（volatile 修饰符，是否强制从主内存读写）。
 - **name_index:** 对常量池的引用，表示的字段的名称；
@@ -794,7 +794,7 @@ field_info     fields[fields_count];//一个类会可以有个字段
 
 **字段的 access_flag 的取值:**
 
-![字段的 access_flag 的取值](/home/autmaple/Documents/Notes/Attachment/image-20201031084342859.png)
+![字段的 access_flag 的取值](../Attachment/image-20201031084342859.png)
 
 ### 方法表集合（Methods）
 
@@ -809,11 +809,11 @@ Class 文件存储格式中对方法的描述与对字段的描述几乎采用�
 
 **method_info(方法表的) 结构:**
 
-![方法表的结构](/home/autmaple/Documents/Notes/Attachment/方法表的结构.png)
+![方法表的结构](../Attachment/方法表的结构.png)
 
 **方法表的 access_flag 取值：**
 
-![方法表的 access_flag 取值](/home/autmaple/Documents/Notes/Attachment/image-20201031084248965.png)
+![方法表的 access_flag 取值](../Attachment/image-20201031084248965.png)
 
 注意：因为 `volatile` 修饰符和 `transient` 修饰符不可以修饰方法，所以方法表的访问标志中没有这两个对应的标志，但是增加了 `synchronized`、`native`、`abstract` 等关键字修饰方法，所以也就多了这些关键字对应的标志。
 
@@ -830,7 +830,7 @@ Class 文件存储格式中对方法的描述与对字段的描述几乎采用�
 
 ## 类的完整生命过程
 
-![类的生命周期- longda666 - 博客园](/home/autmaple/Documents/Notes/Attachment/2115723-20210227204312919-1850617829.png)
+![类的生命周期- longda666 - 博客园](../Attachment/2115723-20210227204312919-1850617829.png)
 
 ## 类加载过程
 
@@ -856,7 +856,7 @@ Class 文件需要加载到虚拟机中之后才能运行和使用，那么虚�
 
 ### 验证
 
-![img](/home/autmaple/Documents/Notes/Attachment/验证阶段.png)
+![img](../Attachment/验证阶段.png)
 
 ###  准备
 
@@ -994,7 +994,7 @@ ClassLoader 只负责 class 文件的加载，而是否能够运行则由 Execut
 
 每一个类都有一个对应它的类加载器。系统中的 ClassLoader 在协同工作的时候会默认使用 **双亲委派模型** 。即在类加载的时候，系统会首先判断当前类是否被加载过。已经被加载的类会直接返回，否则才会尝试加载。加载的时候，首先会把该请求委派给父类加载器的 `loadClass()` 处理，因此**所有的请求最终都应该传送到顶层的启动类加载器 `BootstrapClassLoader` 中**。当父类加载器无法处理时，才由自己来处理。当父类加载器为 null 时，会使用启动类加载器 `BootstrapClassLoader` 作为父类加载器。
 
-![ClassLoader](/home/autmaple/Documents/Notes/Attachment/classloader_WPS图片.png)
+![ClassLoader](../Attachment/classloader_WPS图片.png)
 
 每个类加载都有一个父类加载器，我们通过下面的程序来验证。
 
@@ -1196,8 +1196,8 @@ JVM具有四种类型的*GC*实现：
 
 对于已经发⽣了 OOM 的系统：
 1. ⼀般⽣产系统中都会设置当系统发⽣了 OOM 时，⽣成当时的 dump ⽂件（-
-  XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/base）
-  22 我们可以利⽤ jsisualvm 等⼯具来分析 dump ⽂件
+    XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/base）
+    22 我们可以利⽤ jsisualvm 等⼯具来分析 dump ⽂件
 2. 根据 dump ⽂件找到异常的实例对象，和异常的线程（占⽤ CPU ⾼），定位到具体的代码
 3. 然后再进⾏详细的分析和调试
 

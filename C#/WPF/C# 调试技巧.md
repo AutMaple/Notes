@@ -1,4 +1,4 @@
-## 1. Evaluate an expression with or without side effects
+Evaluate an expression with or without side effects
 
 Sometimes, during debugging, we want to evaluate an expression that can change application state when executed. For example, a property’s getter that modifies a static variable. This can corrupt our debugging session. There’s a way however, to evaluate expressions without side effects.
 
@@ -19,13 +19,13 @@ class MyClass
 
 If I evaluate **Foo** in the Immediate Window, **number** will increase and my application state will be changed:
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/immediate-window-eval-1-1.jpg)
+![img](../../Attachment/immediate-window-eval-1-1.jpg)
 
 We can see here that `m.number` increased from 1 to 2.
 
 **By adding `, nse` (No Side Effects) to the expression will evaluate without changing the application state.**
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/immediate-window-eval-2-1-unchanged.jpg)
+![img](../../Attachment/immediate-window-eval-2-1-unchanged.jpg)
 
 Now we can see that the evaluation returned correctly, and `m.number` stayed the same.
 
@@ -37,11 +37,11 @@ Adding `, nse` runs the code in a sandbox environment of sorts and application s
 
 While debugging, Visual Studio will always break on Unhandled Exceptions. As for Handled Exceptions, you can control whether to break on them in the Exceptions Settings Tool Window. In Menu, go to Debug -> Windows -> Exception Settings:
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/exception-settings-tool-window.jpg)
+![img](../../Attachment/exception-settings-tool-window.jpg)
 
 Toggling CLR exceptions controls whether to break on managed exceptions. You can even select specific exception types to ignore.
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/exception-thrown.jpg)
+![img](../../Attachment/exception-thrown.jpg)
 
 This is a very useful debugging feature to catch problems in the application. Whenever something doesn’t work for an unexplained reason, there’s a good chance an exception was thrown.
 
@@ -51,7 +51,7 @@ By default, VS will break only on Exceptions thrown in your code. However, there
 
 To break on exceptions from all code, go to **Tools -> Options** and in **Debugging**, uncheck “Enable Just My Code”.
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/enable-just-my-code.jpg)
+![img](../../Attachment/enable-just-my-code.jpg)
 
 Now you’ll break on all exceptions, including in the methods of your references. You probably won’t see the code since you don’t have the symbols of that library, but you will see the Call Stack and Exception type.
 
@@ -65,7 +65,7 @@ Sometimes you’ll encounter problems in your references that you’ll need to i
 
 DnSpy will decompile and reveal source code of any .dll or .exe file. You can then place breakpoints in the decompiled source code and debug. Here’s me debugging **Newtonsoft.Json**‘s “SerializeObject” method:
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/dnspy-debugging-1024x532.jpg)
+![img](../../Attachment/dnspy-debugging-1024x532.jpg)
 
 Using DnSpy is pretty straightforward. First, copy the path of the referenced library you want to debug and open it in DnSpy. You will be able to see the decompiled source code. Then, search the method you want to debug and place a breakpoint. Finally, run your program from DnSpy with F5 (you can also Attach to Process). As the breakpoint hits, DnSpy will break and you can debug just like in VS with Step Over and Step Into (F10 and F11).
 
@@ -91,11 +91,11 @@ There are some issues and bugs with this from my experience. Sometimes it doesn�
 
 [OzCode](https://www.oz-code.com/) is a unique VS extensions to help debugging. There are a lot of excellent [features](https://oz-code.com/features/) that will help debugging. For example, [Head-Up Display](https://oz-code.com/features/#headUpDisplay);
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/ozcode-investigate2.png)
+![img](../../Attachment/ozcode-investigate2.png)
 
 And [Reveal](https://oz-code.com/features/#reveal):
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/Reveal.gif)
+![img](../../Attachment/Reveal.gif)
 
 ###### **Disclaimer**: I am currently an OzCode employee. This is however, my personal blog and this post is not a promotion, just a professional recommendation.
 
@@ -107,7 +107,7 @@ VS debugger exposes some special variables, all starting with the $ sign.
 
 In a catch clause, **$exception** will give the exception instance value. You can see it in **Locals** tool window. You can also evaluate it in **Immediate Window** or any **Watch** tool window.
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/special-var-exception.jpg)
+![img](../../Attachment/special-var-exception-165966963002110.jpg)
 
 **$ReturnValue**
 
@@ -117,17 +117,17 @@ You can see a method’s returns value with the special **$ReturnValue** variabl
 
 A useful feature in VS is to give ID number to a specific object instance. This is available from the hover DataTip:
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/make-object-ID.jpg)
+![img](../../Attachment/make-object-ID-165966966455713.jpg)
 
 This will give this instance the ID **$1**. Typing $1 in the immediate window or watch window will evaluate this instance (works globally, in any breakpoint scope). Any variable referencing $1 will show the $1 in the DataTip:
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/object-ID-referencing.jpg)
+![img](../../Attachment/object-ID-referencing.jpg)
 
 ### $user
 
 Holds information on the user that’s running the current process
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/special-var-user2.jpg)
+![img](../../Attachment/special-var-user2.jpg)
 
 ## 7. Make sense of a complicated scenario with dotTrace Performance Profiler
 
@@ -139,7 +139,7 @@ There are a lot of ways to go about it. You can try to find UI event handlers, g
 
 Suppose I record the 10 seconds where my bug reproduces. Now, dotTrace will show a list of all the methods called during the recording.
 
-![img](https://michaelscodingspot.com/wp-content/uploads/2018/01/dotTraceMethodList.png)
+![img](../../Attachment/dotTraceMethodList.png)
 
 There’s a bunch of useful information and [features](https://www.jetbrains.com/profiler/features/), much for performance profiling. In particular, you can see how much time was spent on each method. You can also view which methods were called by a specific method and the other way round – which method called the specific method.
 

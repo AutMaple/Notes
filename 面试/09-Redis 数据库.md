@@ -174,7 +174,7 @@ OK
 
 我专门画了一个图方便小伙伴们来理解：
 
-![redis list](/home/autmaple/Documents/Notes/Attachment/redis-list.e79ad4dd.png)
+![redis list](../Attachment/redis-list.e79ad4dd.png)
 
 通过 `lrange` 查看对应下标范围的列表元素：
 
@@ -399,7 +399,7 @@ Redis 通过**IO 多路复用程序** 来监听来自客户端的大量连接（
 - 文件事件分派器（将 socket 关联到相应的事件处理器）
 - 事件处理器（连接应答处理器、命令请求处理器、命令回复处理器）
 
-![img](/home/autmaple/Documents/Notes/Attachment/redis事件处理器.66ac2f3d.png)
+![img](../Attachment/redis事件处理器.66ac2f3d.png)
 
 ## 缓存穿透
 

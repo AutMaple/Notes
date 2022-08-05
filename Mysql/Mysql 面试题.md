@@ -14,7 +14,7 @@ B+ 树全节点遍历更快：B+ 树遍历整棵树只需要遍历所有的叶�
 
 # Mysql 调优
 
-![img](/home/autmaple/Documents/Notes/Attachment/008i3skNgy1gtzx3bvkbkj61c40bsq5o02.jpg)
+![img](../Attachment/008i3skNgy1gtzx3bvkbkj61c40bsq5o02.jpg)
 
 理论上来说，如果表有一定的数据量，那就应该要创建对应的索引
 

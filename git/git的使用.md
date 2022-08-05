@@ -43,7 +43,7 @@ git remote add origin git@git.local.com:rp-cilent/rp-processedit.git
 - 暂存区：`.git/index` 文件夹下的内容
 - 版本库: `.git` 文件夹
 
-![img](/home/autmaple/Documents/Notes/Attachment/1352126739_7909.jpg)
+![img](../Attachment/1352126739_7909.jpg)
 
 说明：
 

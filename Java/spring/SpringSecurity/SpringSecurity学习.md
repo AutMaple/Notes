@@ -48,7 +48,7 @@ Sometimes, an application has logical groups of protected resources (for example
 
 ProviderManager 实例共享一个 parent, 这个父类用作全局资源的一种，并作为所有 Provider 的后备资源
 
-![AuthenticationManager 层次图](/home/autmaple/Downloads/authentication.png)
+![一文带你了解强大的Spring Security 架构原理！ - 知乎](../../../Attachment/v2-19992a59bb9ffbc0b14ed45613139986_1440w-165967043857619.jpg)
 
 # Authentication Managers
 

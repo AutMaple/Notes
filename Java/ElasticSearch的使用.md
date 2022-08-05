@@ -35,7 +35,7 @@ ElasticSearch 的主要目标是索引、搜索和分析。
 
 在实际使用的过程中，我们可以把请求发送给 data/ingest/coordination 节点，而不能发送给 master 节点。
 
-![img](/home/autmaple/Documents/Notes/Attachment/cf3b26d6938f4be1b0e1064340839940-16558180192663.png)
+![img](../Attachment/cf3b26d6938f4be1b0e1064340839940-16558180192663.png)
 
 ### 集群的三种状态
 

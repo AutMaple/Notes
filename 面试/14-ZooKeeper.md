@@ -12,7 +12,7 @@ ZooKeeper 是一个典型的 __分布式数据一致性解决方案__，分布�
 
 ZooKeeper 一个最常用的使用场景就是用于担任服务生产者和服务消费者的注册中心。
 
-![ZooKeeper集群架构以及读写原理](/home/autmaple/Documents/Notes/Attachment/ZookeeperCluster_1583048208304.jpg)
+![ZooKeeper集群架构以及读写原理](../Attachment/ZookeeperCluster_1583048208304.jpg)
 
 # ZooKeeper 的一些重要概念
 
@@ -102,7 +102,7 @@ ZooKeeper 采用 ACL（Access Control Lists）策略来进行权限控制，类�
 
 ZooKeeper 允许分布式进程通过共享的 __层次结构命名空间__ 进行相互协调，这与标准文件系统类似。 名称空间由 ZooKeeper 中的数据寄存器组成 - 称为 ZNode，这些类似于文件和目录。 与为存储设计的典型文件系统不同，ZooKeeper __数据保存在内存中__，这意味着 ZooKeeper 可以实现高吞吐量和低延迟。
 
-![img](/home/autmaple/Documents/Notes/Attachment/165c68aae393583ftplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/165c68aae393583ftplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 ## 可构建集群
 
@@ -110,7 +110,7 @@ ZooKeeper 允许分布式进程通过共享的 __层次结构命名空间__ 进�
 
 __ZooKeeper 官方提供的架构图：__
 
-![Zookeeper集群搭建- W\&L - 博客园](/home/autmaple/Documents/Notes/Attachment/08-26-01.png)
+![Zookeeper集群搭建- W\&L - 博客园](../Attachment/08-26-01.png)
 
 上图中每一个 Server 代表一个安装 ZooKeeper 服务的服务器。组成 ZooKeeper 服务的服务器都会在内存中维护当前的服务器状态，并且每台服务器之间都互相保持着通信。__集群间通过 ZAB 协议（ZooKeeper Atomic Broadcast）来保持数据的一致性。__
 
@@ -146,7 +146,7 @@ __ZooKeeper 有这样一个特性：集群中只要有过半的机器是正常�
 
 但是，在 ZooKeeper 中没有选择传统的  Master/Slave 概念，而是引入了 Leader、Follower 和 Observer 三种角色
 
-![一文了解Zookeeper 基本原理与应用场景\_Focus on Bigdata-程序员ITS404 - 程序员ITS404](/home/autmaple/Documents/Notes/Attachment/format,png.png)
+![一文了解Zookeeper 基本原理与应用场景\_Focus on Bigdata-程序员ITS404 - 程序员ITS404](../Attachment/format,png.png)
 
 * ZooKeeper 集群中的所有机器通过一个 Leader 选举过程来选定一台称为 “Leader” 的机器，Leader 既可以为客户端提供写服务又能提供读服务。
 * 除了 Leader 外，Follower 和  Observer 都只能提供读服务。
@@ -170,7 +170,7 @@ ZAB 协议包括两种基本的模式，分别是 __崩溃恢复和消息广播_
 
 # ZooKeeper 工作流程
 
-![ZooKeeper 如何保证数据一致性- sw\_kong - 博客园](/home/autmaple/Documents/Notes/Attachment/1735488-20200427131416250-2132266842.png)
+![ZooKeeper 如何保证数据一致性- sw\_kong - 博客园](../Attachment/1735488-20200427131416250-2132266842.png)
 
 既然是集群模式，那集群中各个节点的数据一致性就成了问题，而 ZooKeeper 的工作原理恰好能保证了他集群内节点的数据一致性。具体流程如下：
 

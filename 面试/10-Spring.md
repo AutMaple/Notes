@@ -21,7 +21,7 @@ Spring 提供的核心功能主要是 IOC 和 AOP。学习 Spring ，一定要�
 
 ## 核心组件
 
-![Spring主要模块](/home/autmaple/Documents/Notes/Attachment/e0c60b4606711fc4a0b6faf03230247a.png)
+![Spring主要模块](../Attachment/e0c60b4606711fc4a0b6faf03230247a.png)
 
 - Core Container: 核心模块，Spring 其他所有的功能基本都需要依赖于该类库，主要提供 IOC 依赖注入功能的支持。
 - Aspects: 该模块为与 AspectJ 的集成提供支持。
@@ -55,7 +55,7 @@ Spring 提供的核心功能主要是 IOC 和 AOP。学习 Spring ，一定要�
 - IoC(思想，设计模式)主要的实现方式有两种：依赖查找，**依赖注入**。
 - 依赖注入是一种更可取的方式(实现的方式)
 
-![img](/home/autmaple/Documents/Notes/Attachment/frc-365faceb5697f04f31399937c059c162.png)
+![img](../Attachment/frc-365faceb5697f04f31399937c059c162.png)
 
 IoC 容器就像是一个大工厂一样，当我们需要创建一个对象的时候，只需要配置好配置文件/注解即可，完全不用考虑对象是如何被创建出来的。
 
@@ -87,7 +87,7 @@ AOP(Aspect-Oriented Programming:面向切面编程)能够将那些与业务无�
 
 Spring AOP 就是基于动态代理的，如果要代理的对象，实现了某个接口，那么 Spring AOP 会使用 **JDK Proxy**，去创建代理对象，而对于没有实现接口的对象，就无法使用 JDK Proxy 去进行代理了，这时候 Spring AOP 会使用 **Cglib** 生成一个被代理对象的子类来作为代理，如下图所示：
 
-![SpringAOPProcess](/home/autmaple/Documents/Notes/Attachment/926dfc549b06d280a37397f9fd49bf9d.jpg)
+![SpringAOPProcess](../Attachment/926dfc549b06d280a37397f9fd49bf9d.jpg)
 
 当然你也可以使用 **AspectJ** ！Spring AOP 已经集成了 AspectJ ，AspectJ 应该算的上是 Java 生态系统中最完整的 AOP 框架了。
 
@@ -97,7 +97,7 @@ Spring AOP 就是基于动态代理的，如果要代理的对象，实现了某
 
 MVC 是模型(Model)、视图(View)、控制器(Controller)的简写，其核心思想是通过将业务逻辑、数据、显示分离来组织代码。
 
-![img](/home/autmaple/Documents/Notes/Attachment/image-20210809181452421.png)
+![img](../Attachment/image-20210809181452421.png)
 
 网上有很多人说 MVC 不是设计模式，只是软件设计规范，我个人更倾向于 MVC 同样是众多设计模式中的一种
 
@@ -107,7 +107,7 @@ MVC 是一种设计模式,Spring MVC 是一款很优秀的 MVC 框架。Spring M
 
 ## SpringMVC 的原理
 
-![img](/home/autmaple/Documents/Notes/Attachment/de6d2b213f112297298f3e223bf08f28.png)
+![img](../Attachment/de6d2b213f112297298f3e223bf08f28.png)
 
 **流程说明（重要）：**
 

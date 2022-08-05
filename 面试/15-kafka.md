@@ -42,7 +42,7 @@ Kafka 是支持消费者群组的，也就是说 Kafka 中会有一个或者多�
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068bb0f1a796tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068bb0f1a796tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -50,7 +50,7 @@ Kafka 是支持消费者群组的，也就是说 Kafka 中会有一个或者多�
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068bb477c550tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068bb477c550tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -58,7 +58,7 @@ Kafka 是支持消费者群组的，也就是说 Kafka 中会有一个或者多�
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068cc433bb21tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068cc433bb21tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -73,7 +73,7 @@ Kafka 有四个核心 API，它们分别是
 - Streams API，它允许应用程序作为流处理器，从一个或多个主题中消费输入流并为其生成输出流，有效的将输入流转换为输出流。
 - Connector API，它允许构建和运行将 Kafka 主题连接到现有应用程序或数据系统的可用生产者和消费者。例如，关系数据库的连接器可能会捕获对表的所有更改
 
-![](/home/autmaple/Documents/Notes/Attachment/16eb068ba7a2fbddtplv-t2oaga2asx-zoom-in-crop-mark1304000-164904852085711.awebp)
+![](../Attachment/16eb068ba7a2fbddtplv-t2oaga2asx-zoom-in-crop-mark1304000-164904852085711.ajpg)
 
 ## Kafka 为何如此之快
 
@@ -114,7 +114,7 @@ offset 是一个递增不可变的数字，由 Kafka 自动生成和维护
 
 当一条 Record 写入 Partition 时，它会追加到 log 文件的末尾, 并分配一个序号作为 offset。
 
-![Anatomy of a Kafka Topic and Partitions (from Kafka website) | Download  Scientific Diagram](/home/autmaple/Documents/Notes/Attachment/Anatomy-of-a-Kafka-Topic-and-Partitions-from-Kafka-website.png)
+![Anatomy of a Kafka Topic and Partitions (from Kafka website) | Download  Scientific Diagram](../Attachment/Anatomy-of-a-Kafka-Topic-and-Partitions-from-Kafka-website.png)
 
 如上图，这个 Topic 有 3 个 Partition，向 Topic 发送消息的时候，实际上是写入某一个 Partition，并赋予 Offset。
 
@@ -126,7 +126,7 @@ offset 是一个递增不可变的数字，由 Kafka 自动生成和维护
 
 ## Partition 为 Kafka 提供了扩展能力
 
-![Basic concepts of Kafka. Kafka is a fault tolerant, scalable… | by Jhansi  Karee | Medium](/home/autmaple/Documents/Notes/Attachment/15rRUh5SMx2FI-THxpPhylA.png)
+![Basic concepts of Kafka. Kafka is a fault tolerant, scalable… | by Jhansi  Karee | Medium](../Attachment/15rRUh5SMx2FI-THxpPhylA.png)
 
 一个 Kafka 集群由多个 Broker（就是 Server） 构成，每个 Broker 中含有集群的部分数据。
 
@@ -324,7 +324,7 @@ JVM 端配置的另一个重要参数就是垃圾回收器的设置，也就是�
 在 Kafka 中，我们把产生消息的那一方称为生产者，比如我们经常回去淘宝购物，你打开淘宝的那一刻，你的登陆信息，登陆次数都会作为消息传输到 Kafka 后台，当你浏览购物的时候，你的浏览信息，你的搜索指数，你的购物爱好都会作为一个个消息传递给 Kafka 后台，然后淘宝会根据你的爱好做智能推荐，致使你的钱包从来都禁不住诱惑，那么这些生产者产生的消息是怎么传到 Kafka 应用程序的呢？发送过程是怎么样的呢？
 尽管消息的产生非常简单，但是消息的发送过程还是比较复杂的，如图:
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068cd8d08784tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068cd8d08784tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 我们从创建一个 `ProducerRecord` 对象开始，ProducerRecord 是 Kafka 中的一个核心类，它代表了一组 Kafka 需要发送的 `key/value` 键值对，它由记录要发送到的主题名称（Topic Name），可选的分区号（Partition Number）以及可选的键值对构成。
 
@@ -402,7 +402,7 @@ public ProducerRecord(String topic, K key, V value) {}
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068ce25704e8tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068ce25704e8tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -504,7 +504,7 @@ Partitioner 类有三个方法，分别来解释一下
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068cdf11869etplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068cdf11869etplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -516,7 +516,7 @@ Partitioner 类有三个方法，分别来解释一下
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068ce25be1dbtplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068ce25be1dbtplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -537,7 +537,7 @@ return ThreadLocalRandom.current().nextInt(partitions.size());
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068cdc3ca978tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068cdc3ca978tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -609,13 +609,13 @@ acks 参数指定了要有多少个分区副本接收消息，生产者才认为
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068cf4f6ba76tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068cf4f6ba76tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068d4a803cc4tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068d4a803cc4tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -659,7 +659,7 @@ Kafka 消费者从属于`消费者群组`。一个群组中的消费者订阅的
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068eb30222dctplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068eb30222dctplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -667,7 +667,7 @@ Kafka 消费者从属于`消费者群组`。一个群组中的消费者订阅的
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068f1af13377tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068f1af13377tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -675,7 +675,7 @@ Kafka 消费者从属于`消费者群组`。一个群组中的消费者订阅的
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb069033019b60tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb069033019b60tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -683,7 +683,7 @@ Kafka 消费者从属于`消费者群组`。一个群组中的消费者订阅的
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb068f986c4185tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb068f986c4185tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -693,7 +693,7 @@ Kafka 一个很重要的特性就是，只需写入一次消息，可以支持�
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb0690843c4d19tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb0690843c4d19tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -718,7 +718,7 @@ Kafka 一个很重要的特性就是，只需写入一次消息，可以支持�
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb06909972f3f2tplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb06909972f3f2tplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -856,7 +856,7 @@ socket 在读写数据时用到的 TCP 缓冲区也可以设置大小。如果�
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb0690b6721d0dtplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb0690b6721d0dtplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -864,7 +864,7 @@ socket 在读写数据时用到的 TCP 缓冲区也可以设置大小。如果�
 
 
 
-![img](/home/autmaple/Documents/Notes/Attachment/16eb0691023e677etplv-t2oaga2asx-zoom-in-crop-mark1304000.webp)
+![img](../Attachment/16eb0691023e677etplv-t2oaga2asx-zoom-in-crop-mark1304000.jpg)
 
 
 
@@ -900,7 +900,7 @@ commitSync() 将会提交由 poll() 返回的最新偏移量，如果处理完�
 
 # Kafka 与 ZooKeeper 是如何结合的
 
-![图片](/home/autmaple/Documents/Notes/Attachment/640.jpeg)
+![图片](../Attachment/640.jpeg)
 
 ZooKeeper 主要为 Kafka 提供元数据的管理的功能。
 

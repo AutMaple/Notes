@@ -28,13 +28,13 @@ Here are some scenarios where JSON Web Tokens are useful:
 
 在传统的 Web 应用程序中，我们使用 Session 来授权用户，当用户登录到应用程序后，我们会为该用户分配一个唯一的 Session Id。我们将此 Session Id 保存在用户浏览器的安全 cookie 中和服务器的内存中。我们对每个请求都使用相同的会话，以便服务器知道该用户已通过身份验证。对于每个请求，cookie 中的 Session Id 都会与服务器内存中的 Session Id 作匹配，以验证用户是否被授权。
 
-![Session Id Implementation](https://img2020.cnblogs.com/blog/2074831/202103/2074831-20210330020252363-247446431.png)
+![img](../Attachment/2074831-20210330020252363-247446431.png)
 
 #### JWT 实现
 
 在 JWT 实现中，我们使用 JWT 授权用户，当用户登录到应用程序后，就会为每个通过身份验证的用户生成一个唯一的 JWT。我们将该 token 保存在浏览器的 **local storage 或者 cookie 中，而不会在服务器端保存任何内容**。对于每个请求，该 token 都会被发送到服务器进行解密和验证，以核实该用户是否已授权，不管以何种方式篡改了 token 都会被拒绝。
 
-![Implementation with JWT](https://img2020.cnblogs.com/blog/2074831/202103/2074831-20210330020149159-1322327347.png)
+![img](../Attachment/2074831-20210330020149159-1322327347.png)
 
 这种实现对于小型站点来说很好，因为服务器不再需要存储 Session Id，从而减少了服务器的负载
 
@@ -44,7 +44,7 @@ Here are some scenarios where JSON Web Tokens are useful:
 
 #### Session Id 实现
 
-![Session Id Implementation Multiple Servers](https://img2020.cnblogs.com/blog/2074831/202103/2074831-20210330020325962-677994127.png)
+![img](../Attachment/2074831-20210330020325962-677994127.png)
 
 我们需要有一台连接到负载均衡器的新服务器，以便基于流量和可用性在 Web 服务器之间导航流量。这种实现给我们带来了一个新的问题，如下所示：
 
@@ -52,7 +52,7 @@ Here are some scenarios where JSON Web Tokens are useful:
 
 *用户将被认为已退出应用程序并被要求再次登录*，这不是一个好的用户体验。通常，我们解决这个问题的方法是引入缓存：
 
-![Session Id Implementation introducing cache](https://img2020.cnblogs.com/blog/2074831/202103/2074831-20210330020357842-6567073.png)
+![img](../Attachment/2074831-20210330020357842-6567073.png)
 
 现在，所有的 Session 也将同时保存在缓存中，因此任何一台服务器都可以检查该 Session 是否存在，并可以利用它来验证用户并授予他们对应用程序的访问权限。
 
@@ -70,7 +70,7 @@ Here are some scenarios where JSON Web Tokens are useful:
 
 不同于在 Cookie 中使用 Session Id 与服务器内存中的 Session 作匹配；我们可以使用 JWT 来代替它。此时，当用户登录到我们的应用程序时，服务器将不会生成 Session Id 并将其保存在内存中，而是会创建一个 JWT token，并对其进行编码和序列化，然后使用自己的加密机制对其进行签名。通过这种方式，服务将知道一旦对它做了变更或篡改，便将其变为无效。由于通过服务器的加密机制对其进行了签名，所以这是可以被检验的。
 
-![Implementation with JWT Multiple Servers](https://img2020.cnblogs.com/blog/2074831/202103/2074831-20210330020438448-1268213585.png)
+![img](../Attachment/2074831-20210330020438448-1268213585.png)
 
 使用 JWT 可以更容易地管理可伸缩性，因为我们不需要服务器来处理任何会话检查或缓存检查。请求可以转发到负载均衡器为其分配的任一服务器，而无需担心会话的可用性。万一某台服务器宕机，所有的 token 将仍然有效，因为所有服务器上的加密机制是一样的。
 
@@ -86,7 +86,7 @@ Here are some scenarios where JSON Web Tokens are useful:
 - 所有信息都存储于 token 本身中
 - 易于缩放
 
-![quick JWT summary](https://img2020.cnblogs.com/blog/2074831/202103/2074831-20210330020517987-1336836798.png)
+![img](../Attachment/2074831-20210330020517987-1336836798.png)
 
 #### Session Id
 
@@ -96,7 +96,7 @@ Here are some scenarios where JSON Web Tokens are useful:
 - 服务器需要查找用户并进行必要的检查
 - 难以缩放
 
-![quick Session Id summary](https://img2020.cnblogs.com/blog/2074831/202103/2074831-20210330020550544-1890643182.png)
+![img](../Attachment/2074831-20210330020550544-1890643182.png)
 
 ## JWT 结构
 

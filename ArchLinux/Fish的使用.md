@@ -30,10 +30,6 @@ function fish_prompt
 end
 ```
 
-显示的结果如下
-
-![image-20220328101226987](/home/autmaple/Documents/Notes/Attachment/image-20220328101226987.png)
-
 ## 快捷键
 
 | 快捷键                     | 描述                             |
