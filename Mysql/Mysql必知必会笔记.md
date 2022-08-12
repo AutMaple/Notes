@@ -218,3 +218,156 @@ Group By 相关规定：
 
 - where 和 having 的区别就是 where 过滤的是行，having 过滤的是分组
 - WHERE 在数据分组前进行过滤，HAVING 在数据分组后进行过滤
+
+# 组合查询 Union
+
+MySQL 允许执行多个查询(多条 SELECT 语句)，并将结果作为单个查询结果集返回。这些组合查询通常称为并(union)或复合查询(compound query)。
+
+有两种基本情况，其中需要使用组合查询：
+
+- 在单个查询中从不同的表返回类似结构的数据；
+- 对单个表执行多个查询，按单个查询返回数据。
+
+任何具有多个 WHERE 子句的 SELECT 语句都可以作为一个组合查询给出
+
+## Union 的规则
+
+- UNION 必须由两条或两条以上的 SELECT 语句组成，语句之间用关键字 UNION 分隔，因此，如果组合 4 条 SELECT 语句，将要使用 3 个 UNION 关键字
+- UNION 中的每个查询必须包含相同的列、表达式或聚集函数，不过各个列不需要以相同的次序列出
+- 列数据类型必须兼容：类型不必完全相同，但必须是 DBMS 可以隐式转换的类型
+- UNION 默认会从查询结果集中自动去除重复的行，如果不想去掉重复的行，则需要使用 UNION ALL 关键字
+- 在用 UNION 组合查询时，如果要使用排序，只能使用一条 ORDER BY 子句，并且它必须出现在最后一条 SELECT 语句之后
+
+# 全文索引
+
+在使用全文本搜索时，MySQL 不需要分别查看每个行，不需要分别分析和处理每个词。MySQL 创建指定列中各词的一个索引，搜索可以针对这些词进行。这样，MySQL 可以快速有效地决定哪些词匹配（哪些行包含它们），哪些词不匹配，它们匹配的频率，等等。全文本搜索的一
+个重要部分就是对结果排序，具有较高等级的行先返回，如要搜索的词在某行是第 4 个单词，在另外一行中是第 10 个单词，那么在第 4 个单词出现的行会优先被返回。
+
+为了使用全文索引，必须对搜索的列创建全文索引，在创建索引之后，SELECT 可与 Match() 和 Against() 一起使用以实际执行搜索。
+
+要创建全文索引，需要在创建表时进行声明，同时，被索引的列之间使用逗号隔开
+
+```sql
+CREATE TABLE productnotes
+(
+    note_id int NOT NULL AUTO INCREMENT,
+    prod_id char(10) NOT NULL,
+    note_date datetime NOT NULL,
+    note_text text NULL,
+    PRIMARY KEY(note_id),
+    FULLTEXT(note_text)
+)ENGINE=MyISAM;
+```
+
+> 不要在导入数据时使用 FULLTEXT 更新索引要花时间，虽然不是很多，但毕竟要花时间。如果正在导入数据到一个新表，此时不应该启用FULLTEXT 索引。应该首先导入所有数据，然后再修改表，定义FULLTEXT。这样有助于更快地导入数据（而且使索引数据的总时间小于在导入每行时分别进行索引所需的总时间）
+
+## 使用全文索引
+
+在索引之后，使用两个函数 Match() 和 Against() 执行全文本搜索，其中 Match() 指定被搜索的列，Against() 指定要使用的搜索表达式。
+
+```sql
+SELECt note_text
+FROM productnotes
+WHERE Match(note_text) Against('rabbit');
+```
+
+分析：
+
+此 SELECT 语句检索单个列 note_text。由于 WHERE 子句，一个全文本搜索被执行。Match(note_text) 指示 MySQL 针对指定的列进行搜索，Against('rabbit') 指定词 rabbit 作为搜索文本
+
+# 插入语句
+
+MySQL 用单条 INSERT 语句处理多个插入比使用多条 INSERT 语句快。
+
+## 插入检索出来的数据(INSERT SELECT)
+
+```sql
+INSERT INTO customers 
+(
+    cust_id,
+    cust_contact,
+    cust_email,
+    cust_name,
+    cust_address,
+    cust_city,
+    cust_state,
+    cust_zip,
+    cust_country
+)
+SELECT 
+	cust_id,
+	cust_contact,
+	cust_email,
+	cust_name,
+	cust_address,
+	cust_city,
+	cust_state,
+	cust_zip,
+	cust_country
+FROM custnew;
+```
+
+这个例子使用 INSERT SELECT 从 custnew 中将所有数据导入 customers
+
+> INSERT SELECT 中的列名 为简单起见，这个例子在 INSERT 和 SELECT 语句中使用了相同的列名。但是，不一定要求列名匹配。事实上，**MySQL 甚至不关心 SELECT 返回的列名。它使用的是列的位置，因此 SELECT 中的第一列（不管其列名）将用来填充表列中指定的第一个列，第二列将用来填充表列中指定的第二个列，如此等等。**这对于从使用不同列名的表中导入数据是非常有用的。
+
+INSERT SELECT 中 SELECT 语句可包含 WHERE 子句以过滤插入的数据。
+
+# 创建表
+
+## AUTO_INCREMENT
+
+每个表只允许一个 AUTO_INCREMENT 列，而且它必须被索引
+
+获取 AUTO_INCREMENT 自动增长的值：SELECT last_insert_id();
+
+## 默认值 DEFAULT
+
+MySQL 不允许使用函数作为默认值，它只支持常量。尽可能的使用默认值，而不要使用 NULL
+
+# 视图
+
+视图是虚拟的表,它不包含表中应该有的任何列或数据，它包含的是一个 SQL 查询。
+
+视图仅仅是用来查看存储在别处数据的一种方式
+
+## 视图常见的应用
+
+- 重用SQL语句。
+- 简化复杂的 SQL 操作。在编写查询后，可以方便地重用它而不必知道它的基本查询细节。
+- 使用表的组成部分而不是整个表。
+- 保护数据。可以给用户授予表的特定部分的访问权限而不是整个表的访问权限。
+- 更改数据格式和表示。视图可返回与底层表的表示和格式不同的数据。
+
+在视图创建之后，可以用与表基本相同的方式利用它们。可以对视图执行 SELECT 操作，过滤和排序数据，将视图联结到其他视图或表，甚
+至能添加和更新数据(添加和更新数据存在某些限制)
+
+## 视图的规则和限制
+
+- 与表一样，视图必须唯一命名（不能给视图取与别的视图或表相同的名字）
+- 对于可以创建的视图数目没有限制。
+- 为了创建视图，必须具有足够的访问权限。这些限制通常由数据库管理人员授予。
+- 视图可以嵌套，即可以利用从其他视图中检索数据的查询来构造一个视图。
+- ORDER BY 可以用在视图中，但如果从该视图检索数据 SELECT 中也含有 ORDER BY，那么该视图中的 ORDER BY 将被覆盖。
+- 视图不能索引，也不能有关联的触发器或默认值。
+- 视图可以和表一起使用。例如，编写一条联结表和视图的 SELECT 语句。
+
+在 MySQL 处理在视图上的查询时，它会把在视图上执行的 SQL 语句中的 WHERE 子句添加到创建视图的 SQL 语句中的 WHERE 子句中，以便正确过滤数据。
+
+## 视图的更新
+
+如果视图定义中有以下操作，则不能进行视图的更新:
+
+- 分组（使用GROUP BY和HAVING）
+- 联结
+- 子查询
+- 并
+- 聚集函数(Min()、Count()、Sum()等)
+- DISTINCT
+- 导出（计算）列
+
+通常来说，视图是用于查询数据的，不用于更新数据
+
+## 性能问题
+
+因为视图不包含数据，所以每次使用视图时，都必须处理查询执行时所需的任一个检索。如果你用多个联结和过滤创建了复杂的视图或者嵌套了视图，可能会发现性能下降得很厉害。因此，在部署使用了大量视图的应用前，应该进行测试。
