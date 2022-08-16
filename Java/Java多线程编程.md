@@ -198,3 +198,69 @@ static final class SuppliedThreadLocal<T> extends ThreadLocal<T> {
 # 使用工厂创建线程
 
 Java 提供了一个接口(ThreadFactory接口) 来实现线程对象工厂
+
+# Java 锁
+
+![图片](../Attachment/640.jpeg)
+
+## 乐观锁和悲观锁
+
+### 乐观锁
+
+乐观锁认为自己在使用数据时不会有别的线程修改数据，所以不会添加锁，只是在更新数据的时候去判断之前有没有别的线程更新了这个数据。如果这个数据没有被更新，当前线程将自己修改的数据成功写入。如果数据已经被其他线程更新，则根据不同的实现方式执行不同的操作
+
+乐观锁在 Java 中是通过使用无锁编程来实现，最常采用的是 CAS 算法，Java 原子类中的递增操作就通过 CAS 自旋实现的。
+
+![图片](../Attachment/640-16606220001032.jpeg)
+
+- 悲观锁适合写操作多的场景，先加锁可以保证写操作时数据正确。
+- 乐观锁适合读操作多的场景，不加锁的特点能够使其读操作的性能大幅提升
+
+## AQS
+
+### 参考文献
+
+- [从ReentrantLock的实现看AQS的原理及应用](https://tech.meituan.com/2019/12/05/aqs-theory-and-apply.html)
+- [【基本功】不可不说的Java“锁”事](https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&mid=2651749434&idx=3&sn=5ffa63ad47fe166f2f1a9f604ed10091&chksm=bd12a5778a652c61509d9e718ab086ff27ad8768586ea9b38c3dcf9e017a8e49bcae3df9bcc8&scene=38#wechat_redirect)
+
+![img](../Attachment/82077ccf14127a87b77cefd1ccf562d3253591.png)
+
+# ReentrantLock
+
+## ReentrantLock 与 Synchronized 对比
+
+|            | ReentrantLock                      | Synchrozied      |
+| ---------- | ---------------------------------- | ---------------- |
+| 锁实现机制 | 依赖 AQS                           | 监视器模式       |
+| 灵活性     | 支持响应中断，超时，尝试获取锁     | 不灵活           |
+| 释放形式   | 必须显示的调用 unlock() 方法释放锁 | 自动释放监视器   |
+| 锁类型     | 公平锁 & 非公平锁                  | 公平锁           |
+| 条件队列   | 可关联多个条件队列                 | 关联一个条件队列 |
+| 可重入性   | 可重入                             | 可重入           |
+
+## tryLock 方法
+
+```java
+public void tryLock();
+public void tryLock(long timeout, TimeUnit unit);
+```
+
+### 无参 tryLock() 方法
+
+```java
+public boolean tryLock() {
+    return sync.nonfairTryAcquire(1);
+}
+```
+
+如果请求的锁没有被其他线程所占有，则立即获得锁的使用权，同时将锁的持有者设置为 1；该方法不论当前锁是公平锁还是非公平锁，只要锁是可用的，则立即获得锁的使用权
+
+### 有参 tryLock() 方法
+
+```java
+public boolean tryLock(long timeout, TimeUnit unit) throws InterruptedException {
+    return sync.tryAcquireNanos(1, unit.toNanos(timeout));
+}
+```
+
+该方法是可以实现公平锁，如果获取的锁的策略是公平锁，那么在调用该方法时，即使锁是可用的，也不会获取锁。
