@@ -114,7 +114,7 @@ MVC 是一种设计模式,Spring MVC 是一款很优秀的 MVC 框架。Spring M
 1. 客户端（浏览器）发送请求，直接请求到 `DispatcherServlet`。
 2. `DispatcherServlet` 根据请求信息调用 `HandlerMapping`，解析请求对应的 `Handler`。
 3. 解析到对应的 `Handler`（也就是我们平常说的 `Controller` 控制器）后，开始由 `HandlerAdapter` 适配器处理。
-4. `HandlerAdapter` 会根据 `Handler` 来调用真正的处理器开处理请求，并处理相应的业务逻辑。
+4. `HandlerAdapter` 会根据 `Handler` 来调用真正的处理器处理请求，并处理相应的业务逻辑。
 5. 处理器处理完业务后，会返回一个 `ModelAndView` 对象，`Model` 是返回的数据对象，`View` 是个逻辑上的 `View`。
 6. `ViewResolver` 会根据逻辑 `View` 查找实际的 `View`。
 7. `DispaterServlet` 把返回的 `Model` 传给 `View`（视图渲染）。
@@ -192,11 +192,11 @@ public enum Isolation {
 
 下面我依次对每一种事务隔离级别进行介绍：
 
-- **`TransactionDefinition.ISOLATION_DEFAULT`** :使用后端数据库默认的隔离级别，MySQL 默认采用的 `REPEATABLE_READ` 隔离级别 Oracle 默认采用的 `READ_COMMITTED` 隔离级别.
-- **`TransactionDefinition.ISOLATION_READ_UNCOMMITTED`** :最低的隔离级别，使用这个隔离级别很少，因为它允许读取尚未提交的数据变更，**可能会导致脏读、幻读或不可重复读**
-- **`TransactionDefinition.ISOLATION_READ_COMMITTED`** : 允许读取并发事务已经提交的数据，**可以阻止脏读，但是幻读或不可重复读仍有可能发生**
-- **`TransactionDefinition.ISOLATION_REPEATABLE_READ`** : 对同一字段的多次读取结果都是一致的，除非数据是被本身事务自己所修改，**可以阻止脏读和不可重复读，但幻读仍有可能发生。**
-- **`TransactionDefinition.ISOLATION_SERIALIZABLE`** : 最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行，这样事务之间就完全不可能产生干扰，也就是说，**该级别可以防止脏读、不可重复读以及幻读**。但是这将严重影响程序的性能。通常情况下也不会用到该级别。
+- **`TransactionDefinition.ISOLATION_DEFAULT`**: 使用后端数据库默认的隔离级别，MySQL 默认采用的 `REPEATABLE_READ` 隔离级别 Oracle 默认采用的 `READ_COMMITTED` 隔离级别.
+- **`TransactionDefinition.ISOLATION_READ_UNCOMMITTED`**: 最低的隔离级别，使用这个隔离级别很少，因为它允许读取尚未提交的数据变更，**可能会导致脏读、幻读或不可重复读**
+- **`TransactionDefinition.ISOLATION_READ_COMMITTED`**: 允许读取并发事务已经提交的数据，**可以阻止脏读，但是幻读或不可重复读仍有可能发生**
+- **`TransactionDefinition.ISOLATION_REPEATABLE_READ`**: 对同一字段的多次读取结果都是一致的，除非数据是被本身事务自己所修改，**可以阻止脏读和不可重复读，但幻读仍有可能发生。**
+- **`TransactionDefinition.ISOLATION_SERIALIZABLE`**: 最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行，这样事务之间就完全不可能产生干扰，也就是说，**该级别可以防止脏读、不可重复读以及幻读**。但是这将严重影响程序的性能。通常情况下也不会用到该级别。
 
 ### @Transactional(rollbackFor = Exception.class)注解了解吗？
 
@@ -204,7 +204,7 @@ public enum Isolation {
 
 当 `@Transactional` 注解作用于类上时，该类的所有 public 方法将都具有该类型的事务属性，同时，我们也可以在方法级别使用该标注来覆盖类级别的定义。如果类或者方法加了这个注解，那么这个类里面的方法抛出异常，就会回滚，数据库里面的数据也会回滚。
 
-在 `@Transactional` 注解中如果不配置 `rollbackFor` 属性,那么事务只会在遇到 `RuntimeException` 的时候才会回滚，加上 `rollbackFor=Exception.class`,可以让事务在遇到非运行时异常时也回滚。
+在 `@Transactional` 注解中如果不配置 `rollbackFor` 属性, 那么事务只会在遇到 `RuntimeException` 的时候才会回滚，加上 `rollbackFor=Exception.class`, 可以让事务在遇到非运行时异常时也回滚。
 
 # Spring 面试题
 
@@ -531,7 +531,7 @@ spring-boot/spring-boot-project/spring-boot-autoconfigure/src/main/resources/MET
 
 ### SpringBoot 事务的使用
 
-- SpringBoot 的事务很简单，首先使用注解 EnableTransactionManagement 开启事物之后，然后在Service 方法上添加注解 Transactional 便可。
+- SpringBoot 的事务很简单，首先使用注解 EnableTransactionManagement 开启事务之后，然后在 Service 方法上添加注解 Transactional 便可。
 
 ### Async异步调用方法
 
@@ -566,7 +566,7 @@ spring-boot/spring-boot-project/spring-boot-autoconfigure/src/main/resources/MET
 - 单纯做 Spring Boot 开发，可能不太容易遇到 bootstrap.properties 配置文件，但是在结合 Spring Cloud 时，这个配置就会经常遇到了，特别是在需要加载一些远程配置文件的时侯。
 - spring boot 核心的两个配置文件：
   - bootstrap (. yml 或者 . properties)：boostrap 由父 ApplicationContext 加载的，比 applicaton 优先加载，配置在应用程序上下文的引导阶段生效。一般来说我们在 Spring Cloud 配置就会使用这个文件。且 boostrap 里面的属性不能被覆盖；
-  - application (. yml 或者 . properties)： 由ApplicatonContext 加载，用于 spring boot 项目的自动化配置。
+  - application (. yml 或者 . properties)： 由 ApplicatonContext 加载，用于 spring boot 项目的自动化配置。
 
 ### 什么是 Spring Profiles？
 
@@ -604,7 +604,7 @@ Spring Profiles 允许用户根据不同的开发环境加载不同的配置文�
 
 - Spring 提供了一种使用 ControllerAdvice 处理异常的非常有用的方法。我们通过实现一个 ControlerAdvice 类，来处理控制器类抛出的所有异常。
 
-### SpringBoot性能如何优化
+### SpringBoot 性能如何优化
 
 - 如果项目比较大，类比较多，不使用 @SpringBootApplication，采用 @Compoment 指定扫包范围
 - 在项目启动时设置 JVM 初始内存和最大内存相同

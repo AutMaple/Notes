@@ -189,7 +189,6 @@ class LibraryProperties {
 ```java
 @Component
 @PropertySource("classpath:website.properties")
-
 class WebSite {
     @Value("${url}")
     private String url;

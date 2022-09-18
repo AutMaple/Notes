@@ -13,8 +13,8 @@ Kafka 是由 `Linkedin` 公司开发的，它是一个分布式的，支持多�
 * `消费者群组`：生产者与消费者的关系就如同餐厅中的厨师和顾客之间的关系一样，一个厨师对应多个顾客，也就是一个生产者对应多个消费者，消费者群组（Consumer Group）指的就是由一个或多个消费者组成的群体。
 * `偏移量`：偏移量（Consumer Offset）是一种元数据，它是一个不断递增的整数值，用来记录消费者发生重平衡时的位置，以便用来恢复数据。
 * `broker`: 一个独立的 Kafka 服务器就被称为 broker，broker 接收来自生产者的消息，为消息设置偏移量，并提交消息到磁盘保存。
-* `broker 集群`：broker 是集群 的组成部分，broker 集群由一个或多个 broker 组成，每个集群都有一个 broker 同时充当了集群控制器的角色（自动从集群的活跃成员中选举出来）。
-* `副本`：Kafka 中消息的备份又叫做 副本（Replica），副本的数量是可以配置的，Kafka 定义了两类副本：领导者副本（Leader Replica） 和 追随者副本（Follower Replica），前者对外提供服务，后者只是被动跟随。
+* `broker 集群`：broker 是集群的组成部分，broker 集群由一个或多个 broker 组成，每个集群都有一个 broker 同时充当了集群控制器的角色（自动从集群的活跃成员中选举出来）。
+* `副本`：Kafka 中消息的备份又叫做副本（Replica），副本的数量是可以配置的，Kafka 定义了两类副本：领导者副本（Leader Replica）和追随者副本（Follower Replica），前者对外提供服务，后者只是被动跟随。
 * `重平衡`：Rebalance。消费者组内某个消费者实例挂掉后，其他消费者实例自动重新分配订阅主题分区的过程。Rebalance 是 Kafka 消费者端实现高可用的重要手段。
 
 # Kafka 的特性（设计原则）
@@ -62,7 +62,7 @@ Kafka 是支持消费者群组的，也就是说 Kafka 中会有一个或者多�
 
 
 
-如上图所示，一个典型的 Kafka 集群中包含若干 Producer（可以是 web 前端产生的 Page View，或者是服务器日志，系统 CPU、Memory 等），若干 broker（Kafka 支持水平扩展，一般 broker 数量越多，集群吞吐率越高），若干 Consumer Group，以及一个 Zookeeper 集群。Kafka 通过 Zookeeper 管理集群配置，选举 leader，以及在Consumer Group 发生变化时进行 rebalance。Producer 使用 push 模式将消息发布到 broker，Consumer 使用 pull 模式从 broker 订阅并消费消息。
+如上图所示，一个典型的 Kafka 集群中包含若干 Producer（可以是 web 前端产生的 Page View，或者是服务器日志，系统 CPU、Memory 等），若干 broker（Kafka 支持水平扩展，一般 broker 数量越多，集群吞吐率越高），若干 Consumer Group，以及一个 Zookeeper 集群。Kafka 通过 Zookeeper 管理集群配置，选举 leader，以及在 Consumer Group 发生变化时进行 rebalance。Producer 使用 push 模式将消息发布到 broker，Consumer 使用 pull 模式从 broker 订阅并消费消息。
 
 ## 核心 API
 
@@ -72,8 +72,6 @@ Kafka 有四个核心 API，它们分别是
 - Consumer API，允许应用程序订阅一个或多个 topics 并处理为其生成的记录流
 - Streams API，它允许应用程序作为流处理器，从一个或多个主题中消费输入流并为其生成输出流，有效的将输入流转换为输出流。
 - Connector API，它允许构建和运行将 Kafka 主题连接到现有应用程序或数据系统的可用生产者和消费者。例如，关系数据库的连接器可能会捕获对表的所有更改
-
-![](../Attachment/16eb068ba7a2fbddtplv-t2oaga2asx-zoom-in-crop-mark1304000-164904852085711.ajpg)
 
 ## Kafka 为何如此之快
 
@@ -146,7 +144,7 @@ Kafka 为一个 Partition 生成多个副本，并且把它们分散在不同的
 
 ## 将消息写入 Partition
 
-一个 Topic 有多个 Partition，那么，向一个 Topic 中发送消息的时候，具体是写入哪个 Partition 呢？有3种写入方式。
+一个 Topic 有多个 Partition，那么，向一个 Topic 中发送消息的时候，具体是写入哪个 Partition 呢？有 3 种写入方式。
 
 ### 1. 使用 Partition Key 写入特定的 Partition
 
@@ -264,7 +262,7 @@ num.partitions 参数指定了新创建的主题需要包含多少个分区。�
 
 - default.replication.factor
 
-这个参数比较简单，它表示 kafka保存消息的副本数，如果一个副本失效了，另一个还可以继续提供服务default.replication.factor 的默认值为1，这个参数在你启用了主题自动创建功能后有效。
+这个参数比较简单，它表示 kafka 保存消息的副本数，如果一个副本失效了，另一个还可以继续提供服务 default.replication.factor 的默认值为 1，这个参数在你启用了主题自动创建功能后有效。
 
 - log.retention.ms
 
@@ -290,7 +288,7 @@ broker 通过设置 `message.max.bytes` 参数来限制单个消息的大小，�
 
 - retention.ms
 
-规定了该主题消息被保存的时常，默认是7天，即该主题只能保存7天的消息，一旦设置了这个值，它会覆盖掉 Broker 端的全局参数值。
+规定了该主题消息被保存的时常，默认是 7 天，即该主题只能保存 7 天的消息，一旦设置了这个值，它会覆盖掉 Broker 端的全局参数值。
 
 - retention.bytes
 
@@ -313,7 +311,7 @@ JVM 端配置的另一个重要参数就是垃圾回收器的设置，也就是�
 
 - MaxGCPauseMillis
 
-该参数指定每次垃圾回收默认的停顿时间。该值不是固定的，G1可以根据需要使用更长的时间。它的默认值是 200ms，也就是说，每一轮垃圾回收大概需要200 ms 的时间。
+该参数指定每次垃圾回收默认的停顿时间。该值不是固定的，G1可以根据需要使用更长的时间。它的默认值是 200ms，也就是说，每一轮垃圾回收大概需要 200 ms 的时间。
 
 - InitiatingHeapOccupancyPercent
 
@@ -734,7 +732,7 @@ Kafka 一个很重要的特性就是，只需写入一次消息，可以支持�
 
 > 更重要的是它在进行垃圾收集时，必须暂停其他所有的工作线程。直到它收集结束。`Stop The World` 这个名字听起来很帅，但这项工作实际上是由虚拟机在后台自动发起并完成的，在用户不可见的情况下把用户正常工作的线程全部停掉，这对很多应用来说都是难以接受的。
 
-也就是说，在重平衡期间，消费者组中的消费者实例都会停止消费，等待重平衡的完成。而且**重平衡这个过程很慢**......
+也就是说，**在重平衡期间，消费者组中的消费者实例都会停止消费，等待重平衡的完成**。而且**重平衡这个过程很慢**......
 
 ### 创建消费者
 
@@ -942,7 +940,7 @@ Kafka 服务器如果挂了，可以使用副本，每个 kafka 服务器中的�
 
 #### 1. 设置 acks = all
 
-解决办法就是我们设置  **acks = all**。acks 是 Kafka 生产者(Producer)  很重要的一个参数。
+解决办法就是我们设置  **acks = all**。acks 是 Kafka 生产者(Producer) 很重要的一个参数。
 
 acks 的默认值即为 1，代表我们的消息被 leader 副本接收之后就算被成功发送。当我们配置 **acks = all** 代表则所有副本都要接收到该消息之后该消息才算真正成功被发送。
 
