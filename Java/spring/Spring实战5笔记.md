@@ -270,7 +270,7 @@ public String addUserInfo(@Validated UserInfoReq req) {
 
 @Validated 注解修饰的 UserInfoReq，当请求到达时，会自动验证 UserInfoReq 类中需要验证的字段
 
-## @Validateed VS @Valid
+## @Validated VS @Valid
 
 - @Valid：标准 JSR-303 规范的标记型注解，用来标记验证属性和方法返回值，进行级联和递归校验
 - @Validated：Spring 的注解，是标准 JSR-303 的一个变种（补充），提供了一个分组功能，可以在入参验证时，根据不同的分组采用不同的验证机制
