@@ -95,15 +95,15 @@ a consumer receives a message, **it now only has one part: a payload.** The labe
 
 ### Channel 
 
-Before you consume from or publish to Rabbit, you first have to connect to it. By connecting, you’re creating a TCP connection between your app and the Rabbit broker. Once the TCP connection is open (and you’re authenticated), your app then creates an AMQP channel. **This channel is a virtual connection inside the “real” TCP connection**, and it’s over the channel that you issue AMQP commands. E**very channel has a unique ID** assigned to it (your AMQP library of choice will handle remembering the ID for you). Whether you’re publishing a message, subscribing to a queue, or receiving a message, **it’s all done over a channel**. 
+Before you consume from or publish to Rabbit, you first have to connect to it. By connecting, you’re creating a TCP connection between your app and the Rabbit broker. Once the TCP connection is open (and you’re authenticated), your app then creates an AMQP channel. **This channel is a virtual connection inside the “real” TCP connection**, and it’s over the channel that you issue AMQP commands. **Every channel has a unique ID** assigned to it (your AMQP library of choice will handle remembering the ID for you). Whether you’re publishing a message, subscribing to a queue, or receiving a message, **it’s all done over a channel**. 
 
 RabbitMQ 采用类似 NIO（Non-blocking I/O）的做法，选择 TCP 连接复用，不仅可以减少性能开销，同时也便于管理
 
-每个线程把持一个信道，所以信道复用了 Connection 的 TCP 连接。同时 RabbitMQ 可以确保每个线程的私密性，就像拥有独立的连接一样。当每个信道的流量不是很大时，复用单一的Connection 可以在产生性能瓶颈的情况下有效地节省 TCP 连接资源。但是当信道本身的流量很大时，这时候多个信道复用一个 Connection 就会产生性能瓶颈，进而使整体的流量被限制了。此时就需要开辟多个 Connection，将这些信道均摊到这些 Connection 中，至于这些相关的调优策略需要根据业务自身的实际情况进行调节
+每个线程把持一个信道，所以信道复用了 Connection 的 TCP 连接。同时 RabbitMQ 可以确保每个线程的私密性，就像拥有独立的连接一样。当每个信道的流量不是很大时，复用单一的 Connection 可以在产生性能瓶颈的情况下有效地节省 TCP 连接资源。但是当信道本身的流量很大时，这时候多个信道复用一个 Connection 就会产生性能瓶颈，进而使整体的流量被限制了。此时就需要开辟多个 Connection，将这些信道均摊到这些 Connection 中，至于这些相关的调优策略需要根据业务自身的实际情况进行调节
 
 #### Why do we need channels?
 
- you might ask? Why not just issue AMQP commands directly over the TCP connection? The main reason is because **setting up and tearing down TCP sessions is expensive for an operating system**
+you might ask? Why not just issue AMQP commands directly over the TCP connection? The main reason is because **setting up and tearing down TCP sessions is expensive for an operating system**
 
 ![image-20220702104904435](../Attachment/image-20220702104904435.png)
 
@@ -211,7 +211,7 @@ Connection 可以用来创建多个 Channel 实例，但是 Channel 实例不能
 
 Channel 或者 Connection 中有个 isOpen 方法可以用来检测其是否已处于开启状态（关于 Channel 或者 Connection 的状态可以参考 3.6 节）。但并不推荐在生产环境的代码上使用 isOpen 方法，这个方法的返回值依赖于 shutdownCause的存在，有可能会产生竞争
 
-如 果 在 使 用 Channel 的 时 候 其 已 经 处 于 关 闭 状 态 ， 那 么 程 序 会 抛 出 一 个 `com.rabbitmq.client.ShutdownSignalException`，我们只需捕获这个异常即可。当然同时也要试着捕获 IOException 或者 SocketException，以防 Connection 意外关闭
+如果在使用 Channel 的时候其已经处于关闭状态 ，那么程序会抛出一个 `com.rabbitmq.client.ShutdownSignalException`，我们只需捕获这个异常即可。当然同时也要试着捕获 IOException 或者 SocketException，以防 Connection 意外关闭
 
 ```java
 public void validMethod(Channel channel){
@@ -241,10 +241,8 @@ Exchange.DeclareOk exchangeDeclare(String exchange,
 	Map<String, Object> arguments) throws IOException
 ```
 
-- durable:  设置是否持久化。durable 设置为 true 表示持久化，反之是非持久化。持
-  久化可以将交换器存盘，在服务器重启的时候不会丢失相关信息
-- autoDelete: 设置是否自动删除。autoDelete 设置为 true 则表示自动删除。自动
-  删除的前提是至少有一个队列或者交换器与这个交换器绑定，之后所有与这个交换器绑定的队列或者交换器都与此解绑。注意不能错误地把这个参数理解为：“当与此交换器连接的客户端都断开时，RabbitMQ 会自动删除本交换器
+- durable:  设置是否持久化。durable 设置为 true 表示持久化，反之是非持久化。持久化可以将交换器存盘，在服务器重启的时候不会丢失相关信息
+- autoDelete: 设置是否自动删除。autoDelete 设置为 true 则表示自动删除。自动删除的前提是至少有一个队列或者交换器与这个交换器绑定，之后所有与这个交换器绑定的队列或者交换器都与此解绑。注意不能错误地把这个参数理解为：“当与此交换器连接的客户端都断开时，RabbitMQ 会自动删除本交换器
 - internal：设置是否是内置的。如果设置为 true，则表示是内置的交换器，客户端程序无法直接发送消息到这个交换器中，只能通过交换器路由到交换器这种方式
 
 ### 检测相应的交换机是否存在
@@ -269,11 +267,9 @@ Queue.DeclareOk queueDeclare(String queue,
 不带任何参数的 queueDeclare 方法默认创建一个由 RabbitMQ 命名的（类似这种
 amq.gen-LhQz1gv3GhDOv8PIDabOXA 名称，这种队列也称之为匿名队列）、排他的、自动删除的、非持久化的队列
 
-- exclusive:  设置是否排他。为 true 则设置队列为排他的。如果一个队列被声明为排
-  他队列，该队列仅对首次声明它的**连接可见**，并在连接断开时自动删除。排他队列是基于连接（Connection）可见的，同一个连接的不同信道（Channel）是可以同时访问同一连接创建的排他队列。*首次*是指如果一个连接已经声明了一个排他队列，**其他连接是不允许建立同名的排他队列的**。即使该队列是持久化的，一旦连接关闭或者客户端退出，**该排他队列都会被自动删除**，这种队列适用于一个客户端同时发送和读取消息的应用场景
+- exclusive:  设置是否排他。为 true 则设置队列为排他的。如果一个队列被声明为排他队列，该队列仅对首次声明它的**连接可见**，并在连接断开时自动删除。排他队列是基于连接（Connection）可见的，同一个连接的不同信道（Channel）是可以同时访问同一连接创建的排他队列。*首次*是指如果一个连接已经声明了一个排他队列，**其他连接是不允许建立同名的排他队列的**。即使该队列是持久化的，一旦连接关闭或者客户端退出，**该排他队列都会被自动删除**，这种队列适用于一个客户端同时发送和读取消息的应用场景
 
-生产者和消费者都能够使用 queueDeclare 来声明一个队列，但是如果消费者在同一个
-信道上订阅了另一个队列，就无法再声明队列了。必须先取消订阅，然后将信道置为“传输”模式，之后才能声明队列
+生产者和消费者都能够使用 queueDeclare 来声明一个队列，但是如果消费者在同一个信道上订阅了另一个队列，就无法再声明队列了。必须先取消订阅，然后将信道置为“传输”模式，之后才能声明队列
 
 ## Queue
 
@@ -397,8 +393,7 @@ channel.basicPublish(exchangeName,routingKey,mandatory,properties,
 
 通过 channel.queueDeclare 方法中的 x-expires 参数可以设置队列被自动删除前处于未被使用状态的时间。未被使用状态的意思是队列上没有任何的消费者，队列也没有被重新声明，并且在过期时间段内也没有调用 Basic.Get 命令。
 
-RabbitMQ 会确保在过期时间到达后将队列删除，但是不保障删除的动作有多及时。在 RabbitMQ 重启后，持久化的队列 的过期时间会被重新计算。比如该参数设置为 1000，则表示该队列如果在 1 秒钟之内未
-使用则会被删除。
+RabbitMQ 会确保在过期时间到达后将队列删除，但是不保障能够及时的执行删除任务。在 RabbitMQ 重启后，持久化的队列的过期时间会被重新计算。比如该参数设置为 1000，则表示该队列如果在 1 秒钟之内未使用则会被删除。
 
 ```java
 Map<String, Object> args = new HashMap<String, Object>();
@@ -416,8 +411,7 @@ Dead-Letter-Exchange(DLX) 称为死信交换机。当消息再一个队列中变
 - 消息过期
 - 消息数量达到队列最大容量
 
-DLX 是正常的交换机，和普通的交换机没有区别。它能够被任何队列所绑定，实际上就是设置某个队列的属性。当队列中存在 dead message 的时候，RabbitMQ 会自动地将这个消息重新的发布到设置的 DLX 上去，进而被路由到另外一个队列上，即死信队列。可以监听这个队列中的消息以进行相应的处理，这个特性与将消息的 TTL 设置为 0 配合使用可以弥补 immediate 参数
-的功能。
+DLX 是正常的交换机，和普通的交换机没有区别。它能够被任何队列所绑定，实际上就是设置某个队列的属性。当队列中存在 dead message 的时候，RabbitMQ 会自动地将这个消息重新的发布到设置的 DLX 上去，进而被路由到另外一个队列上，即死信队列。可以监听这个队列中的消息以进行相应的处理，这个特性与将消息的 TTL 设置为 0 配合使用可以弥补 immediate 参数的功能。
 
 ### 添加 DLX
 
@@ -673,7 +667,7 @@ abbitMQ 客户端中与事务机制相关的方法有三个 ：
 - channel.txCommit: 该方法用于提交事务
 - channel.txRollback: 该方法用于回滚事务
 
-在通过 channel.txSelect 方法开启事务之后，我们便可以发布消息给 RabbitMQ 了，**如果事务提交成功，则消息一定到达了 RabbitMQ 中**，如果在事务提交执行之前由于 RabbitMQ 异常崩溃或者其他原因抛出异常，这个时候我们便可以将其捕获 ， 进而通过执行 channel.txRollback 方法来实现事务回滚
+在通过 channel.txSelect 方法开启事务之后，我们便可以发布消息给 RabbitMQ 了，**如果事务提交成功，则消息一定到达了 RabbitMQ 中**，如果在事务提交执行之前由于 RabbitMQ 异常崩溃或者其他原因抛出异常，这个时候我们便可以将其捕获，进而通过执行 channel.txRollback 方法来实现事务回滚
 
 **注意**
 
@@ -816,7 +810,7 @@ QueueingConsumer 本身有几个大缺陷，需要读者在使用时特别注意
 
 ## 去重机制
 
- RabbitMQ 有没有去重的机制来保证“恰好一次”呢？答案是并没有，不仅是 RabbitMQ，目前大多数主流的消息中间件都没有消息去重机制，也不保障“恰好一次”。**去重处理一般是在业务客户端实现**，比如引入 GUID（Globally Unique Identifier）的概念。针对 GUID，如果从客户端的角度去重，那么需要引入集中式缓存，必然会增加依赖复杂度，另外缓存的大小也难以界定。建议在实际生产环境中，业务方根据自身的业务特性进行去重，比如业务消息本身具备幂等性，或者借助 Redis 等其他产品进行去重处理。
+RabbitMQ 有没有去重的机制来保证“恰好一次”呢？答案是并没有，不仅是 RabbitMQ，目前大多数主流的消息中间件都没有消息去重机制，也不保障“恰好一次”。**去重处理一般是在业务客户端实现**，比如引入 GUID（Globally Unique Identifier）的概念。针对 GUID，如果从客户端的角度去重，那么需要引入集中式缓存，必然会增加依赖复杂度，另外缓存的大小也难以界定。建议在实际生产环境中，业务方根据自身的业务特性进行去重，比如业务消息本身具备幂等性，或者借助 Redis 等其他产品进行去重处理。
 
 ## 虚拟主机 Virtual Host
 

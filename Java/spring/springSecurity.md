@@ -78,7 +78,7 @@ AccessDecisionVoter 和 AccessDecisionManager 都有众多的实现类，在 Acc
 
 # SpringSecurity 的使用
 
-在 Java Web 工程中，一般使用 Servlet 过滤器（Filter）对请求进行拦截，然后在 Filter 中通过自己的 验证逻辑来 决定是否放 行请求。同 样地， Spring Security 也 是基于这个 原理，在进入到 DispatcherServlet 前就可以对 Spring MVC 的请求进行拦截，然后通过一定的验证，从而决定是否放行请求访问系统。
+在 Java Web 工程中，一般使用 Servlet 过滤器（Filter）对请求进行拦截，然后在 Filter 中通过自己的验证逻辑来决定是否放行请求。同样地， Spring Security 也是基于这个原理，在进入到 DispatcherServlet 前就可以对 Spring MVC 的请求进行拦截，然后通过一定的验证，从而决定是否放行请求访问系统。
 
 为了对请求进行拦截，Spring Security 提供了过滤器 DelegatingFilterProxy 类给予开发者配置。
 
@@ -211,7 +211,7 @@ public void principal(Principal principal){
 
 用过 Spring MVC 的读者都知道，Controller 中方法的参数都是当前请求 HttpServletRequest 带来的。毫无疑问，前面的 Authentication 和Principal 参数也都是 HttpServletRequest 带来的，那么这些数据到底是何时放入 HttpServletRequest 的呢？又是以何种形式存在的呢？接下来我们一起分析一下。
 
-如果使用了 Spring Security 框架，那么我们在 Controller 参数中拿到的 HttpServletRequest实例将是 Servlet3SecurityContextHolderAwareRequestWrapper, 很明显，这是被 Spring Security 封装过的请求。
+如果使用了 Spring Security 框架，那么我们在 Controller 参数中拿到的 HttpServletRequest 实例将是 Servlet3SecurityContextHolderAwareRequestWrapper, 很明显，这是被 Spring Security 封装过的请求。
 
 ![image-20220711161908612](../../Attachment/image-20220711161908612.png)
 
@@ -245,7 +245,7 @@ SecurityContextHolderAwareRequestWrapper 类主要实现了 Servlet3.0 之前和
 
 SecurityContextHolderAwareRequestWrapper 类其实非常好理解：
 
-- getAuthentication: 该方法用来获取当前登录对象 Authentication, 获取方式就是我们前面所讲的从 SecurityContextHolder 中获取。如果不是匿名对象就返回，否则就返回nul。
+- getAuthentication: 该方法用来获取当前登录对象 Authentication, 获取方式就是我们前面所讲的从 SecurityContextHolder 中获取。如果不是匿名对象就返回，否则就返回 null。
 - getRemoteUser: 该方法返回了当前登录用户的用户名，如果 Authentication 对象中存储的 Principal 是当前登录用户对象，则返回用户名；如果 Authentication 对象中存储的 Principal 是当前登录用户名（字符串），则直接返回即可。
 - getUserPrincipal: 该方法返回当前登录用户对象，其实就是 Authentication 的实例。
 - isGranted:该方法是一个私有方法，作用是判断当前登录用户是否具备某一个指定的角色。判断逻辑也很简单，先对传入进来的角色进行预处理，有的情况下可能需要添加 ROLE 前缀，然后调用 Authentication#getauthorities 方法，获取当前登录用户所具备的所有角色，最后再和传入进来的参数进行比较。
@@ -418,8 +418,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 }
 ```
-
-
 
 ### SecurityFilterChain
 
@@ -602,8 +600,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 在 SpringSecurity5 版本中要求密码必须加密，否则当你输入用户名和密码时，登录不了，并在控制台报错： `There is no PasswordEncoder mapped for the id "null"`, 要解决这个问题需要创建一个实现了 PasswordEncode 接口的加密类，SpringSecurity 默认实现了一些类，可以直接使用, 不同的实现类使用不同的加密方法，可以自由的进行选择,通常使用 BCryptPasswordEncoder 这个类来对密码进行加密
 
 ![image-20220101132910469](/home/autmaple/.config/Typora/typora-user-images/image-20220101132910469.png)
-
-
 
 ```java
 @Configuration
