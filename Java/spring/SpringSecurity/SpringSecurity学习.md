@@ -182,6 +182,84 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
+## Filter
+
+在 Security 认证的过程中，会使用 setDetails 方法对请求参数进行提取:
+
+```java
+protected void setDetails(HttpServletRequest request, UsernamePasswordAuthenticationToken authRequest) {
+	authRequest.setDetails(authenticationDetailsSource.buildDetails(request));
+}
+```
+
+UsernamePasswordAuthenticationToken 是 Authentication 的具体实现，实现的细节如下:
+
+```java
+public class WebAuthenticationDetailsSource implements
+    AuthenticationDetailsSource<HttpServletRequest, WebAuthenticationDetails> {
+	public WebAuthenticationDetails buildDetails(HttpServletRequest context) {
+		return new WebAuthenticationDetails(context);
+	}
+}
+public class WebAuthenticationDetails implements Serializable {
+	private final String remoteAddress; // IP 地址
+	private final String sessionId; // 会话 ID
+	public WebAuthenticationDetails(HttpServletRequest request) {
+		this.remoteAddress = request.getRemoteAddr();
+
+		HttpSession session = request.getSession(false);
+		this.sessionId = (session != null) ? session.getId() : null;
+	}
+    //省略其他方法
+}
+```
+
+因此如果想提取请求中的更多参数，可以自己实现一个 AuthenticationDetailsSource 接口，返回自定义的一个 WebAuthenticationDetails 即可
+
+```java
+public class MyWebAuthenticationDetails extends WebAuthenticationDetails {
+    private boolean isPassed;
+    
+    public MyWebAuthenticationDetails(HttpServletRequest req) {
+        super(req);
+        String code = req.getParameter("code");
+        String verify_code = (String) req.getSession().getAttribute("verify_code");
+        if (code != null && verify_code != null && code.equals(verify_code)) {
+            isPassed = true;
+        }
+    }
+
+    public boolean isPassed() {
+        return isPassed;
+    }
+}
+
+@Component
+public class MyWebAuthenticationDetailsSource implements AuthenticationDetailsSource<HttpServletRequest,MyWebAuthenticationDetails> {
+    @Override
+    public MyWebAuthenticationDetails buildDetails(HttpServletRequest context) {
+        return new MyWebAuthenticationDetails(context);
+    }
+}
+```
+
+最后的问题就是如何用自定义的 MyWebAuthenticationDetailsSource 代替系统默认的 WebAuthenticationDetailsSource，很简单，我们只需要在 SecurityConfig 中稍作定义即可：
+
+```java
+@Autowired
+MyWebAuthenticationDetailsSource myWebAuthenticationDetailsSource;
+
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http.authorizeRequests()
+            ...
+            .and()
+            .formLogin()
+            .authenticationDetailsSource(myWebAuthenticationDetailsSource)
+            ...
+}
+```
+
 ## 认证流程
 
 通过过滤器链，生成未认证的 Authentication 并交给 AuthenticationManager 去进行认证处理
@@ -189,4 +267,3 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 Authentication 常用的实现类就是 UseranmePasswordAuthenticationToken
 
 AuthenticationManager 常用的实现类就是 ProviderManager, 该实现类的认证方法为了实现不同的认证方式，提供了一个 AuthenticationProvider 接口，该接口中有一个方法可以判断是否能够处理该认证方式。
-
