@@ -1,5 +1,19 @@
 # Spring 开发
 
+## Spring 常用注解
+
+| 注解            | 描述                                                         |
+| --------------- | ------------------------------------------------------------ |
+| @Conditional    | 在类实例化之前根据给定的 Condition 类判断是否需要实例化该注解修饰的类 |
+| @PostConstruct  | 该注解属于 `javax.annotation` 包下面的注解, 可以在 Bean 初始化之后执行一些操作 |
+| @PreDestroy     | 该注解属于 `javax.annotation` 包下面的注解, 通常用于做一些善后工作。该注解在 Spring 环境下，在发布容器关闭事件之后，在执行Bean的destroy方法之前执行。Servlet 环境下, 被该注解修饰的方法会在 Servlet 的 destroy 方法执行之后，在 Servlet 被彻底卸载完成之前执行，并且只会执行一次。 |
+| @Primary        | 指定同类型 Bean 装配的优先级，被该注解修饰的类优先被注入，同时如果和 @Qualifier 注解一同使用，则优先使用 @Qualifier 注解指定的 Bean |
+| @Qualifier      | 该注解的作用是告诉 Spring 容器应该注入 Qualifier 注解所指定的名字的 Bean |
+| @Resource       | 该注解是 Java 自带的注解，默认按照名称进行注入，其中优先级为：@Resource > @Qualifier > @Primary ， |
+| @Inject         | @Inject 注解默认也是按照 Bean 的名称进行注入，要想使用该注解需要导入对应的包，同时该注解可以和 @Primary 注解一起使用 |
+| @PropertySource | 通过该注解可以将 properties 文件中的配置加载到 Spring 的 Environment 中 |
+| @Profile        | 用于指定一个组件或者方法只有在指定的开发环境下才起作用       |
+
 ## Spring 的介绍
 
 Spring 框架是 Java 平台的一个开源的全栈( full-stack) 应用程序框架和控制反转( Inversion of Control，IoC )容器实现，一般被直接称为 Spring。该框架的一些核心功能理论上可用于任何 Java 应用，但 Spring 还为基于 Java 企业版平台构建的 Web 应用提供了大量的拓展支持。**Spring 没有直接实现任何的编程模型**，但它已经在 Java 社区中广为流行，基本上完全代替了企业级 JavaBeans（EJB）模型。
@@ -33,6 +47,27 @@ Spring 提供了一个接口 BeanFactory。这个接口是 Spring 实现 IOC 容
 ### Aware 接口
 
 Aware 是一个具有标识作用的超级接口，实现该接口的 bean 是具有被 spring 容器通知的能力的，而被通知的方式就是通过回调。也就是说：直接或间接实现了这个接口的类，都具有被 spring 容器通知的能力。
+
+通过 Aware 接口，可以实现在自定义的 Bean 中去使用 Spring 的一些底层组件，如 Spring 的上下文对象 ApplicationContext, Bean 工厂 BeanFactory 等，使用这些对象可以完成一些特殊的工作，如修改 Bean 的定义， 给 Bean 容器中设置 property 属性等，所有的 Aware 接口如下图：
+
+![image-20221009134401114](../../Attachment/image-20221009134401114.png)
+
+实现 xxxAware 接口就可以获取到 Spring 底层的组件，如实现 ApplicationContextAware 接口就可以获取 Spring 的 ApplicationContext，要获取什么，只需要实现对应的 xxxAware 接口即可
+
+### 常用的 Aware 接口
+
+- BeanFactoryAware 用于获取创建 Bean 的 BeanFactory
+- BeanNameAware 用于获取当前 Bean 的名字
+- ApplicationContenxtAware 用于获取当前 Bean 所在的 Spring 应用上下文对象，利用该对象可以获取到 Spring 容器中 Bean 的很多信息，例如：所有 bean 的名称，所有 bean 的定义，bean 注册中心等等，除此之外，还可以再获取到上下文之后，然后创建一个特定的 Bean 定义，并注册到 Spring 的 BeanDefinitionRegistry 中
+- MessageSourceAware 可以用于获取当前应用的国际化信息，包括区域，语言等，在做 Web 应用的国际化是有用
+- EnvironmentAware 可用于获取当前 Bean 运行的环境信息，例如操作系统，环境变量，当前 classpath 中配置的所有 property 属性值和属性名等
+- EmbeddedValueResolverAware：可用于获取一个 String 类型的值解析器，解析容器中占位符中的字符串值，例如：`${name}`，`#{12+10}` 等。第一个 `${name}` 为普通的占位符，容器中必须存在这个 name 属性，第二个 `#{12+10}` 为 SPEL 表达式，可以实现一些计算逻辑，通过注入的值解析器都可以完成解析。
+
+### Aware 底层实现原理
+
+在 Spring 中 Aware 接口作为一个顶层接口，其底层的 xxxAware 子接口中全部定义了 setxxx 方法，用于交给具体的类来实现，然后通过xxxAwareProcessor 来实现具体的注入。
+
+例如通过 ApplicationContextAware 注入 ApplicationContext 时，使用的后置处理器为 ApplicationContextAwareProcessor
 
 ### Spring Bean 的生命周期
 
@@ -303,6 +338,16 @@ public interface InitializingBean {
 
 DisposableBean 和 destory-method 与上述类似，就不描述了。
 
+### 3.4 BeanFactoryPostProcessor
+
+该扩展点执行的时机：在 Bean 定义全部解析及加载完毕 [加载完毕指的是bean定义已经被放入到了bean定义注册中心beanDefinitonMap中]，但是 bean 实例化之前。
+
+使用该扩展点，可以在实例化 Bean 之前修改 Bean 的定义信息，例如：修改 bean 的类型，修改 bean 的作用域，是否为懒加载，是否参与自动装配或者是修改 bean 的工厂方法等等
+
+### BeanDefinition
+
+在 Spring 中 Bean 定义是专门用来描述 bean 的一种结构，里面包括了 bean 的方方面面的信息，在创建 bean 实例以及初始化 bean 的过程中就是根据 bean 定义中的信息来完成的
+
 ## 4. 总结
 
 最后总结下如何记忆 Spring Bean 的生命周期：
@@ -310,6 +355,12 @@ DisposableBean 和 destory-method 与上述类似，就不描述了。
 - 首先是实例化、属性赋值、初始化、销毁这 4 个大阶段；
 - 再是初始化的具体操作，有 Aware 接口的依赖注入、BeanPostProcessor 在初始化前后的处理以及 InitializingBean 和 init-method 的初始化操作；
 - 销毁的具体操作，有注册相关销毁回调接口，最后通过 DisposableBean 和 destory-method 进行销毁。
+
+## Bean 的实例化和初始化
+
+实例化：创建对象并填充对应的属性
+
+初始化：执行 init-method 指定的方法或者 InitializingBean 接口的 afterPropertiesSet 方法
 
 ### 依赖注入 DI
 
