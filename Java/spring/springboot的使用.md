@@ -2,6 +2,33 @@
 
 当访问路径 `/` 时，springboot 默认显示 static 文件夹下的 index.html 文件
 
+## SpringBoot 启动过程
+
+1. 实例化一个 SpringApplication 对象：
+   1. 将 run 方法传入进来的 class 赋值给 SpringApplication 的 primarySource 属性
+   2. 推测应用的类型: NONE -> AnnotationConfigApplicationContenxt, SERVLET, REACTIVE
+   3. 从 spring.factories 中获取 ApplicationContextInitiaizer 的实现类并赋值给 SpringApplication 的 initializers 属性
+   4. 从 spring.factories 中获取 ApplicationListener 的实现类并赋值给 SpringApplication 的 listeners 属性
+   5. 找到 main 方法所在的类
+2. 调用 SpringApplication 的 run 方法
+   1. 获取 RunListener，并发布 starting 事件
+   2. 准备 Environment 对象: 解析 properties，yaml，环境变量这些位置的配置信息
+   3. 打印 banner
+   4. 创建一个 Spring 容器
+   5. 执行 ApplicationContenxtInitializer
+   6. 发布 contextPrepared 事件
+   7. 往容器中添加配置类(run 方法传入进来的类)
+   8. 发布 contextLoaded 事件
+   9. 启动 Spring 容器
+   10. afterRefresh 方法 -> 这是一个空方法， 典型的模板设计模式，交给子类自定义实现
+   11. 发布一个 started 事件
+   12. 调用 callRunners 方法
+   13. 发布一个 ready 事件
+
+### SpringApplicationRunListener 接口
+
+该接口定义了 SpringBoot 应用启动过程的声明周期函数，可以通过实现该接口对 SpringBoot 应用启动的各个过程进行一个自定义的扩展
+
 ## 常用注解
 
 | 注解                           | 描述                                                         |
