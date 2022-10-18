@@ -15,7 +15,7 @@
    2. 准备 Environment 对象: 解析 properties，yaml，环境变量这些位置的配置信息
    3. 打印 banner
    4. 创建一个 Spring 容器
-   5. 执行 ApplicationContextInitializer
+   5. 执行 ApplicationContextInitializer: 
    6. 发布 contextPrepared 事件
    7. 往容器中添加配置类(run 方法传入进来的类)
    8. 发布 contextLoaded 事件
