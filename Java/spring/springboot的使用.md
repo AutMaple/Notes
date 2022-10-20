@@ -2,6 +2,14 @@
 
 当访问路径 `/` 时，springboot 默认显示 static 文件夹下的 index.html 文件
 
+## 参考文章
+
+- [Spring全解系列 - @Import注解](https://zhuanlan.zhihu.com/p/147025312)
+
+## SpringBoot 启动常用的一些接口
+
+- ImportBeanDefinitionRegistrar: 用于在处理 @Configuration 注解的时候
+
 ## SpringBoot 启动过程
 
 1. 实例化一个 SpringApplication 对象：
@@ -111,6 +119,89 @@ public class Swagger2Attribute {
 }
 ```
 
+## @Import 注解
+
+@Import 注解是 Spring 基于注解开发的重要组成部分，该注解的作用是用于导入一个或多个组件到 Spring 容器中，同时还可以用于组织多个 @Configuration，等价于基于 xml 配置的 `<import>` 标签
+
+同时该注解优先于 @Configuration 进行加载:
+
+```java
+@Configuration
+@Import(ConfigB.class)
+public class ConfigA{
+    @Bean
+    @ConditionalOnMissingBean
+    public Service serviceA() {
+        return new ServiceA();
+    }
+}
+```
+
+```java
+@Configuration
+public class ConfigB{
+    @Bean
+    public Service serviceB(){
+        return new ServiceB();
+    }
+}
+```
+
+```java
+public interface Service{
+    void print();
+}
+
+public class ServiceA implements Service {
+    @Override
+    public void print() {
+        System.out.println("Service A");
+    }
+}
+
+public class ServiceB implements Service {
+    @Override
+    public void print() {
+        System.out.println("Service B");
+    }
+}
+```
+
+```java
+public class ConfigTest{
+    public static void main(String[] args){
+        AnnotationConfigApplicationContext ct = new AnnotationConfigApplicationContext(ConfigA.class);
+        Service service = ct.getBean(Service.class);
+        service.print(); // Service B
+    }
+}
+```
+
+### AnnotationMetadata 接口
+
+该接口可以在指定的类没有加载的情况下访问它的注解信息
+
+### ImportSelector 接口
+
+```java
+public interface ImportSelector {
+
+	/**
+	 * 根据 AnnotationMetadata 信息决定往容器中导入那些类，这个 AnnotationMetadata 通常是 @Configuration 所修饰的类上面的注解信息
+	 * 返回值: 需要导入容器的类的全限定类名数组
+	 */
+	String[] selectImports(AnnotationMetadata importingClassMetadata);
+
+	@Nullable
+	default Predicate<String> getExclusionFilter() {
+		return null;
+	}
+
+}
+```
+
+该接口的作用就是决定哪一个类将会被导入到容器中，
+
 ## Bean 的生命周期
 
 ![image-20220715171425499](../../Attachment/image-20220715171425499.png)
@@ -147,7 +238,7 @@ Bean 的生命周期大致分为 Bean 定义、Bean 的初始化、Bean 的生�
 String driver;
 ```
 
-`${...}` 表示占位符，它会读取 spring 配置文件(如 application.yaml) 中的值装配到对应的字段中。
+`${...}` 表示占位符，可以嵌套，它会读取 spring 配置文件(如 application.yaml) 中的值装配到对应的字段中。
 
 除了读取 Spring 配置文件之外，可以进行运算，要进行运算需要使用: `#{...}` 占位符
 
