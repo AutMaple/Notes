@@ -1,3 +1,35 @@
+
+
+# Spring 推断构造方法
+
+## 只有一个构造方法
+
+- 无参构造方法: 调用该方法进行实例化
+
+- 有参构造方法
+
+  - 如果是基于注解方式的配置，那么 Spring 会根据构造方法的参数信息去寻找 bean，然后传给构造方法
+
+  - 如果是基于 XML 方式的配置，要么在 XML 中指定构造方法的参数值(手动指定)，要么配置**autowire=constructor** 让 Spring **自动** 去寻找 bean 做为构造方法的参数值
+
+## 多个构造方法
+
+推断规则：
+
+1. 如果开发者指定了想要使用的构造方法，那么就用这个构造方法
+
+2. 如果开发者没有指定想要使用的构造方法，则看开发者有没有让 Spring 自动去选择构造方法
+
+3. 如果开发者也没有让 Spring 自动去选择构造方法，则 Spring 利用无参构造方法，如果没有无参构造方法，则报错
+
+如何指定使用哪个构造方法：
+
+- 在 XML 配置中，使用 `<constructor-arg>` 标签
+
+- 基于注解的方式，使用 `@Autowired` 注解
+
+因为 `@Autowired` 还有一个属性 `required`，默认为 `true`，所以一个类中，只有能一个构造方法标注了 `@Autowired` 或 `@Autowired(required=true)`，有多个会报错。但是可以有多个 `@Autowired(required=false)`, 这种情况下，需要 Spring 从这些构造方法中去自动选择一个构造方法。
+
 # @Configuration
 
 @Configuration 注解会告诉 Spring 它所修饰的类是一个配置类，会为 Spring 的应用上下文提供 Bean

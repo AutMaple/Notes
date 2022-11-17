@@ -21,7 +21,7 @@ public interface AuthenticationManager {
 
 An `AuthenticationManager` can do one of 3 things in its `authenticate()` method:
 
-- Return an `Authentication` (normally with `authenticated=true`) if it can verify that the input represents a valid principal.如果 authenticate 方法可以证明输入是一个有效的主体，就返回一个 Authentication 对象
+- Return an `Authentication` (normally with `authenticated=true`) if it can verify that the input represents a valid principal.如果 authenticate 方法可以证明输入是一个有效的凭证，就返回一个 Authentication 对象
 
 - Throw an `AuthenticationException` if it believes that the input represents an invalid principal.
 - Return `null` if it cannot decide.
@@ -121,7 +121,7 @@ public interface AuthenticationManager {
 
 该实现类用于处理具体的认证处理请求，SpringSecurity 的认证逻辑基本上都在该类的 authenticate 方法中实现了，因此为了区分不同的认证方法，SpringSecurity 将它们抽象成了一个 AuthenticationProvider 接口，认证时，首先判断对应的 AuthenticationProvider 能否处理对应的认证方式，能处理然后才会调用 AuthenticationProvider 的 authenticate 方法进行认证。同时 ProviderManager 的认证方式默认是自己处理认证，如果自己处理不了时，就交给父类处理。
 
-## AuthenticationProvider
+### AuthenticationProvider
 
 该接口用于指示该类能够处理何种认证方式
 
@@ -141,7 +141,7 @@ public interface AuthenticationProvider {
 - DaoAuthenticationProvider: 可以处理 UsernamePasswordAuthenticationToken 
 - RememberMeAuthenticationProvider: 可以处理 RememberMeAuthenticationToken
 
-### DaoAuthenticaitonProvider
+#### DaoAuthenticaitonProvider
 
 用户名密码方式的登录请求是调用 AbstractUserDetailsAuthenticationProvider#authenticate 方法进行认证的，在该方法中，又会调用到 DaoAuthenticationProvider#additionalAuthenticationChecks 方法做进一步的校验，去校验用户登录密码。因此我们可以自定义一个 AuthenticationProvider 代替 DaoAuthenticationProvider，并重写它里边的 additionalAuthenticationChecks 方法，在重写的过程中，加入自定义的校验逻辑即可。
 
@@ -182,7 +182,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
-## Filter
+# 参数提取
 
 在 Security 认证的过程中，会使用 setDetails 方法对请求参数进行提取:
 
@@ -260,10 +260,22 @@ protected void configure(HttpSecurity http) throws Exception {
 }
 ```
 
-## 认证流程
+# 认证流程
 
 通过过滤器链，生成未认证的 Authentication 并交给 AuthenticationManager 去进行认证处理
 
 Authentication 常用的实现类就是 UseranmePasswordAuthenticationToken
 
 AuthenticationManager 常用的实现类就是 ProviderManager, 该实现类的认证方法为了实现不同的认证方式，提供了一个 AuthenticationProvider 接口，该接口中有一个方法可以判断是否能够处理该认证方式。
+
+# 过滤器
+
+## ExceptionTranslationFilter
+
+ExceptionTranslationFilter 位于整个 springSecurityFilterChain 过滤器链的后方，用来**转换**整个链路中出现的异常。dd它是将 Java 异常转换为 HTTP Response 的桥梁, 同时 ExceptionTranslationFilter 不做任何安全方面的处理，只关注用户交互方面的问题
+
+ExceptionTranslationFilter 会处理在过滤器链中抛出的 `AccessDeniedException` 和 `AuthenticationException` 异常。
+
+- 当 ExceptionTranslationFilter  检测到 `AuthenticationException` 异常时，过滤器会启动 `AuthenticationEntryPoint`, 这里可以对认证异常进行一个统一处理
+
+- 当 ExceptionTranslationFilter  检测到 `AccessDeniedException` 异常时，该过滤器首先会判断用户是否是匿名用户，如果是匿名用户，过滤器就会启动 `AuthenticationEntryPoint`, 如果不是匿名用户，过滤器将会委托 `AccessDeniedHandler` 处理器进行处理

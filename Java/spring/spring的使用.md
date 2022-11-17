@@ -40,7 +40,7 @@ Spring 提供了一个接口 BeanFactory。这个接口是 Spring 实现 IOC 容
 
 **注意**：读取配置文件时，如果读取绝对路径时入参需要添加前缀“file:”，读取相对路径时入参需要添加“classpath:”。
 
-### BeanFactory 和 ApplicationContext
+## BeanFactory 和 ApplicationContext
 
 - BeanFactory 负责读取 bean 配置文档，管理 bean 的加载，实例化，维护 bean 之间的依赖关系，负责 bean 的声明周期。
 - ApplicationContext 除了提供上述 BeanFactory 所能提供的功能之外，还提供了更完整的框架功能：
@@ -48,7 +48,7 @@ Spring 提供了一个接口 BeanFactory。这个接口是 Spring 实现 IOC 容
   2. 资源访问：`Resource rs = ctx. getResource(“classpath:config.properties”), “file:c:/config.properties”`
   3. 事件传递：通过实现 ApplicationContextAware 接口
 
-### Aware 接口
+## Aware 接口
 
 Aware 是一个具有标识作用的超级接口，实现该接口的 bean 是具有被 spring 容器通知的能力的，而被通知的方式就是通过回调。也就是说：直接或间接实现了这个接口的类，都具有被 spring 容器通知的能力。
 
@@ -73,7 +73,7 @@ Aware 是一个具有标识作用的超级接口，实现该接口的 bean 是�
 
 例如通过 ApplicationContextAware 注入 ApplicationContext 时，使用的后置处理器为 ApplicationContextAwareProcessor
 
-### Spring Bean 的生命周期
+## Spring Bean 的生命周期
 
 Bean 的生命周期概括起来就是 **4 个阶段**：
 
@@ -388,7 +388,7 @@ Spring 创建 Bean 的底层代码是通过三级缓存实现，对应三个 Map
 
 通过一个二级缓存从而解决了 Bean 之间通过 set 方法注入的循环依赖问题，但是不能够解决通过构造方法进行注入时引发的循环依赖的问题。
 
-### 依赖注入 DI
+## 依赖注入 DI
 
 依赖注入 DI (Dependency Injection ) 是 IOC 的一种技术实现，Spring 通过 java 的反射技术实现。在程序中只需要提供类的名称, Spring 就会自动的创建和管理该类。至于对象的创建、存储、查找、获取都由容器( Spring )内部自己实现，程序员无需理会。
 

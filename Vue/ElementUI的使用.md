@@ -12,8 +12,6 @@ el-scrollbar 组件渲染之后的结构
 </div>
 ```
 
-
-
 el-scrollbar 接收几个属性：
 
 ```javascript
@@ -31,10 +29,6 @@ props: {
   },
 },
 ```
-
-
-
-
 
 el-scrollbar 在使用的时候必须指定高度，通常可以将 el-scrollbar 放在一个 div 中，然后设置 div 的高度，然后设置 el-scrollbar 的高度为 100%.
 
@@ -57,4 +51,3 @@ this.$refs.scrollbar.wrap.scrollTop
 ```
 
 通过 scrollTop 属性来控制滚动条
-
