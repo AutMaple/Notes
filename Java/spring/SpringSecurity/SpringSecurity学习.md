@@ -277,5 +277,79 @@ ExceptionTranslationFilter 位于整个 springSecurityFilterChain 过滤器链�
 ExceptionTranslationFilter 会处理在过滤器链中抛出的 `AccessDeniedException` 和 `AuthenticationException` 异常。
 
 - 当 ExceptionTranslationFilter  检测到 `AuthenticationException` 异常时，过滤器会启动 `AuthenticationEntryPoint`, 这里可以对认证异常进行一个统一处理
-
 - 当 ExceptionTranslationFilter  检测到 `AccessDeniedException` 异常时，该过滤器首先会判断用户是否是匿名用户，如果是匿名用户，过滤器就会启动 `AuthenticationEntryPoint`, 如果不是匿名用户，过滤器将会委托 `AccessDeniedHandler` 处理器进行处理
+
+此过滤器的作用是处理 FilterSecurityInterceptor 中抛出的异常，然后将请求重定向到对应页面，或返回对应的响应码
+
+## AnonymousAuthenticationFilter
+
+匿名认证过滤器，当 SecurityContextHolder 中认证信息为空,则会创建一个匿名用户存入到 SecurityContextHolder 中。Spirng Security 为了整体逻辑的统一性，即使是未通过认证的用户，也给予了一个匿名身份。而 AnonymousAuthenticationFilter 该过滤器的位置也是非常的科学的，它位于常用的身份认证过滤器（如 UsernamePasswordAuthenticationFilter、BasicAuthenticationFilter、RememberMeAuthenticationFilter）之后，意味着只有在上述身份过滤器执行完毕后，SecurityContext依旧没有用户信息，AnonymousAuthenticationFilter 该过滤器才会有意义—-基于用户一个匿名身份。
+
+## Listener 监听器
+
+Listener 是 Servlet 中的一种特殊类，它们能够帮助开发者监听 web 中的特定事件，比如 ServletContext, HttpSession, ServletRequest 的创建和销毁；变量的创建、销毁和修改等。可以在某些动作前后进行处理，实现监控。
+
+# HttpSecurity 类
+
+HttpSecurity 就是一个构建类，它的作用就是构建出一个 SecurityFilterChain
+
+## HttpSecurity 的属性
+
+```java
+// 配置匹配指定 ant 表达式的请求的处理流程，即在 security 的配置类中使用 antMatchers 方法配置的规则
+private final RequestMatcherConfigurer requestMatcherConfigurer;
+
+// 过滤器链
+private List<OrderedFilter> filters = new ArrayList<>();
+
+// 这个匹配器会匹配所有的请求
+private RequestMatcher requestMatcher = AnyRequestMatcher.INSTANCE;
+
+// 将过滤器链中的过滤器按照 @Order 注解指定的顺序从小到大排序，越小优先级越高
+private FilterOrderRegistration filterOrders = new FilterOrderRegistration();
+
+// 认证管理器
+private AuthenticationManager authenticationManager;
+```
+
+`HttpSecurity` 维护了一个过滤器的列表，这个过滤器的列表最终放入了 `DefaultSecurityFilterChain` 这个过滤器链中
+
+`HttpSecurity` 提供了很多的配置用于处理和维护我们的过滤器列表
+
+# SecurityFilterChain
+
+```java
+public interface SecurityFilterChain {
+    // 判断当前请求是否匹配，匹配时，就将请求交给该对应的过滤器链进行处理
+    boolean matches(HttpServletRequest request);
+    // 过滤器组成的有序过滤器链
+    List<Filter> getFilters();
+}
+```
+
+一个应用中可以存在多个 SecurityFilterChain, 并且这些过滤器链由 FilterChainProxy 来进行管理
+
+## FilterChainProxy
+
+FilterChainProxy 是一个 GenericFilterBean(既是 Servlet Filter 又是 Spring Bean)，它管理了所有注入到 Spring Ioc 容器中的 SecurityFilterChain
+
+FilterChainProxy 的主要作用就是将 url 规则与 SecurityFilterChain 对应起来，实现特定的 url 使用特定的 SecurityFilterChain 过滤器链
+
+# DelegatingFilterProxy
+
+标准 Servlet 过滤器的代理，DelegatingFilterProxy 会委托给一个实现了 Filter 接口并且被 Spring 管理的 Bean 进行过滤处理。在实例化 DelegatingFilterProxy 时，可以传递一个需要委托的 Filter 在 Spring 容器中的 name 作为参数， 假设为  A。 指定了委托之后，所有对 DelegatingFilterProxy 过滤器的调用都会被委托给 Filter A 进行处理, 即调用 Filter A 的 doFilter 方法, 通常这个 Filter A  为 FilterChainProxy，大致流程如下图：
+
+![image-20220711130108279](../../../Attachment/image-20220711130108279.png)
+
+本质上来说 DelegatingFilterProxy 就是一个 Filter，其间接实现了 Filter 接口，但是 **在 doFilter 方法中其实调用的是从 Spring 容器中获取到的委托 Filter 的 doFilter 方法。**
+
+## DelegatingFilterProxy 的作用
+
+- 通过 Spring 容器来管理 Servlet Filter 的生命周期
+- 可以通过 Spring 进行配置并且可以使用 Spring 容器中的对象和属性
+
+# 在 Spring Boot 中添加 Filter
+
+Spring Boot 会自动扫描所有 `FilterRegistrationBean` 类型的 Bean，然后，将它们返回的 `Filter` 自动注册到 Servlet 容器中，无需任何配置
+
+`FilterRegistrationBean` 本身不是 `Filter`，它实际上是 `Filter` 的工厂。Spring Boot 会调用 `getFilter()`，把返回的 `Filter` 注册到 Servlet 容器中。因为我们可以在 `FilterRegistrationBean` 中注入需要的资源

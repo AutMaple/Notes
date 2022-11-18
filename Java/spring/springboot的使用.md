@@ -53,7 +53,7 @@
 | @Scope                         | 该注解用于定义 Bean 的作用域范围                             |
 | @Profile                       | 该注解用于根据环境使用不同的配置文件                         |
 | @ImportResource                | 该注解引入 XML 文件，用于创建 Bean。指定该注解的 value 的时候需要使用 `classpath:` 前缀 |
-| @PostConstruct                 | 表示 Spring Bean 生命周期的一个方法，表示在 Spring 实例化注解所在的 Bean 之后立马执行该注解所修饰的方法 |
+| @PostConstruct                 | 表示 Spring Bean 生命周期的一个方法，表示在 Spring 实例化注解所在的 Bean 之后立马执行该注解所修饰的方法，执行顺序：构造方法 -> @Autowired -> @PostConstruct |
 | @Transactional                 | 这个注解可以标注在类或者方法上，当它标注在类上时，代表这个类所有公共（public）非静态的方法都将启用事务功能 |
 
 ## @EnableConfigurationProperties

@@ -19,6 +19,7 @@ public interface Authentication extends Principal, Serializable {
     
     // 用来获取当前用户，例如是一个用户名或者一个用户实体
     Object getPrincipal();
+    
     // 判断是否认证成功，如果返回 true 则之后的每个请求将不会在通过 AuthenticationMananger 进行认证，从而提升执行效率
     boolean isAuthenticated();
     
@@ -59,7 +60,7 @@ public interface AuthenticationProvider {
 
 由于 Authentication 拥有众多不同的实现类，这些不同的实现类又由不同的 AuthenticationProvider 来处理，所以 AuthenticationProvider 会有一个 supports 方法，用来判断当前的 Authentication Provider 是否支持对应的 Authentication。
 
-在一次完整的认证流程中，可能会同时存在多个 AuthenticationProvider (例如，项目同时支持 form 表单登录和短信验证码登录)，多 AuthenticationProvider 统一由 ProviderManager 来管理。同时，ProviderManager 具有一个可选的 parent, 如果所有的 AuthenticationProvider 都认证失败，那么就会调用 parent 进行认证。parent 相当于一个备用认证方式，即各个 AuthenticationProvider 都无法处理认证问题的时候，就由 parent 出场收拾残局。
+在一次完整的认证流程中，可能会同时存在多个 AuthenticationProvider (例如，项目同时支持 form 表单登录和短信验证码登录)，多个 AuthenticationProvider 统一由 ProviderManager 来管理。同时，ProviderManager 具有一个可选的 parent, 如果所有的 AuthenticationProvider 都认证失败，那么就会调用 parent 进行认证。parent 相当于一个备用认证方式，即各个 AuthenticationProvider 都无法处理认证问题的时候，就由 parent 出场收拾残局。
 
 ## 授权(Authorization)
 
@@ -72,9 +73,9 @@ AccessDecisionVoter 是一个投票器，投票器会检查用户是否具备应
 
 AccessDecisionManager 则是一个决策器，来决定此次访问是否被允许。
 
-AccessDecisionVoter 和 AccessDecisionManager 都有众多的实现类，在 AccessDecisionManager 中会挨个遍历 AccessDecisionVoter,进而决定是否允许用户访问，因而 AccessDecisionVoter 和 AccessDecisionManager 两者的关系类似于 AuthenticationProvider 和ProviderManager 的关系。
+AccessDecisionVoter 和 AccessDecisionManager 都有众多的实现类，在 AccessDecisionManager 中会挨个遍历 AccessDecisionVoter, 进而决定是否允许用户访问，因而 AccessDecisionVoter 和 AccessDecisionManager 两者的关系类似于 AuthenticationProvider 和 ProviderManager 的关系。
 
-在 Spring Security 中，用户请求一个资源（通常是一个网络接口或者一个 Java 方法）所需要的角色会被封装成一个 ConfigAttribute 对象，在ConfigAttribute 中只有一个 getAttribute 方法，该方法返回一个 String 字符串，就是角色的名称。一般来说，角色名称都带有一个 ROLE 前缀，投票器 AccessDecisionVoter 所做的事情，其实就是比较用户所具备的角色和请求某个资源所需的 ConfigAttribute 之间的关系。
+在 Spring Security 中，用户请求一个资源（通常是一个网络接口或者一个 Java 方法）所需要的角色会被封装成一个 ConfigAttribute 对象，在 ConfigAttribute 中只有一个 getAttribute 方法，该方法返回一个 String 字符串，就是角色的名称。一般来说，角色名称都带有一个 ROLE 前缀，投票器 AccessDecisionVoter 所做的事情，其实就是比较用户所具备的角色和请求某个资源所需的 ConfigAttribute 之间的关系。
 
 # SpringSecurity 的使用
 
@@ -125,7 +126,7 @@ SpringSecurity 的认证和授权等功能都是基于过滤器来实现的，�
 
 上面的这些过滤器按照既定的优先级排列，最终形成一个过滤器链。我们在使用 SpringSecurity 的时候，也可以自定义过滤器，并通过 @Order 注解去调整自定义过滤器在过滤器链中的位置
 
-**注意: **默认过滤器并不是直接放在 Web 项目的原生过滤器链中，而是通过一个 FilterChainProxy 来统一管理。Spring Security 中的过滤器链通过FilterChainProxy 嵌入到 Web 项目的原生过滤器链中，如图1-1所示。
+**注意: **默认过滤器并不是直接放在 Web 项目的原生过滤器链中，而是通过一个 FilterChainProxy 来统一管理。Spring Security 中的过滤器链通过 FilterChainProxy 嵌入到 Web 项目的原生过滤器链中，如图1-1所示。
 
 ![image-20220711125725169](../../Attachment/image-20220711125725169.png)
 
@@ -133,13 +134,13 @@ SpringSecurity 的认证和授权等功能都是基于过滤器来实现的，�
 
 ![image-20220711125915308](../../Attachment/image-20220711125915308.png)
 
-FilterChainProxy 作为一个顶层管理者，将统一管理 Security Filter。FilterChainProxy 本身将通过 Spring 框架提供的DelegatingFilterProxy 整合到原生过滤器链中，所以图 1-2 还可以做进一步的优化，如图 1-3 所示。
+FilterChainProxy 作为一个顶层管理者，将统一管理 Security Filter。**FilterChainProxy 本身将通过 Spring 框架提供的DelegatingFilterProxy 整合到原生过滤器链中**，所以图 1-2 还可以做进一步的优化，如图 1-3 所示。
 
 ![image-20220711130108279](../../Attachment/image-20220711130108279.png)
 
 ## 登录数据保存
 
-当用户登录成功后，Spring Security 会将登录成功的用户信息保存到 SecurityContextHolder 中。SecurityContextHolder 中的数据保存默认是通过 ThreadLocal 来实现的，使用 ThreadLocal 创建的变量只能被当前线程访问，不能被其他线程访问和修改，也就是**用户数据和请求线程绑定在一起**。当登录请求处理完毕后，Spring Security 会将 SecurityContextHolder 中的数据拿出来保存到 Session 中，同时将SecurityContextHolder 中的数据清空。以后每当有请求到来时，Spring Security 就会先从 Session 中取出用户登录数据，保存到SecurityContextHolder 中，方便在该请求的后续处理过程中使用，同时在请求结束时将 SecurityContextHolder 中的数据拿出来保存到 Session中，然后将 SecurityContextHolder 中的数据清空。
+当用户登录成功后，Spring Security 会将登录成功的用户信息保存到 SecurityContextHolder 中。SecurityContextHolder 中的数据保存默认是通过 ThreadLocal 来实现的，使用 ThreadLocal 创建的变量只能被当前线程访问，不能被其他线程访问和修改，也就是**用户数据和请求线程绑定在一起**。当登录请求处理完毕后，Spring Security 会将 SecurityContextHolder 中的数据拿出来保存到 Session 中，同时将 SecurityContextHolder 中的数据清空。以后每当有请求到来时，Spring Security 就会先从 Session 中取出用户登录数据，保存到 SecurityContextHolder 中，方便在该请求的后续处理过程中使用，同时在请求结束时将 SecurityContextHolder 中的数据拿出来保存到 Session 中，然后将 SecurityContextHolder 中的数据清空。
 
 这一策略非常方便用户在 Controller 或者 Service 层获取当前登录用户数据，但是带来的另外一个问题就是，在子线程中想要获取用户登录数据就比较麻烦。Spring Security 对此也提供了相应的解决方案，如果开发者使用 @Asyc 注解来开启异步任务的话，那么只需要添加如下配置，使用 Spring Security 提供的异步任务代理，就可以在异步任务中从 SecurityContextHolder 里边获取当前登录用户的信息：
 
@@ -163,7 +164,7 @@ public class ApplicationConfiguration extends AsyncConfigurerSupport{
 无论是哪种获取方式，都离不开一个重要的对象：Authentication。在 Spring Security 中，Authentication 对象主要有两方面的功能：
 
 - 作为 AuthenticationManager 的输入参数，提供用户身份认证的凭证，当它作为一个输入参数时，它的 isAuthenticated 方法返回 false, 表示用户还未认证。
-- 代表已经经过身份认证的用户，此时的 Authentication 可以从 SecurityContext 中获取。
+- true 代表已经经过身份认证的用户，此时的 Authentication 可以从 SecurityContext 中获取。
 
 一个 Authentication 对象主要包含三个方面的信息：
 
@@ -207,9 +208,9 @@ public void principal(Principal principal){
 
 ```
 
-开发者可以直接在 Controller 的请求参数中放入 Authentication 对象来获取登录用户信息。通过前面的讲解，大家已经知道 Authentication 是Principal 的子类，所以也可以直接在请求参数中放入 Principal 来接收当前登录用户信息。需要注意的是，即使参数是 Principal, 真正的实例依然是 Authentication 的实例。
+开发者可以直接在 Controller 的请求参数中放入 Authentication 对象来获取登录用户信息。通过前面的讲解，大家已经知道 Authentication 是 Principal 的子类，所以也可以直接在请求参数中放入 Principal 来接收当前登录用户信息。需要注意的是，即使参数是 Principal, 真正的实例依然是 Authentication 的实例。
 
-用过 Spring MVC 的读者都知道，Controller 中方法的参数都是当前请求 HttpServletRequest 带来的。毫无疑问，前面的 Authentication 和Principal 参数也都是 HttpServletRequest 带来的，那么这些数据到底是何时放入 HttpServletRequest 的呢？又是以何种形式存在的呢？接下来我们一起分析一下。
+用过 Spring MVC 的读者都知道，**Controller 中方法的参数都是当前请求 HttpServletRequest 带来的**。毫无疑问，前面的 Authentication 和 Principal 参数也都是 HttpServletRequest 带来的，那么这些数据到底是何时放入 HttpServletRequest 的呢？又是以何种形式存在的呢？接下来我们一起分析一下。
 
 如果使用了 Spring Security 框架，那么我们在 Controller 参数中拿到的 HttpServletRequest 实例将是 Servlet3SecurityContextHolderAwareRequestWrapper, 很明显，这是被 Spring Security 封装过的请求。
 

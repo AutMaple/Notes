@@ -12,6 +12,83 @@ SpringMVC就是一个 Spring。 Spring 是容器，ioc 能够管理对象，使�
 
  使用@Controller注解创建的是一个普通类的对象， 不是Servlet。 SpringMVC 赋予了控制器对象一些额外的功能。web开发底层是 servlet， SpringMVC中有一个对象是Servlet ： DispatherServlet (中央调度器)。DispatherServlet 负责接收用户的所有请求。 用户把请求给 DispatherServlet， 之后 DispatherServlet 把请求转发给我们的 Controller 对象， 最后是 Controller 对象处理请求。
 
+# Spring Web 应用启动顺序
+
+listener -> filter -> servlet
+
+# 参数解析常用注解
+
+| 注解              | 描述                  |
+| ----------------- | --------------------- |
+| @RequestParam     |                       |
+| @PathVariable     | 处理 url 路径中的参数 |
+| @RequestHeader    |                       |
+| @RequestAttribute |                       |
+| @CookieValue      |                       |
+| @MatrixVariable   |                       |
+| @SessionAttribute |                       |
+| @Value            |                       |
+| @ModelAttribute   |                       |
+| @RequestPart      |                       |
+| @RequestBody      |                       |
+
+# 重定向传递参数
+
+## FlashMap
+
+在重定向时，如果需要传递参数，但是又不想放在地址栏中，我们就可以通过 flashMap 来传递参数
+
+```java
+@RestController
+public class HelloController {
+    @PostMapping("/order")
+    public String order(HttpServletRequest request) {
+        FlashMap flashMap = (FlashMap) request.getAttribute(DispatcherServlet.OUTPUT_FLASH_MAP_ATTRIBUTE);
+        flashMap.put("name", "AutMaple");
+        return "redirect:/orderList";
+    }
+
+    @GetMapping("/orderList")
+    public String orderList(Model model) {
+        return (String) model.getAttribute("name");
+    }
+}
+```
+
+上面的代码不够优雅，重定向传递参数比较优雅的方式是通过 `RedirectAttributes` :
+
+```java
+@RestController
+public class HelloController {
+    @PostMapping("/order")
+    public String order(RedirectAttributes attributes) {
+        attributes.addFlashAttribute("name", "AutMaple"); // 放入 Flashmap 中，不会出现在地址栏中
+        attributes.addAttribute("email", "autmaple609@qq.com"); // 参数放入到地址栏中
+        return "redirect:/orderList";
+    }
+
+    @GetMapping("/orderList")
+    public String orderList(Model model) {
+        return (String) model.getAttribute("name");
+    }
+}
+
+```
+
+## 实现原理
+
+使用 FlashMap 实现重定向传参的媒介是 HttpSession。
+
+整个参数传递的过程可以分为三大步：
+
+1. 将参数设置到 outputFlashMap 中，有两种设置方式：
+   - 第一种方式是通过 `req.getAttribute(DispatcherServlet.OUTPUT_FLASH_MAP_ATTRIBUTE)` 直接获取 outputFlashMap 对象，然后把参数放进去
+   - 第二种方式就是通过在接口中添加 RedirectAttributes 参数，然后把需要传递的参数放入 RedirectAttributes 中，这样当处理器处理完毕后，会自动将其设置到 outputFlashMap 中
+2. 将 outputFlashMap 保存到 session 中。保存之前会给 flashMap 设置两个属性，一个是重定向的 url 地址，另一个则是过期时间，过期时间默认 180 秒，这两个属性在第三步加载 flashMap 的时候会用到
+3. 当重定向请求到达 `DispatcherServlet#doService` 方法后，此时会调用 `FlashMapManager#retrieveAndUpdate` 方法从 Session 中获取 outputFlashMap 并设置到 Request 属性中备用
+
+参考文章：[SpringMVC 中的参数还能这么传递？涨姿势了！](https://mp.weixin.qq.com/s/vwR0YRKVQQFN5B99NJKXYA)
+
 ## springmvc执行过程源代码分析
 
 1. tomcat启动，创建容器的过程
