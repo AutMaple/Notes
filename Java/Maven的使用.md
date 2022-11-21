@@ -186,7 +186,7 @@ mvn help:system
 6. mvn install: 安装主程序(会把本工程打包，并且按照本工程的坐标保存到本地仓库中)
 7. mvn deploy: 部署主程序(会把本工程打包，按照本工程的坐标保存到本地库中，并且还会保存到私服仓库中。还会自动把项目部署到 web 容器中)。
 
-执行某个命令时，之前的命令都会执行，例如执行 `mvn test` 命令，则之前的三个命令都执行了
+**执行某个命令时，之前的命令都会执行**，例如执行 `mvn test` 命令，则之前的三个命令都执行了
 
 如果某个命令执行失败，将不会继续向下执行
 
@@ -349,8 +349,6 @@ Maven 仓库的作用是存放 jar 包。仓库分为本地仓库和中央仓库
 
 直接依赖：直接依赖是只项目直接指定的 jar 包，而 jar 包依赖的 jar 则是该项目的间接依赖
 
-间接依赖：
-
 ### 依赖传递冲突问题的解决
 
 - 路径优先：当依赖中出现相同的资源时，层级越深，优先级越底，层级越低，优先级越高。其中直接依赖位于最底层
@@ -495,3 +493,60 @@ relativePath 用于指定父 pom.xml 文件的位置，它的默认值是 `../po
 ### 无 import
 
 当没有 `<scope>import</scope>` 时，意思是将 `spring-boot-dependencies` 的 `dependencies` 全部插入到当前工程的 `dependencies` 中，并且会依赖传递。
+
+## Maven 私服
+
+### Nexus
+
+Nexus 是一个强大的 Maven 仓库管理工具，使用 Nexus 可以方便的管理内部仓库同时简化外部仓库的访问。
+
+### 仓库的类型
+
+| 类型    | 描述                                                         |
+| ------- | ------------------------------------------------------------ |
+| proxy   | 表示这个仓库是一个远程仓库的代理，最典型的就是代理 Maven 中央仓库 |
+| hosted  | 宿主仓库，公司自己开发的一些 jar 存放在宿主仓库中，以及一些在 Maven 中央仓库上没有的 jar |
+| group   | 仓库组，包含代理仓库和宿主仓库                               |
+| virtual | 虚拟仓库                                                     |
+
+nexus 中包括很多仓库，hosted 中存放的是企业自己发布的 jar 包及第三方公司的 jar 包，proxy 中存放的是中央仓库的 jar，为了方便从私服下载 jar 包可以将多个仓库组成一个仓库组，每个工程需要连接私服的仓库组下载 jar 包
+
+### 上传 jar 包
+
+上传 jar 包到私服，需要配置两个地方：
+
+1. Maven 的 conf/settings.xml
+2. 项目的 pom.xml 文件
+
+settings.xml
+
+```xml
+<server>
+  <id>releases</id>
+  <username>admin</username>
+  <password>admin123</password>
+</server>
+<server>
+  <id>snapshots</id>
+  <username>admin</username>
+  <password>admin123</password>
+</server>
+```
+
+pom.xml
+
+```xml
+<distributionManagement>
+    <repository>
+        <id>releases</id>
+        <!-- 这里输入私服对应仓库的地址 -->
+        <url>http://localhost:8081/repository/maven-releases/</url>
+    </repository>
+    <snapshotRepository>
+        <id>snapshots</id>
+        <!-- 当项目的版本号带有 SNAPSHOT 字样时，就会上传到该地址对应的仓库上 -->
+        <url>http://localhost:8081/repository/maven-snapshots/</url>
+    </snapshotRepository>
+</distributionManagement>
+```
+

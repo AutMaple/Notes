@@ -723,3 +723,57 @@ public class SexTypeHandler extends BaseTypeHandler<SexEnum> {
 ```
 
 在 MyBatis 中对于 typeHandler 的要求是实现 `TypeHandler<T>` 接口，而它自身为了更加方便也通过抽象类 `BaseTypeHandler<T>` 实现了 `TypeHandler<T>` 接口，所以这里直接继承抽象类 `BaseTypeHandler<T>` 就可以了。注解 `@MappedJdbcTypes` 声明 JdbcType 为数据库的整型，@MappedTypes 声明 JavaType 为 SexEnum，这样 MyBatis 即可据此对对应的数据类型进行转换了。
+
+# 参数类型处理器
+
+在 MyBatis 映射中，能够自动将 Jdbc 类型映射为 Java 类型，处理基本数据类型，默认的类型处理就足够了，如果是特殊的数据类型，就需要我们自定义类型处理器。
+
+比如，我有一个用户爱好的字段，这个字段，在对象中，是一个 List 集合，在数据库中，是一个 VARCHAR 字段，这种情况下，就需要我们自定义类型转换器，自定义的类型转换器提供两个功能：
+
+1. 数据存储时，自动将 List 集合，转为字符串（格式自定义）
+2. 数据查询时，将查到的字符串再转为 List 集合
+
+```java
+@MappedJdbcTypes(JdbcType.VARCHAR)
+@MappedTypes(List.class)
+public class List2VarcharHandler implements TypeHandler<List<String>> {
+    public void setParameter(PreparedStatement ps, int i, List<String> parameter, JdbcType jdbcType) throws SQLException {
+        StringBuffer sb = new StringBuffer();
+        for (String s : parameter) {
+            sb.append(s).append(",");
+        }
+        ps.setString(i, sb.toString());
+    }
+
+    public List<String> getResult(ResultSet rs, String columnName) throws SQLException {
+        String favs = rs.getString(columnName);
+        if (favs != null) {
+            return Arrays.asList(favs.split(","));
+        }
+        return null;
+    }
+
+    public List<String> getResult(ResultSet rs, int columnIndex) throws SQLException {
+        String favs = rs.getString(columnIndex);
+        if (favs != null) {
+            return Arrays.asList(favs.split(","));
+        }
+        return null;
+    }
+
+    public List<String> getResult(CallableStatement cs, int columnIndex) throws SQLException {
+        String favs = cs.getString(columnIndex);
+        if (favs != null) {
+            return Arrays.asList(favs.split(","));
+        }
+        return null;
+    }
+}
+```
+
+自定义的类型转换器上需要添加两个注解：
+
+-  @MappedJdbcTypes 注解指定要处理的 Jdbc 数据类型
+-  @MappedTypes 指定要处理的 Java 类型
+
+这两个注解结合起来，就可以锁定要处理的字段

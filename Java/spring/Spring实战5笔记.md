@@ -243,6 +243,7 @@ public class Taco {
 | @Max              | 设置数字的最大值                                             |
 | @Email            | 验证字符串的值是一个邮箱                                     |
 | @AssertTrue       | 限制被修饰的字段的值为 true                                  |
+| @AssertFalse      | 限值被修饰的字段的值为 false                                 |
 | @NotEmpty         | 被修饰的字段不能为 null和不能为空，该注解可以修饰 String, Collection, Map, 或者数组类型 |
 | @Positive         | 表示数字只能够为正数                                         |
 | @PositiveOrZero   | 表示数字只能够为正数和 0                                     |

@@ -112,3 +112,6 @@ Java 浮点数类型能处理到无穷大的上溢以及到零的下溢，因此
 - StringBuilder 和 StringBuffer 对象都可以多次被修改，而不会产生新的对象
 - 通常 StringBuilder 的速度快一些，在不要求同步的场景中，通常使用 StringBuilder。如果要求同步的场景中对字符串进行操作就只能够使用 StringBuffer
 
+# this 指针问题
+
+在继承关系中，不管父类还是子类，这些类里面的 this 都代表了最终 new 出来的那个类的实例对象，所以在父类中你可以用 this 获取到子类的信息！
