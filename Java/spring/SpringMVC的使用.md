@@ -765,3 +765,31 @@ public class StudentController {
 }
 ```
 
+# 自定义参数解析器
+
+自定义参数解析器需要实现 HandlerMethodArgumentResolver 接口，改接口的定义如下：
+
+```java
+public interface HandlerMethodArgumentResolver {
+	boolean supportsParameter(MethodParameter parameter); // 判断是否启用该参数解析器
+	@Nullable
+	Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception;// 具体的解析过程
+
+}
+```
+
+- resolveArgument 方法的返回值就是参数的值
+
+实现完自定义的参数解析器之后还需要将其配置到 HandlerAdpter 中:
+
+```java
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+    @Override
+    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+        resolvers.add(new CurrentUserNameHandlerMethodArgumentResolver());
+    }
+}
+```
+
