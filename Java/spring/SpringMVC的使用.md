@@ -793,3 +793,32 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
+## 参数类型转换器
+
+由于请求的携带的参数都是字符串类型的，如果想要将字符串类型的数据转换成 java 类型的数据，就需要使用到参数类型转换器: Converter。
+
+如果我们想将一个字符串类型的日期转换成 java 中的 Date 类型，只需要实现 Converter 接口, 然后将其注入到 Spring 容器中:
+
+```java
+@Component
+public class DateConverter implements Converter<String, Date> {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    public Date convert(String source) {
+        try {
+            return sdf.parse(source);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}
+```
+
+将 Converter 接口的实现类注入到 Spring 容器中之后，Spring 会自动对 Controller 的方法参数进行类型转换
+
+## Converter 和 HandlerMethodArgumentResolver 的区别
+
+- Converter 需要和请求携带的参数进行关联，如果请求中没有携带指定的参数，这不会应用对应的转换器
+
+- HandlerMethodArgumentResolver 不需要和请求携带的参数进行关联，只需要该接口中的 supportsParameter 方法返回 true 值，就会调用对应的解析器
+- HandlerMethodArgumentResolver 的控制粒度更细

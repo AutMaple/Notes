@@ -777,3 +777,94 @@ public class List2VarcharHandler implements TypeHandler<List<String>> {
 -  @MappedTypes 指定要处理的 Java 类型
 
 这两个注解结合起来，就可以锁定要处理的字段
+
+使用时只需要在对应的 Mapper 文件的 Sql 语句中指定类型处理器即可：
+
+```xml
+<insert id="addUser" parameterType="org.javaboy.mybatis.model.User">
+    insert into user (favorites) values (#{favorites,typeHandler=org.javaboy.mybatis.typehandler.List2VarcharHandler});
+</insert>
+```
+
+# 主键回填
+
+## JDBC 实现
+
+JDBC 中实现主键回填其实非常容易，主要是在构造 PreparedStatement 时指定需要主键回填，然后在插入成功后，查询刚刚插入数据的 id:
+
+```java
+public int insert(Person person) {
+    Connection con = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    con = DBUtils.getConnection();
+    ps = con.prepareStatement("INSERT INTO person(username,password,money) VALUES(?,?,?)", PreparedStatement.RETURN_GENERATED_KEYS);
+    ps.setObject(1, person.getUsername());
+    ps.setObject(2, person.getPassword());
+    ps.setObject(3, person.getMoney());
+    int i = ps.executeUpdate();
+    rs = ps.getGeneratedKeys();
+    int id = -1;
+    if (rs.next()) {
+        id = rs.getInt(1);
+    }
+    return id;
+}
+```
+
+和普通的插入 SQL 不同之处主要体现在两个地方：
+
+1. 第一个是构造 PreparedStatement 时，多了一个参数，指定了需要主键回填。
+2. 在更新操作执行完成之后，调用 getGeneratedKeys ，然后又会获取到一个 ResultSet 对象，从这个游标集中就可以获取到刚刚插入数据的id。
+
+## Mybatis 中的实现
+
+一般情况下，主键有两种生成方式：
+
+1. 主键自动增长
+2. 自定义主键(一般是 UUID 或者是类 UUID)
+
+如果是第二种，主键一般是在 Java 代码中生成，然后传入数据库执行插入操作，如果是第一个主键自增长，此时，Java 可能需要知道数据添加成功后的主键。
+
+在 Mybatis 中实现主键回填的方式一共有两种.
+
+### 方式一
+
+在 mapper 文件中 sql 语句中加上 useGeneratekeys 属性，同时加上接收回传 id 的属性
+
+```xml
+<insert id="insertBook" useGeneratedKeys="true" keyProperty="id">
+    insert into t_book (b_name,author) values (#{name},#{author});
+</insert>
+```
+
+在执行上述语句后，传入的对象的 id 会被自动的设置
+
+**推荐使用这种方式，这种方式是最简单的**
+
+### 方式二
+
+使用 Mysql 自带的 `last_insert_id()` 函数查询刚刚插入的 id
+
+```xml
+<insert id="insertBook">
+    <selectKey keyProperty="id" resultType="java.lang.Integer">
+        SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into t_book (b_name,author) values (#{name},#{author});
+</insert>
+```
+
+这种方式是在 insert 节点中添加 selectKey 来实现主键回填，实际上这种方式的功能更加丰富，因为 selectKey 节点中的 SQL 我们既可以在插入之前执行，也可以在插入之后执行（通过设置节点的 Order 属性为 AFTER 或者 BEFORE 可以实现），具体什么时候执行，还是要看具体的需求，如果是做主键回填，我们当然需要在插入 SQL 执行之后执行 selectKey 节点中的 SQL。
+
+# ${} 和 #{}
+
+使用 `#{}` 编写 SQL 的时候，`#{}`对应的变量会自动加上单引号，而 `${}` 对应的变量不会加上单引号
+
+当我们需要拼接的变量上不能带单引号时，就必须使用`${}`,其他情况都尽量使用 `#{}` 的方式，因为 `${}` 会有 sql 注入的问题。
+
+## 常见的使用 ${} 的情况：
+
+1. 当 sql 中表名是从参数中取的情况
+
+2. order by 排序语句中，因为 order by 后边必须跟字段名，这个字段名不能带引号，如果带引号会被识别会字符串，而不是字段。
