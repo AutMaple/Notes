@@ -32,3 +32,10 @@
 | `pacman -Scc`                  | 清除安装包缓存                                               |      |
 | `pacman -Rns $(pacman -Qtdq)`  | 清除孤立的包                                                 |      |
 
+# 手动安装软件
+
+在包含 PKGBUILD 文件夹下执行：
+
+```bash
+makepkg -si
+```

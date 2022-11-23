@@ -939,7 +939,6 @@ public class WebConfig implements WebMvcConfigurer {
 
 ```java
 public interface RequestBodyAdvice {
-
 	boolean supports(MethodParameter methodParameter, Type targetType,
 			Class<? extends HttpMessageConverter<?>> converterType);
 
@@ -964,5 +963,159 @@ public interface ResponseBodyAdvice<T> {
 			ServerHttpRequest request, ServerHttpResponse response);
 
 }
-
 ```
+
+# @RequestBody 注解所修饰参数的解析过程
+
+SpringMVC 中解析 Controller 中方法参数的接口是：HandlerMethodArgumentResolver 接口。 @RequestBody 注解的解析器是：RequestResponseBodyMethodProcessor 类，具体的解析源码如下：
+
+```java
+@Override
+public boolean supportsParameter(MethodParameter parameter) {
+    return parameter.hasParameterAnnotation(RequestBody.class); // 只有参数中标有 @RequestBody 的参数会使用当前解析器进行解析
+}
+
+@Override
+public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+        NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
+    // 对 Optional 类型的参数做一些处理，如参数的嵌套等级加一
+    parameter = parameter.nestedIfOptional(); 
+    // 从请求体中将对应的参数解析出来
+    Object arg = readWithMessageConverters(webRequest, parameter, parameter.getNestedGenericParameterType());
+    String name = Conventions.getVariableNameForParameter(parameter);
+
+    if (binderFactory != null) {
+        WebDataBinder binder = binderFactory.createBinder(webRequest, arg, name);
+        if (arg != null) {
+            validateIfApplicable(binder, parameter);
+            if (binder.getBindingResult().hasErrors() && isBindExceptionRequired(binder, parameter)) {
+                throw new MethodArgumentNotValidException(parameter, binder.getBindingResult());
+            }
+        }
+        if (mavContainer != null) {
+            mavContainer.addAttribute(BindingResult.MODEL_KEY_PREFIX + name, binder.getBindingResult());
+        }
+    }
+
+    return adaptArgumentIfNecessary(arg, parameter);
+}
+```
+
+```java
+@Override
+protected <T> Object readWithMessageConverters(NativeWebRequest webRequest, MethodParameter parameter,
+        Type paramType) throws IOException, HttpMediaTypeNotSupportedException, HttpMessageNotReadableException {
+    
+    HttpServletRequest servletRequest = webRequest.getNativeRequest(HttpServletRequest.class);
+    Assert.state(servletRequest != null, "No HttpServletRequest");
+    // ServletServerHttpRequest 在 HttpServletRequest 的基础上添加了几个获取请求地址相关的方法
+    ServletServerHttpRequest inputMessage = new ServletServerHttpRequest(servletRequest);
+
+    // 该方法的实现在父类中
+    Object arg = readWithMessageConverters(inputMessage, parameter, paramType);
+    if (arg == null && checkRequired(parameter)) {
+        throw new HttpMessageNotReadableException("Required request body is missing: " +
+                parameter.getExecutable().toGenericString(), inputMessage);
+    }
+    return arg;
+}
+```
+
+参数：
+
+- paramType: 程序运行是，paramType 存储的是 ParameterizedTypeImpl 实例，ParameterizedTypeImpl 是 ParameterizedType 接口的实现
+
+ParameterizedType 接口的定义如下：
+
+```java
+public interface ParameterizedType extends Type {
+    // 主要用于获取泛型参数的真实类型
+    // 如 Controller 方法中有一个 List<Device> 类型的参数，那么调用该方法时，获取到的就是 Device 对应的 Class
+    Type[] getActualTypeArguments(); 
+    
+    // 该方法用于获取数据的原始数据类型，如 List<Device> 类型的参数调用该方法时，返回的是 List 对应的 Class
+    Type getRawType(); 
+    Type getOwnerType();
+}
+```
+
+```java
+protected <T> Object readWithMessageConverters(HttpInputMessage inputMessage, MethodParameter parameter,
+        Type targetType) throws IOException, HttpMediaTypeNotSupportedException, HttpMessageNotReadableException {
+
+    MediaType contentType;
+    boolean noContentType = false;
+    try {
+        contentType = inputMessage.getHeaders().getContentType();
+    }
+    catch (InvalidMediaTypeException ex) {
+        throw new HttpMediaTypeNotSupportedException(ex.getMessage());
+    }
+    if (contentType == null) {
+        noContentType = true;
+        contentType = MediaType.APPLICATION_OCTET_STREAM;
+    }
+
+    Class<?> contextClass = parameter.getContainingClass(); // 获取在运行时包含该参数的类
+    Class<T> targetClass = (targetType instanceof Class ? (Class<T>) targetType : null);
+    if (targetClass == null) {
+        ResolvableType resolvableType = ResolvableType.forMethodParameter(parameter);
+        targetClass = (Class<T>) resolvableType.resolve();
+    }
+
+    HttpMethod httpMethod = (inputMessage instanceof HttpRequest ? ((HttpRequest) inputMessage).getMethod() : null);
+    Object body = NO_VALUE;
+
+    EmptyBodyCheckingHttpInputMessage message = null;
+    try {
+        message = new EmptyBodyCheckingHttpInputMessage(inputMessage);
+
+        for (HttpMessageConverter<?> converter : this.messageConverters) {
+            Class<HttpMessageConverter<?>> converterType = (Class<HttpMessageConverter<?>>) converter.getClass();
+            GenericHttpMessageConverter<?> genericConverter =
+                    (converter instanceof GenericHttpMessageConverter ? (GenericHttpMessageConverter<?>) converter : null);
+            if (genericConverter != null ? genericConverter.canRead(targetType, contextClass, contentType) :
+                    (targetClass != null && converter.canRead(targetClass, contentType))) {
+                if (message.hasBody()) {
+                    HttpInputMessage msgToUse =
+                            getAdvice().beforeBodyRead(message, parameter, targetType, converterType);
+                    body = (genericConverter != null ? genericConverter.read(targetType, contextClass, msgToUse) :
+                            ((HttpMessageConverter<T>) converter).read(targetClass, msgToUse));
+                    body = getAdvice().afterBodyRead(body, msgToUse, parameter, targetType, converterType);
+                }
+                else {
+                    body = getAdvice().handleEmptyBody(null, message, parameter, targetType, converterType);
+                }
+                break;
+            }
+        }
+    }
+    catch (IOException ex) {
+        throw new HttpMessageNotReadableException("I/O error while reading input message", ex, inputMessage);
+    }
+    finally {
+        if (message != null && message.hasBody()) {
+            closeStreamIfNecessary(message.getBody());
+        }
+    }
+
+    if (body == NO_VALUE) {
+        if (httpMethod == null || !SUPPORTED_METHODS.contains(httpMethod) ||
+                (noContentType && !message.hasBody())) {
+            return null;
+        }
+        throw new HttpMediaTypeNotSupportedException(contentType,
+                getSupportedMediaTypes(targetClass != null ? targetClass : Object.class));
+    }
+
+    MediaType selectedContentType = contentType;
+    Object theBody = body;
+    LogFormatUtils.traceDebug(logger, traceOn -> {
+        String formatted = LogFormatUtils.formatValue(theBody, !traceOn);
+        return "Read \"" + selectedContentType + "\" to [" + formatted + "]";
+    });
+
+    return body;
+}
+```
+
