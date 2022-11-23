@@ -781,6 +781,14 @@ public interface HandlerMethodArgumentResolver {
 
 - resolveArgument 方法的返回值就是参数的值
 
+需要注意的是：HttpServletRequest 只能获取一次 POST 请求的请求体数据，获取多次会报如下错误：
+
+```txt
+java.io.IOException: Stream closed
+```
+
+这也是为何 @RequestBody 注解只能够在方法参数列表中出现一次的原因
+
 实现完自定义的参数解析器之后还需要将其配置到 HandlerAdpter 中:
 
 ```java
@@ -859,3 +867,102 @@ SpringMVC 定义了两个接口来操作这两个过程：
 
 1. 参数解析器 HandlerMethodArgumentResolver 
 2. 返回值处理器 HandlerMethodReturnValueHandler
+
+转化流程如下：
+
+![img](../../Attachment/1620.png)
+
+### HandlerMethodArgumentResolver
+
+```java
+public interface HandlerMethodArgumentResolver {
+	boolean supportsParameter(MethodParameter parameter); // 判断是否启用该参数解析器
+	@Nullable
+	Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception;// 具体的解析过程
+
+}
+```
+
+### HandlerMethodReturnValueHandler
+
+```java
+// 返回值处理器接口
+public interface HandlerMethodReturnValueHandler {
+
+    // 处理器是否支持返回值类型
+    boolean supportsReturnType(MethodParameter returnType);
+
+    // 将返回值解析为HTTP响应报文
+    void handleReturnValue(Object returnValue, MethodParameter returnType,
+            ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception;
+
+}
+```
+
+## MethodParameter 类
+
+```java
+public Class<?> getParameterType() // 获取参数的类型
+public Method getMethod() // 获取参数所在的方法
+public <A extends Annotation> boolean hasMethodAnnotation(Class<A> annotationType)
+public <A extends Annotation> A getMethodAnnotation(Class<A> annotationType)
+public Class<?> getDeclaringClass() // 获取声明该参数所在的类
+public Class<?> getContainingClass() // 获取程序运行时参数所在的类，与 getDeclaringClass() 方法的区别是，实际执行时，参数可能由于接口、动态代理等原因，参数实际所在的类是声明的类的子类或实现类
+```
+
+# PathPattern
+
+PathPattern 专为 Web 应用设计，它与 AntPathMatcher 功能大部分比较类似。整体上来说，AntPathMatcher 是 Spring 中一种比较原始的路径匹配解决方案，虽然比较简单，但是它的效率很低，并且在处理 URL 编码的时候也很不方便。因此，才有了 Spring5 中的 PathPattern。
+
+如果是 Servlet 应用，目前官方推荐的 URL 匹配解决方案就是 PathPattern。虽然官方推荐的是 PathPattern，但实际上默认使用的依然是 AntPathMatcher；如果你用的是 WebFlux，PathPattern 就是唯一解决方案了
+
+> 注意，PathPattern 是一个非常新鲜的玩艺，目前 Spring 最新版是 5.3.4，在 Spring5.3 之前，我们在 Servlet 应用中，也只能选择 AntPathMatcher，从 Spring5.3 之后，我们才可以使用 PathPattern 了。
+
+## 如何使用
+
+默认情况下, SpringMVC 使用的还是 AntPathMatcher, 如果想用 PathPattern 的话，需要进行如下的配置：
+
+```java
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.setPatternParser(new PathPatternParser());
+    }
+}
+```
+
+# RequestBodyAdvice 和 ResponseBodyAdvice
+
+如果想将请求和响应拦截下来进行一些自定义操作，最简单的方式是定义一个过滤器，这种方式简单，灵活；另外一种方式是 SpringMVC 给我们提供的 RequestBodyAdvice 和 ResponseBodyAdvice 接口，利用这两个接口可以对请求和响应进行预处理。接口的定义如下：
+
+```java
+public interface RequestBodyAdvice {
+
+	boolean supports(MethodParameter methodParameter, Type targetType,
+			Class<? extends HttpMessageConverter<?>> converterType);
+
+	HttpInputMessage beforeBodyRead(HttpInputMessage inputMessage, MethodParameter parameter,
+			Type targetType, Class<? extends HttpMessageConverter<?>> converterType) throws IOException;
+
+	Object afterBodyRead(Object body, HttpInputMessage inputMessage, MethodParameter parameter,
+			Type targetType, Class<? extends HttpMessageConverter<?>> converterType);
+
+	@Nullable
+	Object handleEmptyBody(@Nullable Object body, HttpInputMessage inputMessage, MethodParameter parameter,
+			Type targetType, Class<? extends HttpMessageConverter<?>> converterType);
+
+}
+
+public interface ResponseBodyAdvice<T> {
+	boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType);
+
+	@Nullable
+	T beforeBodyWrite(@Nullable T body, MethodParameter returnType, MediaType selectedContentType,
+			Class<? extends HttpMessageConverter<?>> selectedConverterType,
+			ServerHttpRequest request, ServerHttpResponse response);
+
+}
+
+```
