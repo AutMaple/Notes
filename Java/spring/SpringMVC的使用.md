@@ -822,3 +822,40 @@ public class DateConverter implements Converter<String, Date> {
 
 - HandlerMethodArgumentResolver 不需要和请求携带的参数进行关联，只需要该接口中的 supportsParameter 方法返回 true 值，就会调用对应的解析器
 - HandlerMethodArgumentResolver 的控制粒度更细
+
+## HttpMessageConverter
+
+SpringMVC 在处理请求和响应时支持多种类型的请求参数和返回类型，而这种功能的实现需要对 HTTP 消息体和参数以及返回值进行转换，为此 SpringMVC 提供了大量的转换器，这些转换器都实现了 HttpMessageConverter 接口，该接口的定义如下：
+
+```java
+// 当前转换器是否能将 HTTP 报文转换为对象类型
+boolean canRead(Class<?> clazz, @Nullable MediaType mediaType);
+
+// 当前转换器是否能将对象类型转换为HTTP报文
+boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType);
+
+// 转换器能支持的 HTTP 媒体类型
+List<MediaType> getSupportedMediaTypes();
+
+default List<MediaType> getSupportedMediaTypes(Class<?> clazz) {
+    return (canRead(clazz, null) || canWrite(clazz, null) ?
+            getSupportedMediaTypes() : Collections.emptyList());
+}
+
+// 转换HTTP报文为特定类型
+T read(Class<? extends T> clazz, HttpInputMessage inputMessage)
+        throws IOException, HttpMessageNotReadableException;
+
+// 将特定类型对象转换为 HTTP 报文
+void write(T t, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
+        throws IOException, HttpMessageNotWritableException;
+```
+
+- read 方法即是读取 HTTP 请求转换为参数对象
+
+- write 方法即是将返回值对象转换为HTTP响应报文。
+
+SpringMVC 定义了两个接口来操作这两个过程：
+
+1. 参数解析器 HandlerMethodArgumentResolver 
+2. 返回值处理器 HandlerMethodReturnValueHandler
