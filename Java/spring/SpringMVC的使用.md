@@ -965,157 +965,49 @@ public interface ResponseBodyAdvice<T> {
 }
 ```
 
-# @RequestBody 注解所修饰参数的解析过程
+# LocaleContext 和 RequestAttributes
 
-SpringMVC 中解析 Controller 中方法参数的接口是：HandlerMethodArgumentResolver 接口。 @RequestBody 注解的解析器是：RequestResponseBodyMethodProcessor 类，具体的解析源码如下：
+LocaleContext 和 RequestAttributes 都是接口
+
+## LocalContext
+
+接口的定义：
 
 ```java
-@Override
-public boolean supportsParameter(MethodParameter parameter) {
-    return parameter.hasParameterAnnotation(RequestBody.class); // 只有参数中标有 @RequestBody 的参数会使用当前解析器进行解析
-}
-
-@Override
-public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
-        NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
-    // 对 Optional 类型的参数做一些处理，如参数的嵌套等级加一
-    parameter = parameter.nestedIfOptional(); 
-    // 从请求体中将对应的参数解析出来
-    Object arg = readWithMessageConverters(webRequest, parameter, parameter.getNestedGenericParameterType());
-    String name = Conventions.getVariableNameForParameter(parameter);
-
-    if (binderFactory != null) {
-        WebDataBinder binder = binderFactory.createBinder(webRequest, arg, name);
-        if (arg != null) {
-            validateIfApplicable(binder, parameter);
-            if (binder.getBindingResult().hasErrors() && isBindExceptionRequired(binder, parameter)) {
-                throw new MethodArgumentNotValidException(parameter, binder.getBindingResult());
-            }
-        }
-        if (mavContainer != null) {
-            mavContainer.addAttribute(BindingResult.MODEL_KEY_PREFIX + name, binder.getBindingResult());
-        }
-    }
-
-    return adaptArgumentIfNecessary(arg, parameter);
+public interface LocaleContext {
+	@Nullable
+	Locale getLocale();
 }
 ```
 
-```java
-@Override
-protected <T> Object readWithMessageConverters(NativeWebRequest webRequest, MethodParameter parameter,
-        Type paramType) throws IOException, HttpMediaTypeNotSupportedException, HttpMessageNotReadableException {
-    
-    HttpServletRequest servletRequest = webRequest.getNativeRequest(HttpServletRequest.class);
-    Assert.state(servletRequest != null, "No HttpServletRequest");
-    // ServletServerHttpRequest 在 HttpServletRequest 的基础上添加了几个获取请求地址相关的方法
-    ServletServerHttpRequest inputMessage = new ServletServerHttpRequest(servletRequest);
+LocaleContext 里面存放的是 Locale, 也就是本地化信息，如果程序需要支持国际化，就需要使用到 Locale。
 
-    // 该方法的实现在父类中
-    Object arg = readWithMessageConverters(inputMessage, parameter, paramType);
-    if (arg == null && checkRequired(parameter)) {
-        throw new HttpMessageNotReadableException("Required request body is missing: " +
-                parameter.getExecutable().toGenericString(), inputMessage);
-    }
-    return arg;
-}
-```
-
-参数：
-
-- paramType: 程序运行是，paramType 存储的是 ParameterizedTypeImpl 实例，ParameterizedTypeImpl 是 ParameterizedType 接口的实现
-
-ParameterizedType 接口的定义如下：
+SpringMVC 中提供了一个 LocaleContextHolder, 这个工具类的作用就是用来保存当前请求的 LocaleContext，原理是使用 ThreadLocal 来实现：
 
 ```java
-public interface ParameterizedType extends Type {
-    // 主要用于获取泛型参数的真实类型
-    // 如 Controller 方法中有一个 List<Device> 类型的参数，那么调用该方法时，获取到的就是 Device 对应的 Class
-    Type[] getActualTypeArguments(); 
-    
-    // 该方法用于获取数据的原始数据类型，如 List<Device> 类型的参数调用该方法时，返回的是 List 对应的 Class
-    Type getRawType(); 
-    Type getOwnerType();
-}
+Locale locale = LocaleContextHolder.getLocale();
 ```
+
+## RequestAttributes
+
+RequestAttributes 接口的作用是用于 get/set/remove 一个属性。RequestAttributes 有很多的实现类，在 SpringMVC 中默认使用的是 ServletRequestAttributes,  通过 ServletRequestAttributes 的 getRequest, getResponse 和 getSession 方法，我们可以获取该次请求的 request, response, session 对象
+
+HttpServletRequest 只存在于 Controller 层中，如果想要在 Service 层获取到 HttpServletRequest 的话，需要从 Controller 层传递过来，这非常的麻烦，特别是当我们 Service 层接口已经定义好之后再去修改就更加的无趣了。
+
+SpringMVC 中提供了一个 RequestContextHolder 工具类方便我们获取 RequestAttributes:
 
 ```java
-protected <T> Object readWithMessageConverters(HttpInputMessage inputMessage, MethodParameter parameter,
-        Type targetType) throws IOException, HttpMediaTypeNotSupportedException, HttpMessageNotReadableException {
-
-    MediaType contentType;
-    boolean noContentType = false;
-    try {
-        contentType = inputMessage.getHeaders().getContentType();
-    }
-    catch (InvalidMediaTypeException ex) {
-        throw new HttpMediaTypeNotSupportedException(ex.getMessage());
-    }
-    if (contentType == null) {
-        noContentType = true;
-        contentType = MediaType.APPLICATION_OCTET_STREAM;
-    }
-
-    Class<?> contextClass = parameter.getContainingClass(); // 获取在运行时包含该参数的类
-    Class<T> targetClass = (targetType instanceof Class ? (Class<T>) targetType : null);
-    if (targetClass == null) {
-        ResolvableType resolvableType = ResolvableType.forMethodParameter(parameter);
-        targetClass = (Class<T>) resolvableType.resolve();
-    }
-
-    HttpMethod httpMethod = (inputMessage instanceof HttpRequest ? ((HttpRequest) inputMessage).getMethod() : null);
-    Object body = NO_VALUE;
-
-    EmptyBodyCheckingHttpInputMessage message = null;
-    try {
-        message = new EmptyBodyCheckingHttpInputMessage(inputMessage);
-
-        for (HttpMessageConverter<?> converter : this.messageConverters) {
-            Class<HttpMessageConverter<?>> converterType = (Class<HttpMessageConverter<?>>) converter.getClass();
-            GenericHttpMessageConverter<?> genericConverter =
-                    (converter instanceof GenericHttpMessageConverter ? (GenericHttpMessageConverter<?>) converter : null);
-            if (genericConverter != null ? genericConverter.canRead(targetType, contextClass, contentType) :
-                    (targetClass != null && converter.canRead(targetClass, contentType))) {
-                if (message.hasBody()) {
-                    HttpInputMessage msgToUse =
-                            getAdvice().beforeBodyRead(message, parameter, targetType, converterType);
-                    body = (genericConverter != null ? genericConverter.read(targetType, contextClass, msgToUse) :
-                            ((HttpMessageConverter<T>) converter).read(targetClass, msgToUse));
-                    body = getAdvice().afterBodyRead(body, msgToUse, parameter, targetType, converterType);
-                }
-                else {
-                    body = getAdvice().handleEmptyBody(null, message, parameter, targetType, converterType);
-                }
-                break;
-            }
-        }
-    }
-    catch (IOException ex) {
-        throw new HttpMessageNotReadableException("I/O error while reading input message", ex, inputMessage);
-    }
-    finally {
-        if (message != null && message.hasBody()) {
-            closeStreamIfNecessary(message.getBody());
-        }
-    }
-
-    if (body == NO_VALUE) {
-        if (httpMethod == null || !SUPPORTED_METHODS.contains(httpMethod) ||
-                (noContentType && !message.hasBody())) {
-            return null;
-        }
-        throw new HttpMediaTypeNotSupportedException(contentType,
-                getSupportedMediaTypes(targetClass != null ? targetClass : Object.class));
-    }
-
-    MediaType selectedContentType = contentType;
-    Object theBody = body;
-    LogFormatUtils.traceDebug(logger, traceOn -> {
-        String formatted = LogFormatUtils.formatValue(theBody, !traceOn);
-        return "Read \"" + selectedContentType + "\" to [" + formatted + "]";
-    });
-
-    return body;
-}
+ServletRequestAttributes requestAttributes =(ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+HttpServletRequest request = requestAttributes.getRequest();
+HttpServletResponse response = requestAttributes.getResponse();
 ```
 
+这样获取 Request 就非常方便了，不需要再通过层层传递的方式去获取
+
+# 浏览器缓存
+
+服务器在接收到客户端的请求时，会处理 GET 和 HEAD 请求头的 Last_Modified 字段。当浏览器第一次发起 GET 或者 HEAD 请求时，请求的响应头中包含一个 Last-Modified 字段，这个字段表示该资源最后一次修改时间，以后浏览器再次发送 GET、HEAD 请求时，都会携带上该字段，服务端收到该字段之后，和资源的最后一次修改时间进行对比，如果资源还没有过期，则直接返回 304 告诉浏览器之前的资源还是可以继续用的，如果资源已经过期，则服务端会返回新的资源以及新的 Last-Modified。
+
+# HandlerAdpter
+
+SpringMVC 中通过 HandlerAdapter 来让 Handler 得到执行，为什么拿到 Handler 之后不直接执行呢？那是因为 SpringMVC 中我们定义 Handler 的方式多种多样（虽然日常开发中我们都是使用注解来定义，但是实际上还有其他方式），不同的 Handler 当然对应不同的执行方式，所以这中间就需要一个适配器 HandlerAdapter。
