@@ -622,3 +622,261 @@ Spring 数据库事务的约定，其实现原理是 AOP，而 AOP 的原理是�
 事务的打开、回滚和提交是由事务管理器来完成的。在 Spring 中，事务管理器的顶层接口为 PlatformTransactionManager。当我们引入其他框架时，还会有其他的事务管理器的类，比如引入 Hibernate, 那么那么 Spring orm 包还会提供 HibernateTransactionManager 与之对应并给我们使用; Mybatis 中最常用到的事物管理器就是 DataSourceTransactionManager。
 
 在 Spring Boot 中，当你依赖于 mybatis-spring-boot-starter 之后，它会自动创建一个 DataSourceTransactionManager 对象，作为事务管理器，如果依赖于 spring-boot-starter-data-jpa，则它会自动创建 JpaTransactionManager 对象作为事务管理器，所以我们一般不需要自己创建事务管理器而直接使用它们即可
+
+# AOP 动态代理
+
+- Spring 中的 AOP，有接口就用 JDK 动态代理，没有接口就用 Cglib 动态代理。
+
+- Spring Boot 中的 AOP，2.0 之前和 Spring 一样；2.0 之后首选 Cglib 动态代理，如果用户想要使用 JDK 动态代理，需要自己手动配置。
+
+SpringBoot 2.0 之后，如果想用 JDK 动态代理需要在 application.yaml 配置文件中配置如下选项：
+
+```properties
+spring.aop.proxy-target-class=false
+```
+
+# 定义系统启动任务的两种方式
+
+在项目启动阶段要做一些数据初始化操作，这些操作有一个共同的特点，只在项目启动时进行，以后都不再执行。Spring Boot 中针对系统启动任务提供了两种解决方案，分别是 CommandLineRunner 和 ApplicationRunner, 接口的定义如下：
+
+```java
+@FunctionalInterface
+public interface CommandLineRunner {
+	void run(String... args) throws Exception; // args 来自项目启动时传递的参数，这个接口无法解析 key/value 形式的参数
+}
+
+@FunctionalInterface
+public interface ApplicationRunner {
+	void run(ApplicationArguments args) throws Exception;
+}
+```
+
+ApplicationRunner 和 CommandLineRunner 功能一致，用法也基本一致，唯一的区别主要体现在对参数的处理上，ApplicationRunner 可以接收更多类型的参数（ApplicationRunner 除了可以接收 CommandLineRunner 的参数之外，还可以接收 key/value 形式的参数）
+
+# 定时任务
+
+在 Spring  + SpringMVC 环境中，要实现定时任务，通常有两种方案：
+
+1. Spring 自带的 @Scheduled 注解
+2. 定时任务框架：Quartz
+
+## @Scheduled
+
+使用 @Scheduled 非常容易，直接创建一个 Spring Boot 项目并添加 Web 依赖，然后再启动类中添加 `@EnableScheduling` 注解来开启定时任务：
+
+```java
+@SpringBootApplication
+@EnableScheduling
+public class MyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+```
+
+接下来就可以使用 @Scheduled 注解来定义定时任务了：
+
+```java
+@Scheduled(fixedRate = 2000)
+public void fixedRate() {
+    System.out.println("FixedRage: " + new Date());
+}
+
+@Scheduled(fixedDelay = 2000)
+public void fixedDelay() {
+    System.out.println("FixedDelay: " + new Date());
+}
+
+@Scheduled(initialDelay = 2000, fixedDelay = 2000)
+public void initialDelay() {
+    System.out.println("InitialDelay: " + new Date());
+}
+```
+
+- fixedRate: 表示每隔 2000 ms 执行一次该任务，2000 表示的是两次任务开始执行的时间间隔
+- fixedDelay: 表示上一个任务结束到下一个任务开始之间的时间间隔
+- initialDelay: 表示任务首次执行的延时时间
+
+### Cron 表达式
+
+@Scheduled 注解也支持 Cron 表达式，Cron 表达式的格式如下：
+
+```txt
+[秒][分][时][日][月][周][年]
+```
+
+```java
+@Scheduled(cron="0/5 * * * * *") // 表示每隔 5s 执行一次
+public void cron() {
+    System.out.println(new Date())
+}
+```
+
+## Quartz 
+
+一般在项目中，除非定时任务涉及到的业务非常的简单，才会使用 @Scheduled 注解来解决定时任务，否则大部分情况可能都是使用 Quartz 来做定时任务
+
+参考文章：[配置定时任务](http://docs.javaboy.org/springboot/scheduled_task/#_4-%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1%E6%80%8E%E4%B9%88%E9%85%8D)
+
+# 配置过滤器
+
+在 SpringBoot 中配置过滤器有三种方式：
+
+1. @WebFilter
+2. @Bean
+3. FilterRegistrationBean
+
+## @WebFilter
+
+通过 @WebFilter 来标记一个过滤器，这是将 Servlet 中的那套方式直接搬到 SpringBoot 中
+
+```java
+@WebFilter(urlPatterns = "/*")
+public class MyFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        System.out.println("-----doFilter-----");
+        chain.doFilter(request, response);
+    }
+}
+```
+
+在 @WebFilter 中可以配置拦截规则，但是要想让这个过滤器剩下，还需要进行如下的配置：
+
+```java
+@SpringBootApplication
+@ServletComponentScan
+public class FilterdemoApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(FilterdemoApplication.class, args);
+    }
+
+}
+```
+
+@ServletComponentScan 注解虽然名字带了 Servlet, 但是实际上它不仅仅可以扫描项目中的 Servlet 容器，也可以扫描 Filter 和 Listener
+
+在实际项目中，这种方式使用较少，因为这种方式有一个很大的弊端就是无法指定 Filter 的优先级，如果存在多个 Filter 时，无法通过 @Order 指定优先级
+
+## @Bean
+
+第二种方式就是将过滤器配置成 Bean，注册到容器中去：
+
+```java
+@Component
+public class MyFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        System.out.println("-----doFilter-----");
+        chain.doFilter(request, response);
+    }
+}
+```
+
+这种方式看起来很方便，一个注解就将 Filter 注入到容器中，并且可以通过 @Order 指定 Filter 的优先级。但是这种方式不能够设置过滤器的拦截规则，只能够是默认的: `/*` ，也就是默认拦截所有的请求
+
+## FilterRegistrationBean
+
+通过 FilterRegistrationBean， 既可以设置优先级，也可以设置过滤器的拦截规则
+
+```java
+@Configuration
+public class FilterConfiguration {
+    @Bean
+    FilterRegistrationBean<MyFilter> myFilterFilterRegistrationBean() {
+        FilterRegistrationBean<MyFilter> bean = new FilterRegistrationBean<>();
+        bean.setFilter(new MyFilter());
+        bean.setOrder(-1);
+        bean.setUrlPatterns(Arrays.asList("/*"));
+        return bean;
+    }
+    @Bean
+    FilterRegistrationBean<MyFilter2> myFilterFilterRegistrationBean2() {
+        FilterRegistrationBean<MyFilter2> bean = new FilterRegistrationBean<>();
+        bean.setFilter(new MyFilter2());
+        bean.setOrder(-2);
+        bean.setUrlPatterns(Arrays.asList("/hello"));
+        return bean;
+    }
+}
+```
+
+SpringBoot 为了方便开发人员向 Servlet 容器中注册 Servlet、Filter 以及 Listener, 提供了一个 Bean 注册的抽象类：RegistrationBean
+
+```java
+public abstract class RegistrationBean implements ServletContextInitializer, Ordered {
+	private int order = Ordered.LOWEST_PRECEDENCE;
+	private boolean enabled = true;
+	@Override
+	public final void onStartup(ServletContext servletContext) throws ServletException {
+		String description = getDescription();
+		if (!isEnabled()) {
+			logger.info(StringUtils.capitalize(description) + " was not registered (disabled)");
+			return;
+		}
+		register(description, servletContext);
+	}
+	protected abstract String getDescription();
+	protected abstract void register(String description, ServletContext servletContext);
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+	public void setOrder(int order) {
+		this.order = order;
+	}
+	@Override
+	public int getOrder() {
+		return this.order;
+	}
+
+}
+```
+
+1. RegistrationBean 实现了 ServletContextInitializer 接口，在 Servlet 启动时，RegistrationBean#onStartup 方法会被调用，进而完成 Filter、Servlet 以及 Listener 的注册。
+
+2. enabled 属性可以理解为一个开关，设置为 false 相当于关闭组件注册。
+
+# 自定义 SpringMVC 的配置
+
+跟自定义 SpringMVC 相关的类和注解主要有如下四个：
+
+- WebMvcConfigurerAdapter
+- WebMvcConfigurer
+- WebMvcConfigurationSupport
+- @EnableWebMvc
+
+## WebMvcConfigurerAdapter
+
+WebMvcConfigurerAdapter，这个是在 Spring Boot 1.x 中我们自定义 SpringMVC 时继承的一个抽象类，这个抽象类本身是实现了 WebMvcConfigurer 接口，然后抽象类里边都是空方法。从 Spring5 开始，由于我们要使用 Java8，而 Java8 中的接口允许存在 default 方法，因此官方建议我们直接实现 WebMvcConfigurer 接口，而不是继承 WebMvcConfigurerAdapter 。
+
+## WebMvcConfigurer 
+
+WebMvcConfigurer 是我们在 Spring Boot 2.x 中实现自定义配置的方案。
+
+WebMvcConfigurer 是一个接口，接口中的方法和 WebMvcConfigurerAdapter 中定义的空方法其实一样，所以用法上来说，基本上没有差别，从 Spring Boot 1.x 切换到 Spring Boot 2.x ，只需要把继承类改成实现接口即可。
+
+## WebMvcConfigurationSupport
+
+Spring Boot 给我们提供了很多自动化配置，很多时候当我们修改这些配置的时候，并不是要全盘否定 Spring Boot 提供的自动化配置，我们可能只是针对某一个配置做出修改，其他的配置还是按照 Spring Boot 默认的自动化配置来，而继承 WebMvcConfigurationSupport 来实现对 SpringMVC 的配置会导致所有的 SpringMVC 自动化配置失效，因此，一般情况下我们不选择这种方案
+
+## @EnableWebMvc
+
+@EnableWebMvc 注解，这个注解很好理解，它的作用就是启用 WebMvcConfigurationSupport
+
+加了这个注解，就会自动导入 WebMvcConfigurationSupport，所以在 Spring Boot 中，我们也不建议使用 @EnableWebMvc 注解，因为它一样会导致 Spring Boot 中的 SpringMVC 自动化配置失效。
+
+## 总结
+
+1. Spring Boot 1.x 中，自定义 SpringMVC 配置可以通过继承 WebMvcConfigurerAdapter 来实现。
+
+2. Spring Boot 2.x 中，自定义 SpringMVC 配置可以通过实现 WebMvcConfigurer 接口来完成。
+
+3. 如果在 Spring Boot 中使用继承 WebMvcConfigurationSupport 来实现自定义 SpringMVC 配置，或者在 Spring Boot 中使用了 @EnableWebMvc 注解，都会导致 Spring Boot 中默认的 SpringMVC 自动化配置失效。
+
+4. 在纯 Java 配置的 SSM 环境中，如果我们要自定义 SpringMVC 配置，有两种办法，第一种就是直接继承自 WebMvcConfigurationSupport 来完成 SpringMVC 配置，还有一种方案就是实现 WebMvcConfigurer 接口来完成自定义 SpringMVC 配置，如果使用第二种方式，则需要给 SpringMVC 的配置类上额外添加 @EnableWebMvc 注解，表示启用 WebMvcConfigurationSupport，这样配置才会生效。换句话说，在纯 Java 配置的 SSM 中，如果你需要自定义 SpringMVC 配置，你离不开 WebMvcConfigurationSupport ，所以在这种情况下建议通过继承 WebMvcConfigurationSupport 来实现自动化配置

@@ -1011,3 +1011,7 @@ HttpServletResponse response = requestAttributes.getResponse();
 # HandlerAdpter
 
 SpringMVC 中通过 HandlerAdapter 来让 Handler 得到执行，为什么拿到 Handler 之后不直接执行呢？那是因为 SpringMVC 中我们定义 Handler 的方式多种多样（虽然日常开发中我们都是使用注解来定义，但是实际上还有其他方式），不同的 Handler 当然对应不同的执行方式，所以这中间就需要一个适配器 HandlerAdapter。
+
+# 国际化
+
+默认情况下，系统是根据请求头的中 Accept-Language 字段来判断当前的语言环境的，该这个字段由浏览器自动发送
