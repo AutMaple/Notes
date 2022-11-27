@@ -880,3 +880,26 @@ Spring Boot 给我们提供了很多自动化配置，很多时候当我们修�
 3. 如果在 Spring Boot 中使用继承 WebMvcConfigurationSupport 来实现自定义 SpringMVC 配置，或者在 Spring Boot 中使用了 @EnableWebMvc 注解，都会导致 Spring Boot 中默认的 SpringMVC 自动化配置失效。
 
 4. 在纯 Java 配置的 SSM 环境中，如果我们要自定义 SpringMVC 配置，有两种办法，第一种就是直接继承自 WebMvcConfigurationSupport 来完成 SpringMVC 配置，还有一种方案就是实现 WebMvcConfigurer 接口来完成自定义 SpringMVC 配置，如果使用第二种方式，则需要给 SpringMVC 的配置类上额外添加 @EnableWebMvc 注解，表示启用 WebMvcConfigurationSupport，这样配置才会生效。换句话说，在纯 Java 配置的 SSM 中，如果你需要自定义 SpringMVC 配置，你离不开 WebMvcConfigurationSupport ，所以在这种情况下建议通过继承 WebMvcConfigurationSupport 来实现自动化配置
+
+# JPA
+
+JPA: Java Persistence API, Java 持久化层 API, 是 JAVA EE 5.0 平台标准的 ORM 规范，使得应用程序以统一的方式访问持久层
+
+## JPA 与 Hibernate 的关系
+
+JPA 是一种规范，而 Hibernate 是 JPA 的实现
+
+## Spring Data
+
+Spring Data 是 Spring 的一个子项目，用于简化数据库的访问, 支持关系型数据库和 NoSQL 数据库:
+
+1. 支持的 NoSQL 数据库:
+   - MongoDB(文档型数据库)
+   - Neo4j(图形数据库)
+   - Redis(键/值数据库)
+   - Hbase(列存储数据库)
+2. 支持的关系型数据库：
+   - JDBC
+   - JPA
+
+Spring Data JPA 致力于减少数据访问层(DAO)的开发量. 开发者唯一需要做的就是声明持久层的接口，其他的交给 Spring Data JPA 来完成。Spring Data JPA 通过规范方法的名字, 然后根据方法的名字来确定如何操作数据库。
