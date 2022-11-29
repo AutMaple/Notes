@@ -79,7 +79,11 @@ LXC 技术主要是借助 Linux 内核中提供的 CGroup 功能和 namespace �
 | docker cp \[Hostfile] \[containerId:containerFilePath] | 将主机中的文件复制到容器中, 这两个参数可以互换位置，实现容器到主机的文件复制 |
 | docker inspect \[containerId]                          | 返回指定容器的详细信息,如监听的端口，绑定的 IP 地址等        |
 | docker top \[containerId]                              | 查看指定容器运行的进程                                       |
-|                                                        |                                                              |
+| docker stop $(docker ps -a -q)                         | 停止所有在运行的容器                                         |
+
+### 命令参数注意事项
+
+如果命令中包含 `-d <image-id>` 参数，最好将这些参数放在命令的最后。
 
 ## 容器的启动
 
