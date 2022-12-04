@@ -135,6 +135,42 @@ public class HelloController {
 }
 ```
 
+## 临时实例和非临时实例
+
+nacos 将服务分成临时实例和非临时实例两种，如果不配置，默认的服务就是临时实例，如果要配置非临时实例需要通过如下配置：
+
+```yaml
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ephemeral: false # 该服务为非临时实例
+```
+
+### 临时实例和非临时实例的区别
+
+- 临时实例需要主动发送心跳包给 nacos, 在指定时间段内 nacos 没有收到临时实例的心跳包，则会将临时实例进行剔除
+
+- 非临时实例则不需要进行心跳检测，由 nacos 主动询问非临时实例的状态
+
+## 消息推送
+
+nacos 采取 pull 和 push 两种方式进行服务获取和服务变更通知。服务消费者每隔一段时间到 nacos 中拉取服务列表更新状态，同时，如果 nacos 发现服务列表发生变化，nacos 会主动向服务消费者推送最新的服务列表，从而让服务列表的变更更快的被服务消费者所感知
+
+## Nacos 和 Eureka 对比
+
+### 共同点
+
+1. 都支持服务注册和服务拉取
+2. 都支持服务提供者用心跳方式进行健康检测
+
+### 区别
+
+1. Nacos 支持服务端主动检测服务提供者的状态：临时实例采用心跳检测的方式，非临时实例采用主动检测的方式
+2. 临时实例心跳不正常会被剔除，非临时实例则不会被剔除
+3. Nacos 支持在服务列表变更时主动将变更推送给服务消费者，从而让更新及时的被服务消费者所感知到
+4. Nacos 集群默认采用 AP 方式，当集群中存在非临时实例时，采用 CP 模式；Eureka 采用 AP 模式
+
 # 配置中心 Nacos
 
 [官方文档](https://spring-cloud-alibaba-group.github.io/github-pages/hoxton/zh-cn/index.html#_spring_cloud_alibaba_nacos_config)
@@ -185,11 +221,20 @@ Nacos Config 目前提供了三种配置能力从 Nacos 拉取相关的配置
 
 当三种方式共同使用时，他们的一个优先级关系是:A < B < C
 
+# bootstrap 文件默认不加载的问题
+
+spring cloud 2020.0.0 之后的版本包括 2020.0.0, 默认不加载 bootstrap 文件，如果要加载 bootstrap 文件，需要导入相关的依赖：
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-bootstrap</artifactId>
+</dependency>
+```
+
 ## Spring Cloud Config VS Spring Cloud Alibaba Nacos Config
 
 SPring Cloud Alibaba Config 是 Spring Cloud config 中 Config Server 和 Config Client 的替代品。也就是说，我们可以在 Nacos 中进行配置，然后微服务从 Nacos 中拉取配置进行进行设置
-
-
 
 ## 配置的存储
 
@@ -203,6 +248,45 @@ Nacos Server 的数据存储默认采用的是 Derby 数据库，除此之外，
 
 - 如何将远程服务器上的配置加载到 Environment 中
 - 配置变更时，如何将新的配置更新到 Environment 中，保证配置变更时，可以进行属性值的动态刷新
+
+## 配置热更新
+
+配置热加载的实现方式有两种：
+
+1. 使用 @RefreshScope 注解
+
+   在使用了 @Value 注解的类上，加上 @RefreshScope 注解即可，之后在 nacos 配置中心中修改配置之后，服务中的配置就会自动更新
+
+2. 使用 @ConfigurationProperties 注解, 推荐使用这种方式，该方式不需要使用 @RefreshScope 注解：
+
+   ```java
+   @ConfigurationProperties(prefix="pattern")
+   @Component
+   @Getter
+   @Setter
+   public class PatternProperties {
+       private String dateformat;
+   }
+   
+   
+   @RestController
+   @RequestMapping("/user")
+   public class UserController {
+       @Autowired
+       private PatternProperties properties;
+       
+       @GetMapping("/pattern")
+       public String pattern() {
+           return properties.getDateformat();
+       }
+   }
+   ```
+
+## 配置文件的优先级
+
+>  服务名-profile.yaml > 服务名.yaml > 本地配置
+
+配置中心的配置的优先级大于本地环境，带有 profile 的配置文件的优先级大于不带 profile 配置文件的优先级
 
 # Nacos 多级存储模型
 
@@ -221,6 +305,26 @@ spring:
       discovery:
         cluster-name: hz # 集群的名称
 ```
+
+# Feign 的最佳实践
+
+将 Feign 相关的接口，实体类等都抽取到一个模块中去，当其他的微服务需要使用对应的 Feign API 时，引入封装好的模块即可
+
+需要注意的是，如果将 Feign 相关的接口抽取到一个独立的模块中去之后，Feign 相关的模块也就不在 SpringBootApplication 的扫描范围之内了，也就是说不会在运行时生成 Feign 接口的动态代理类了，解决的办法如下：
+
+1. 指定 FeignClient 所在的包
+
+   ```java
+   @EnableFeignClient(basePackages="com.autmaple.feign.clients")
+   ```
+
+或者是：
+
+2. 指定 FeignClient 对应的字节码，只导入需要的 FeignClient
+
+   ```java
+   @EnableFeignClient(clients = {UserClient.class})
+   ```
 
 # Sentinel
 
@@ -554,6 +658,17 @@ public class GatewayConfig {
                 .build();
     }
 }
+```
+
+## Gateway 配置 lb 协议失效的问题
+
+在 spring cloud 2020 之后的版本中，缺少负载均衡器：Ribbon, 因此如果想让 Gateway 使用 lb 协议的，需要添加负载均衡依赖:
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+</dependency>
 ```
 
 ## Route Predicate 的使用
