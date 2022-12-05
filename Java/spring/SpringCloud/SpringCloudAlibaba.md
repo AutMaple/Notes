@@ -394,6 +394,35 @@ spring:
 - controlBehavior：流控效果，0表示快速失败，1表示Warm Up，2表示排队等待；
 - clusterMode：是否集群。
 
+## Sentinel 和 Hystrix 保护技术的对比
+
+|                | Sentinel                                       | Hystrix                       |
+| -------------- | ---------------------------------------------- | ----------------------------- |
+| 隔离策略       | 信号量隔离                                     | 线程池隔离/信号量隔离         |
+| 熔断降级策略   | 基于慢调用或异常比例                           | 基于失败比率                  |
+| 实时指标实现   | 滑动窗口                                       | 滑动窗口(基于 RxJava)         |
+| 规则配置       | 支持多种数据源                                 | 支持多种数据源                |
+| 扩展性         | 多个扩展点                                     | 插件的形式                    |
+| 基于注解的支持 | 支持                                           | 支持                          |
+| 限流           | 基于 QPS，支持关于调用关系的限流               | 有限的支持                    |
+| 流量整形       | 支持慢启动，匀速排队模式                       | 不支持                        |
+| 系统自适应保护 | 支持                                           | 不支持                        |
+| 控制台         | 开箱即用，可配置规则，查看秒级监控，机器发现等 | 不完善                        |
+| 常见框架适配   | Servlet, Spring Cloud, Dubbo,gRPC 等           | Servlet, Spring Cloud Netfilx |
+
+
+
+## 雪崩问题
+
+服务调用链路中的某个服务出现故障，从而引起整个链路中所有为服务都不可用的一种现象，这种现象称其为雪崩
+
+### 解决方案
+
+- 超时处理：设定超市时间，请求超过一定时间没有响应就返回错误信息，不会无休止的等待。该种方式并不能够从根本上的解决问题。
+- 舱壁模式：限定每个业务所能够使用的线程数，避免耗尽整个计算机的资源，因此也叫线程隔离
+- 熔断降级：由断路器统计业务执行的异常比例，如果超出阈值则会熔断该业务，拦截访问该业务的一切请求，快速失败，从而快速释放资源，避免了资源被消耗殆尽。
+- 流量控制：限制业务访问的 QPS(Query Per Second)，避免服务因为流量的突增而出现故障
+
 ## 限流的算法
 
 ### 计数器算法
@@ -703,6 +732,98 @@ Spring Cloud Gateway 包括许多内置的 Route Predicate 工厂。 所有这�
 | Retry               | 对路由请求进行重试的过滤器，可以根据路由请求返回的 HTTP 状态码来确定是否进行重试 |
 
 Spring Cloud Gateway 可以配置注册中心进行使用，并且如果要使用负载均衡，配置的 uri 需要使用 lb 协议，如： uri: lb://user-service, user-service 是微服务在注册中心的名字
+
+## 默认过滤器
+
+DefaultFilter 是全局过滤器的一种，默认对全部的请求器过滤的作用。配置的方式是通过 application.yaml 文件的方式进行配置。
+
+```yaml
+```
+
+
+
+## 全局过滤器
+
+全局过滤器的作用是处理一切进入网关的请求和微服务的响应，于 GatewayFilter 的作用一样。区别在于 GatewayFilter 通过配置定义，处理逻辑固定，而 GlobalFilter 的逻辑需要自己写代码实现。
+
+GlobalFilter 接口的定义如下：
+
+```java
+public interface GlobalFilter {
+    /**
+     * 处理当前请求，有必要的话通过 {@link GatewayFilterChain} 将请求交给下一个过滤器处理
+     * 
+     * @param exchange 请求上下文，通过该参数可以获取到 request 和 response 相关的信息
+     * @param chain 全局过滤器链，用于将请求交给其他的过滤器处理
+     * @return {@code Mono<Void>} 返回表示当前过滤器业务结束
+     */
+    Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain);
+}
+```
+
+具体实现的例子如下：
+
+```java
+@Order(-1)
+@Component
+public class AuthorizationFilter implements GlobalFilter {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        MultiValueMap<String, String> queryParams = request.getQueryParams();
+        String authorization = queryParams.getFirst("authorization");
+        if ("admin".equals(authorization))
+            return chain.filter(exchange);
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        return exchange.getResponse().setComplete();
+
+    }
+}
+```
+
+> @Order 中的值越小，优先级越高，因此 int 类型的最小值优先级最高，并且 @Order 的默认值为 int 类型的最大值，
+
+## Predicate 和 GatewayFilter 的比较
+
+首先从执行的顺序来看：Predicate 先于 GatewayFilter 执行，先通过 Predicate 判断请求是否允许被路由，只有请求被允许路由时，请求才会交给配置文件中配置的过滤器去处理
+
+配置了 GlobalFilter, Predicate 也是优先于 GlobalFilter 先执行
+
+## 过滤器链的执行顺序
+
+Spring Cloud Gateway 中存在三种过滤器：特定路由的过滤器，默认过滤器以及全局过滤器。
+
+请求在被路由后，Gateway 会将配置给当前路由的 GatewayFilter, DefaultFilte 和 GlobalFilter 合并到一个过滤器链中，并将过滤器链中的过滤器排序后依次执行每个过滤器。在将 GlobalFilter 整合到过滤器链的过程中，使用了适配器模式，将 GlobalFilter 适配成了一个 GatewayFilter
+
+同时，路由过滤器和默认过滤器默认是没有声明 order，这两种过滤器的顺序为在配置文件中声明的顺序，由 Spring 为他们指定，顺序从 1 开始。
+
+如果多个过滤器的 order 值一样是，执行的顺序为：默认过滤器 > 路由过滤器 > GlobalFilter
+
+## 跨域问题处理
+
+在 Spring Cloud Gateway 中实现跨域非常的简单，只需要在 application.yaml 文件中进行配置即可：
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        add-to-simple-url-handler-mapping: true # 解决 OPTIONS 请求被拦截的问题
+        cors-configurations:
+          '[/**]':
+            allowOrigins: # 允许哪些网站进行跨域请求
+              - "http://localhost:8090"
+              - "http://www.autmaple.com"
+            allowMethods: # 允许跨域请求的方法
+              - "GET"
+              - "POST"
+              - "DELETE"
+              - "PUT"
+              - "OPTIONS"
+            allowHeaders: "*" # 允许在请求中携带的请求头信息
+            allowCredentials: true # 是否允许携带 Cookie
+            max-age: 360000 # 此次跨域检查的有效期, 在有效期内，浏览器将不再发起询问
+```
 
 # 分布式事务
 
