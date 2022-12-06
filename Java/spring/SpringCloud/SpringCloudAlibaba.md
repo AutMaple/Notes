@@ -410,8 +410,6 @@ spring:
 | 控制台         | 开箱即用，可配置规则，查看秒级监控，机器发现等 | 不完善                        |
 | 常见框架适配   | Servlet, Spring Cloud, Dubbo,gRPC 等           | Servlet, Spring Cloud Netfilx |
 
-
-
 ## 雪崩问题
 
 服务调用链路中的某个服务出现故障，从而引起整个链路中所有为服务都不可用的一种现象，这种现象称其为雪崩
@@ -480,6 +478,78 @@ Sentinel 就是采用滑动窗口算法来实现限流的
 
 Sentinel 支持多种保护规则：流量控制规则，熔断降级规则，系统保护规则，来源访问控制规则，热点参数规则
 
+### 流量控制
+
+#### 流控模式
+
+在 Sentinel 控制台中添加流控规则的时候，有三种可选的流控模式：
+
+- 直接模式：统计当前资源的请求，触发阈值时，对当前资源直接进行限流，这是默认的流控模式
+- 关联模式：统计与当前资源相关的另一个资源，触发阈值时，对当前资源进行限流
+- 链路模式：统计从指定链访问到本资源的请求，触发阈值时，对指定链路进行限流
+
+##### 关联模式
+
+该种模式下，对 A 资源配置关联流控规则：A 关联 B。该配置的含义就是对 B 进行统计，当 B 的访问超出阈值时，就对 A 作出限制。
+
+使用场景：比如用户支付时，需要修改订单的状态，同时用户要查询订单。查询和修改操作会争抢数据库锁，产生竞争。业务需求就是有限支付和更新订单的业务，因此当修改订单业务出发阈值时，需要对查询业务进行限流。
+
+当满足下面的条件时，就可以使用关联规则：
+
+- 两个有竞争关系的资源
+- 一个优先级高，一个优先级低
+
+小技巧：给 A 限流，就给 A 配置关联规则。
+
+##### 链路模式
+
+只针对从指定链路访问到本资源的请求做统计，判断是否超出阈值。该种方式主要是对不同的来源进行一个限制
+
+例如有两条请求链路：
+
+- /test1 -> /common
+- /test2 -> /common
+
+如果只希望统计从 /test2 进入到 /common 的请求，则可以为 /common 配置流控规则
+
+需求：有查询订单和创建订单的业务，两者都需要查询商品。统计从查询订单进入到查询商品的请求，并对查询商品的业务进行限流。
+
+步骤：
+
+1. 在 OrderService 中添加一个 queryGoods() 方法，不用实现业务
+2. 在 OrderController 添加一个 /order/query 的端点，并在该端点中调用 OrderService 的 queryGoods() 方法
+3. 在 OrderController 中添加一个 /order/save 的端点，并在该端点中调用 OrderService 的 queryGoods() 方法
+4. 给 OrderService 的 queryGoods() 方法配置限流规则。
+
+**注意**：
+
+Sentinel 默认只能够监听 Controller 中的链路，如果需要监控 Service 层中的资源，则需要在 Service 层对应的资源上(即方法上)加上 @SentinelResource 注解。
+
+同时 Sentinel 默认会对 Controller 中的方法做 context 整个，从而导致链路模式的流控失效，需要修改 Application.yaml：
+
+```yaml
+spring:
+  cloud:
+    sentinel:
+      web-context-unify: false # 关闭 context 整合
+```
+
+#### 流控效果
+
+- warm-up: 预热模式，该模式是应对服务冷启动的一种方案。请求阈值初始值是 `threshold /coldFactor` ，持续指定时长后，逐渐提高到 threshold 值，而 coldFactor 的默认值是 3.
+
+  例如：如果设置 QPS 为 10，预热时间为 5s 的话，初始的阈值就是 10 / 3 = 3. 然后在指定的 5s 时间间隔中逐步增长到 10。
+
+- 排队等待：当请求超过 QPS 阈值时，快速失败和 warm up 都会直接拒绝新的请求并抛出异常。而排队等待则是让所有请求进入一个队列中，然后按照阈值允许的时间间隔，依次执行。后来的请求必须等待前面的请求执行完成，如果请求预期的等待时间超出最大时长，则会被拒绝，直接失败。**该种流控方式可以做到流量整形的效果。**
+
+  例如：QPS = 5， 意味着没 200ms 处理一个请求; timeout = 2000, 意味着预期等待超过 2000ms 的请求会被直接拒绝并抛出异常。
+
+#### 热点参数限流
+
+在 Sentinel 中可以对资源中的某些参数值配置限流规则，这种模式的应用场景就是：可以为热点数据配置更多的资源
+
+**注意：** Sentinel 的热点参数限流默认对 SpringMVC 不起作用。如果要对 SpringMVC 起作用，需要在对应的 endpoint 中添加 @SentinelResource 注解。
+
 ### 基于并发数和 QPS 的流量控制
 
 Sentinel 流量控制统计有两种类型，通过 Grade 属性来控制：
@@ -509,6 +579,123 @@ Sentinel 并发线程数限流就是统计当期请求的上下文线程数量�
 Warm Up 是一种冷启动(预热)的方式，当流量突然增大时，也就意味着系统从空闲状态突然切换到繁忙状态，有可能瞬间把系统压垮。当我们希望请求处理的数量逐步递增，并在一个预期时间之后达到处理请求的最大值时，Warm Up 流控方式就能够达到我们想要的效果
 
 匀速排队的方法会严格控制请求通过的间隔时间，也就是让请求以匀速的速率通过，其实相当于漏桶限流算法。例如当 QPS = 2 时，表示每个 500ms 才允许下一个请求。这种方式的好处就是可以处理间隔性突发流量
+
+## 隔离和熔断降级
+
+不管是隔离还是降熔断降级，都是对 **客户端(调用方)** 的保护
+
+### 熔断
+
+熔断的核心就是断路器，断路器会统计异常请求的次数和频率，然后根据开发人员的配置判断是否需要熔断对应的服务。并且可以配置熔断的时间，在指定的熔断时间之后，尝试开放被熔断的服务。
+
+#### 熔断策略
+
+1. 慢调用：即某次请求的处理时间超过阈值，则认为是一次慢调用
+2. 异常比例：统计指定时间内异常比例，根据异常比例来进行熔断
+3. 异常数: 统计指定时间内的异常数，根据异常数来进行熔断。
+
+### 降级
+
+在 SpringCloud 中，微服务的调用都是通过 Feign 来实现的，因此做客户端保护必须整合 Feign 和 Sentinel，步骤：
+
+1. 开启 Feign 的 Sentinel 功能
+
+```yaml
+feign:
+  sentinel:
+    enabled: true # 开启 Feign 对 sentinel 的支持
+```
+
+2. 给 FeignClient 配置失败后的降级逻辑
+   1. FallbackClass，无法对远程调用的异常做处理
+   2. FallbackFactory, 可以对远程调用的异常做处理(**推荐**)
+
+####  FallbackFactory 的使用
+
+1. 实现 FallbackFactory
+
+   ```java
+   @Slf4j
+   public class UserClientFallbackFactory implements FallbackFactory<UserClient> {
+       @Override
+       public UserClient create(Throwable cause) {
+           // 在该实现类中实现降级的逻辑
+           return new UserClient() {
+               @Override
+               public User getUser(Integer id) {
+                   // 记录异常信息
+                   log.error("查询用户失败", cause);
+                   return new User();
+               }
+           };
+       }
+   }
+   ```
+
+2. 将 UserClientFallbackFactory 交给 Spring 容器，可以通过 @Bean 的方式注入到容器中
+
+3. 在 FeignClient 注解中加上 fallbackFactory 参数
+
+   ```java
+   @FeignClient(name = "userservice", fallbackFactory = UserClientFallbackFactory.class)
+   @RestController
+   public interface UserClient {
+       @GetMapping("/userservice/user/getUser")
+       User getUser(@RequestParam("id") Integer id);
+   }
+   ```
+
+### 隔离
+
+隔离的方式有两种：
+
+- 线程池隔离
+- 信号量隔离(Sentinel 的默认实现)
+
+#### 线程池隔离与信号量隔离对比
+
+- 线程池隔离的优点是支持主动超时，支持异步调用，缺点是线程的额外开销大，主要使用的场景是低扇出
+- 信号量隔离的优点是轻量，缺点是不支持主动超时和异步调用，主要使用的场景是高频调用，高扇出的场景
+
+**在 Sentinel 中指定线程数，其实指定的是信号量。**
+
+## 熔断和限流的对比
+
+- 限流是限制正常请求的请求频率，通过限流可以根据机器的处理能力设置合理的阈值，从而最大化的利用机器资源
+- 熔断是对异常请求的一种保护措施，避免服务雪崩发生的一种手段。
+
+## 授权规则
+
+Sentinel 中的授权规则可以对调用方的来源进行控制，有白名单和黑名单两种方式
+
+- 白名单：来自(origin)在白名单之内的调用者允许访问
+- 黑名单：来自(origin)在黑名单之内的调用者不允许访问
+
+实现原理是通过 RequestOriginParser 接口，从请求中提取对应的值，可以自行定义(如通过 Gateway 为请求的请求头中添加一个 Origin 字段)。然后与配置中的白名单和黑名单进行比对，进而决定是否放行。
+
+## 自定义异常结果
+
+默认情况下，发生限流、降级、授权拦截时，都会抛出异常到调用方。如果要自定义出现异常时的返回结果，需要实现 BlockExceptionHandler，并将实现类交给 Spring 容器。
+
+```java
+public interface BlockExceptionHandler {
+    /**
+    * 处理请求被限流，降级，授权拦截时抛出的异常：BlockException
+    */
+    void handle(HttpServletRequest request, 
+                HttpServletResponse response, BlockException e) throws Exception;
+}
+```
+
+常见的 BlockException
+
+| 异常                 | 描述             |
+| -------------------- | ---------------- |
+| FlowException        | 限流异常         |
+| ParamFlowException   | 热点参数限流异常 |
+| DegrageException     | 降级异常         |
+| AuthorityException   | 授权异常         |
+| SystemBlockException | 系统规则异常     |
 
 ## Sentinel 实现服务熔断
 
