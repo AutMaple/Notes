@@ -281,6 +281,51 @@ ExceptionTranslationFilter 会处理在过滤器链中抛出的 `AccessDeniedExc
 
 此过滤器的作用是处理 FilterSecurityInterceptor 中抛出的异常，然后将请求重定向到对应页面，或返回对应的响应码
 
+### AuthenticationEntryPoint
+
+AuthenticationEntryPoint 顾名思义就是认证入口点，在处理用户请求的过程中，如果遇到认证异常时，就会通过 ExceptionTranslatioFilter 来开启特定的认证方案(autentication schema)
+
+该接口只有一个方法：
+
+```java
+public interface AuthenticationEntryPoint {
+
+	/**
+	 * ExceptionTranslationFilter 在调用该方法之前，会将用户请求的地址保存在 HttpSession 中，
+	 * 并且如果想要实现自定义认证方案，需要 AuthenticationEntryPoint 的实现类修改对应的响应头信息
+	 */
+	void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
+			throws IOException, ServletException;
+
+}
+```
+
+### Security 内置的 AuthenticationEntryPoint 实现类
+
+- Http403ForbiddenEntryPoint
+
+  > 设置响应状态字为 403, 并非触发一个真正的认证流程。通常在一个预验证(pre-authenticated authentication)已经得出结论需要拒绝用户请求的情况下，会使用该实现类来拒绝用户请求。
+
+- HttpStatusEntryPoint
+
+  > 设置特定的响应状态字，并非触发一个真正的认证流程。 
+
+- LoginUrlAuthenticationEntryPoint
+
+  > 根据配置计算出登录页面 url, 将用户重定向到该登录页面从而开始一个认证流程。 
+
+- BasicAuthenticationEntryPoint
+
+  > 对应标准 Http Basic 认证流程的触发动作，向响应写入状态字 401 和头部 WWW-Authenticate:"Basic realm="xxx" 触发标准 Http Basic 认证流程。
+
+- DigestAuthenticationEntryPoint
+
+  > 对应标准 Http Digest 认证流程的触发动作，向响应写入状态字 401 和头部 WWW-Authenticate:"Digest realm="xxx" 触发标准 Http Digest 认证流程。
+
+- DelegatingAuthenticationEntryPoint
+
+  > 这是一个代理，将认证任务委托给所代理的多个`AuthenticationEntryPoint`对象，其中一个被标记为缺省`AuthenticationEntryPoint`。
+
 ## AnonymousAuthenticationFilter
 
 匿名认证过滤器，当 SecurityContextHolder 中认证信息为空,则会创建一个匿名用户存入到 SecurityContextHolder 中。Spirng Security 为了整体逻辑的统一性，即使是未通过认证的用户，也给予了一个匿名身份。而 AnonymousAuthenticationFilter 该过滤器的位置也是非常的科学的，它位于常用的身份认证过滤器（如 UsernamePasswordAuthenticationFilter、BasicAuthenticationFilter、RememberMeAuthenticationFilter）之后，意味着只有在上述身份过滤器执行完毕后，SecurityContext依旧没有用户信息，AnonymousAuthenticationFilter 该过滤器才会有意义—-基于用户一个匿名身份。
@@ -353,3 +398,82 @@ FilterChainProxy 的主要作用就是将 url 规则与 SecurityFilterChain 对�
 Spring Boot 会自动扫描所有 `FilterRegistrationBean` 类型的 Bean，然后，将它们返回的 `Filter` 自动注册到 Servlet 容器中，无需任何配置
 
 `FilterRegistrationBean` 本身不是 `Filter`，它实际上是 `Filter` 的工厂。Spring Boot 会调用 `getFilter()`，把返回的 `Filter` 注册到 Servlet 容器中。因为我们可以在 `FilterRegistrationBean` 中注入需要的资源
+
+# @EnableGlobalMethodSecurity 注解
+
+该注解的作用是开启 Spring Security 方法级别的权限控制，常用的参数：
+
+- securedEnabled: 表示开启对 @Secured 注解的支持
+- jsr250Enabled: 表示开启对 @RolesAllowed 注解的支持
+- prePostEnabled: 表示开启对 @PreAuthorize, @PostAuthorize, @PreFilter, @PostFilter 注解的支持
+
+各注解的作用
+
+| 注解           | 描述                                                         |
+| -------------- | ------------------------------------------------------------ |
+| @Secured       | 给方法配置角色，只有具备指定角色之一的用户才能够访问注解所修饰的方法 |
+| @RolesAllowed  | 给方法配置角色，只有具备指定角色之一的用户才能够访问注解所修饰的方法 |
+| @PreAuthorize  | 在方法调用之前，基于表达式的计算结果来判断用户是否有权限访问注解所修饰的方法 |
+| @PostAuthorize | 允许方法的调用，但是如果表达式的计算结果为 false 的话，将会抛出一个安全类异常 |
+| @PreFilter     | 允许方法调用，但是必须再进入方法之前过滤输入值               |
+| @PostFilter    | 允许方法调用，但是必须按照表达式来过滤方法的输出值           |
+
+## @Secured 注解
+
+@Secured 注解会接收一个 String 数组作为参数。每个 String 参数代表一个权限值，调用 @Secured 注解修饰的方法时，至少得拥有其中的一个权限，否则将会抛出 AuthenticaitonException 或者 AccessDeniedException。
+
+```java
+@Secured({"ROLE_ADMIN", "ROLE_USER"})
+public void addUser(User user) {
+    // ....
+}
+```
+
+@Secured 注解的不足之处在于它是 Spring 所特定的注解。如果更倾向于使用 java 标准定义的注解, 可以使用 @RolesAllowed 注解
+
+## @RolesAllowed 注解
+
+@RolesAllowed 注解和 @Secured 注解在功能上基本上是一致的，都是用于做角色校验的，它们之间比较大的区别在于：@RolesAllowed 注解是 JSR-250 定义的 Java 标准注解。
+
+如果要在项目中使用 @RolesAllowed 注解的话，需要设置:
+
+```java
+@Configuration
+@EnableGlobalMethodSecurity(jsr250Enabled=true)
+public class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
+}
+```
+
+尽管我们这里只开启了 jsr250Enabled，但是它与 securedEnabled 并不冲突，这两种注释风格可以同时启用。开启 jsr250Enabled 之后，我们就可以进行如下的使用:
+
+```java
+@RoleAllowed({"ROLE_ADMIN", "ROLE_USER"})
+public void addUser(User user) {
+    // ...
+}
+```
+
+## 使用表达式实现方法级别的安全性
+
+尽管 @Secured 和 @RolesAllowe 注解在方法级别中基于角色的安全检验工作表现的很不错，但是有时候，安全性约束不仅仅涉及用户是否有权限。
+
+Spring Security 3.0 引入了几个新的注解，它们可以将 SpEL 作为参数从而实现更强大的安全性约束。如果表达是的值为 true, 则表示安全规则通过，否则表示失败。
+
+新引入的注解：
+
+| 描述           | 注解                                                         |
+| -------------- | ------------------------------------------------------------ |
+| @PreAuthorize  | 在方法调用之前，基于表达式的计算结果来判断用户是否有权限访问注解所修饰的方法 |
+| @PostAuthorize | 允许方法的调用，但是如果表达式的计算结果为 false 的话，将会抛出一个安全类异常 |
+| @PreFilter     | 允许方法调用，但是必须再进入方法之前过滤输入值               |
+| @PostFilter    | 允许方法调用，但是必须按照表达式来过滤方法的输出值           |
+
+使用示例：
+
+```java
+@PreAuthorize("haseRole('ROLE_ADMIN')")
+public void addUser(User user) {
+    // ...
+}
+```
+
