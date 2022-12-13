@@ -353,3 +353,72 @@ FilterChainProxy 的主要作用就是将 url 规则与 SecurityFilterChain 对�
 Spring Boot 会自动扫描所有 `FilterRegistrationBean` 类型的 Bean，然后，将它们返回的 `Filter` 自动注册到 Servlet 容器中，无需任何配置
 
 `FilterRegistrationBean` 本身不是 `Filter`，它实际上是 `Filter` 的工厂。Spring Boot 会调用 `getFilter()`，把返回的 `Filter` 注册到 Servlet 容器中。因为我们可以在 `FilterRegistrationBean` 中注入需要的资源
+
+# 动态权限实现
+
+## 实现方式
+
+Spring Security 目前实现动态权限的方法有如下几种：
+
+1. 实现 `FilterInvocationSecurityMetadataSource` 接口
+2. 基于 SpEL 表达式的方式
+3. 实现 `AuthorizationManager`接口(Spring Security 5.6+ 版本支持)
+
+## FilterInvocationSecurityMetadataSource 接口
+
+实现 `FilterInvocationSecurityMetadataSource` 接口是 `Spring Security 5.6` 版本之前用于实现动态权限设置的方案。
+
+## SecurityMetadataSource 接口
+
+要实现动态权限的验证，需要有资源所需要的权限，`Spring Security` 通过 `SecurityMetadataSource` 接口来获取资源(uri)所需要的权限。`FilterInvocationSecurityMetadataSource` 接口继承于 `SecurityMetadataSource` 接口，并且没有新增任何需要实现的方法，因此该接口是一个标识接口：
+
+```java
+public interface SecurityMetadataSource extends AopInfrastructureBean {  
+    Collection<ConfigAttribute> getAttributes(Object object) throws IllegalArgumentException;  
+  
+    Collection<ConfigAttribute> getAllConfigAttributes();  
+  
+    boolean supports(Class<?> clazz);  
+}
+
+public interface FilterInvocationSecurityMetadataSource extends SecurityMetadataSource {  
+    
+}
+```
+
+- `getAttributes(Object obejct)`：获取指定资源(接口)需要的权限(角色)。该方法通常会配合 `boolean supports(Class<?> clazz)` 方法使用，从而确保安全对象能被 `SecurityMetadataSource` 所支持之后在调用该方法
+- `supports(Class<?> clazz)`: 判断是否支持指定的类，如果该方法返回 true，则可以对  getAttributes(Object obejct) 方法中的object 参数进行一个安全的类型转换，在 Web 项目中，object 的类型通常都是 `FilterInvocation` 类型，当然也可以直接返回 true。
+-  在项目启动时，AbstractSecurityInterceptor 会对该方法返回的 ConfigAttribute 对象进行校验操作。
+
+### 继承关系
+
+![image-20221213120227144](../../../Attachment/image-20221213120227144.png)
+
+- MethodSecurityMetadataSource： 表示的是方法上定义的权限信息，即使用 @PreAuthorize 等注解上定义的权限信息。通过实现该接口，可以自定义注解来配置对应的权限配置
+- FilterInvocationSecurityMetadataSource：通常表示的 web 请求配置的权限信息，通过实现该接口，可以自定义配置每个请求所需要的权限信息。
+
+通常我们在项目中实现的就是 `FilterInvocationSecurityMetadataSource` 接口。
+
+## AccessDecisionManager 接口
+
+`AccessDecisionManager` 接口的作用就是用于判断用户是否具备访问当前资源的权限。
+
+```java
+public interface AccessDecisionManager {  
+  
+   void decide(Authentication authentication, Object object, Collection<ConfigAttribute> configAttributes)  
+         throws AccessDeniedException, InsufficientAuthenticationException;  
+  
+    boolean supports(ConfigAttribute attribute);  
+  
+    boolean supports(Class<?> clazz);  
+}
+```
+
+## 授权的过程：
+
+1. 首先通过 `SecurityMetadataSource#getAttributes()` 方法获取资源(接口)所需要的权限(角色)
+2. 在 `AccessDecisionManager` 中判断用户是否具备资源(接口)所需要的权限
+
+## 具体代码实现
+
