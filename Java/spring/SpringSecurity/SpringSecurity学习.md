@@ -399,7 +399,6 @@ Spring Boot 会自动扫描所有 `FilterRegistrationBean` 类型的 Bean，然�
 
 `FilterRegistrationBean` 本身不是 `Filter`，它实际上是 `Filter` 的工厂。Spring Boot 会调用 `getFilter()`，把返回的 `Filter` 注册到 Servlet 容器中。因为我们可以在 `FilterRegistrationBean` 中注入需要的资源
 
-<<<<<<< HEAD
 # 动态权限实现
 
 ## 实现方式
@@ -467,7 +466,6 @@ public interface AccessDecisionManager {
 2. 在 `AccessDecisionManager` 中判断用户是否具备资源(接口)所需要的权限
 
 ## 具体代码实现
-=======
 # @EnableGlobalMethodSecurity 注解
 
 该注解的作用是开启 Spring Security 方法级别的权限控制，常用的参数：
@@ -545,5 +543,3 @@ public void addUser(User user) {
     // ...
 }
 ```
->>>>>>> 12744703635c7c68149d63558dbaf8272c8dd386
-
