@@ -401,6 +401,68 @@ Spring Boot 会自动扫描所有 `FilterRegistrationBean` 类型的 Bean，然�
 
 # 动态权限实现
 
+## FilterSecurityInterceptor
+
+该拦截器是权限认证的入口
+
+```java
+public class FilterSecurityInterceptor extends AbstractSecurityInterceptor implements Filter {
+
+	@Override
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+			throws IOException, ServletException {
+		invoke(new FilterInvocation(request, response, chain));
+	}
+
+
+	public void invoke(FilterInvocation filterInvocation) throws IOException, ServletException {
+		// ......
+        
+        // 执行用户的权限校验
+		InterceptorStatusToken token = super.beforeInvocation(filterInvocation);
+		try {
+			filterInvocation.getChain().doFilter(filterInvocation.getRequest(), filterInvocation.getResponse());
+		}
+		finally {
+			super.finallyInvocation(token);
+		}
+		super.afterInvocation(token, null);
+	}
+}
+```
+
+在父类的 beforeInvocation 方法中获取资源权限并对用户权限进行校验
+
+```java
+protected InterceptorStatusToken beforeInvocation(Object object) {
+    	// ... Other Actions 
+    
+		// 获取资源(接口)的权限(角色)信息，
+		Collection<ConfigAttribute> attributes = this.obtainSecurityMetadataSource().getAttributes(object);
+    	
+    	// 如果返回 null, 则表示该资源没有设置权限信息，
+    	// 任何用户都可进行访问。如果返回 null，就不会再通过 AccessDecisionManager 去判断用户是否有权限
+   		if (CollectionUtils.isEmpty(attributes)) {
+			// ... Other Actions 
+            
+			publishEvent(new PublicInvocationEvent(object));
+			return null; // no further work post-invocation
+		}
+    
+		// 判断当前用户是否有权限
+		attemptAuthorization(object, attributes, authenticated);
+
+    	// ......
+
+		return new InterceptorStatusToken(SecurityContextHolder.getContext(), false, attributes, object);
+	}
+```
+
+总结：
+
+1. 通过 SecurityMetadataSource 获取请求接口需要的权限，如果 SecurityMetadataSource 返回 null，这表示请求的接口没有设置权限，任何用户都可以访问
+2. 如果 SecurityMetadataSource 返回值不为空，则需要通过 AccessDecisionManager 接口进一步判断当前用户是否具备请求接口的访问权限。
+
 ## 实现方式
 
 Spring Security 目前实现动态权限的方法有如下几种：
@@ -434,6 +496,8 @@ public interface FilterInvocationSecurityMetadataSource extends SecurityMetadata
 - `getAttributes(Object obejct)`：获取指定资源(接口)需要的权限(角色)。该方法通常会配合 `boolean supports(Class<?> clazz)` 方法使用，从而确保安全对象能被 `SecurityMetadataSource` 所支持之后在调用该方法
 - `supports(Class<?> clazz)`: 判断是否支持指定的类，如果该方法返回 true，则可以对  getAttributes(Object obejct) 方法中的object 参数进行一个安全的类型转换，在 Web 项目中，object 的类型通常都是 `FilterInvocation` 类型，当然也可以直接返回 true。
 -  在项目启动时，AbstractSecurityInterceptor 会对该方法返回的 ConfigAttribute 对象进行校验操作。
+
+该接口的作用就是获取指定资源所需要的权限，如果该方法返回为 null，则表示该资源不需要任何的权限即可访问。
 
 ### 继承关系
 
