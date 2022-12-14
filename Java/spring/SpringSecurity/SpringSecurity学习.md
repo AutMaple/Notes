@@ -469,7 +469,7 @@ Spring Security 目前实现动态权限的方法有如下几种：
 
 1. 实现 `FilterInvocationSecurityMetadataSource` 接口
 2. 基于 SpEL 表达式的方式
-3. 实现 `AuthorizationManager`接口(Spring Security 5.6+ 版本支持)
+3. 实现 `AuthorizationManager` 接口(Spring Security 5.6+ 版本支持)
 
 ## FilterInvocationSecurityMetadataSource 接口
 
@@ -477,7 +477,7 @@ Spring Security 目前实现动态权限的方法有如下几种：
 
 ## SecurityMetadataSource 接口
 
-要实现动态权限的验证，需要有资源所需要的权限，`Spring Security` 通过 `SecurityMetadataSource` 接口来获取资源(uri)所需要的权限。`FilterInvocationSecurityMetadataSource` 接口继承于 `SecurityMetadataSource` 接口，并且没有新增任何需要实现的方法，因此该接口是一个标识接口：
+要实现动态权限的验证，需要有资源所需要的权限，`Spring Security` 通过 `SecurityMetadataSource` 接口来获取资源(uri)所设置的权限。`FilterInvocationSecurityMetadataSource` 接口继承于 `SecurityMetadataSource` 接口，并且没有新增任何需要实现的方法，因此该接口是一个标识接口：
 
 ```java
 public interface SecurityMetadataSource extends AopInfrastructureBean {  
@@ -495,9 +495,9 @@ public interface FilterInvocationSecurityMetadataSource extends SecurityMetadata
 
 - `getAttributes(Object obejct)`：获取指定资源(接口)需要的权限(角色)。该方法通常会配合 `boolean supports(Class<?> clazz)` 方法使用，从而确保安全对象能被 `SecurityMetadataSource` 所支持之后在调用该方法
 - `supports(Class<?> clazz)`: 判断是否支持指定的类，如果该方法返回 true，则可以对  getAttributes(Object obejct) 方法中的object 参数进行一个安全的类型转换，在 Web 项目中，object 的类型通常都是 `FilterInvocation` 类型，当然也可以直接返回 true。
--  在项目启动时，AbstractSecurityInterceptor 会对该方法返回的 ConfigAttribute 对象进行校验操作。
+-  `getAllConfigAttributes()`：在项目启动时，AbstractSecurityInterceptor 会对该方法返回的 ConfigAttribute 对象进行校验操作。
 
-该接口的作用就是获取指定资源所需要的权限，如果该方法返回为 null，则表示该资源不需要任何的权限即可访问。
+**该接口的作用就是获取指定资源所需要的权限，如果该方法返回为 null，则表示该资源没有设置任何的权限，任何用户都可访问。**
 
 ### 继承关系
 
@@ -506,7 +506,7 @@ public interface FilterInvocationSecurityMetadataSource extends SecurityMetadata
 - MethodSecurityMetadataSource： 表示的是方法上定义的权限信息，即使用 @PreAuthorize 等注解上定义的权限信息。通过实现该接口，可以自定义注解来配置对应的权限配置
 - FilterInvocationSecurityMetadataSource：通常表示的 web 请求配置的权限信息，通过实现该接口，可以自定义配置每个请求所需要的权限信息。
 
-通常我们在项目中实现的就是 `FilterInvocationSecurityMetadataSource` 接口。
+通常我们在项目中实现的就是 `FilterInvocationSecurityMetadataSource` 接口。其实也可以直接实现 SecurityMetadataSource 接口，因为判断项目是否支持指定的类主要是通过 `supports(Class<?> clazz)`,  像 FilterInvocationSecurityMetadataSource 的 `supports(Class<?> clazz)` 的实现通常为 `FilterInvocation.class == clazz`, 如果都支持，则直接返回 true 就好了。
 
 ## AccessDecisionManager 接口
 
@@ -527,9 +527,221 @@ public interface AccessDecisionManager {
 ## 授权的过程：
 
 1. 首先通过 `SecurityMetadataSource#getAttributes()` 方法获取资源(接口)所需要的权限(角色)
-2. 在 `AccessDecisionManager` 中判断用户是否具备资源(接口)所需要的权限
+2. 在 `AccessDecisionManager` 中判断用户是否具备资源(接口)的访问权限
 
 ## 具体代码实现
+
+1. 实现 SecurityMetadataSource 接口, 用于获取指定资源(接口)设置的权限
+2. 实现 AccessDecisionManager 接口，用于判断用户是否具备资源的访问权限
+3. 继承 AbstractSecurityInterceptor 接口以及实现 Filter 接口
+4. 将第 3 步实现的过滤器放在 FilterSecurityInterceptor 过滤器的前面
+
+### 1. 实现 SecurityMetaDataSource 接口
+
+```java
+/**
+ * {@link DynamicSecurityMetadataSource} 类用于获取指定资源所需要的权限(角色)<br>
+ * 如果指定资源所需的权限返回 null，则表示没有给该资源设置任何的权限，所有用户均可访问
+ */
+@RequiredArgsConstructor
+public class DynamicSecurityMetadataSource implements FilterInvocationSecurityMetadataSource, InitializingBean {
+    private final PermissionMapper permissionMapper;
+
+    private final AntPathMatcher antPathMatcher = new AntPathMatcher();
+    private Map<String, Collection<ConfigAttribute>> permissionToRoles = null;
+
+    @Override
+    public Collection<ConfigAttribute> getAttributes(Object object) throws IllegalArgumentException {
+        String requestUrl = ((FilterInvocation) object).getRequestUrl();
+        for (String permission : permissionToRoles.keySet()) {
+            if (antPathMatcher.match(permission, requestUrl)) {
+                return permissionToRoles.get(permission);
+            }
+        }
+        return null; // 返回 null，则表示没有给该资源设置任何的权限，所有用户均可访问
+    }
+
+    @Override
+    public Collection<ConfigAttribute> getAllConfigAttributes() {
+        return null;
+    }
+
+    @Override
+    public boolean supports(Class<?> clazz) {
+        return true;
+    }
+
+    /**
+     * 将权限所需的角色信息从数据库中加载到内存中
+     * 用 map 表示权限与角色一对多的关系
+     */
+    public void initPermissionToRoles() {
+        if (this.permissionToRoles != null) {
+            this.permissionToRoles.clear();
+        }
+        this.permissionToRoles = new HashMap<>();
+        List<PermissionRoles> permissionRoles = permissionMapper.getPermissionRoles();
+        for (PermissionRoles permissionRole : permissionRoles) {
+            String permission = permissionRole.getPermission();
+            List<String> roles = permissionRole.getRoles();
+            List<SecurityConfig> configs = roles.stream()
+                    .distinct()
+                    .map(SecurityConfig::new)
+                    .collect(Collectors.toList());
+            Collection<ConfigAttribute> attributes = this.permissionToRoles.computeIfAbsent(permission, (key) -> new ArrayList<>());
+            attributes.addAll(configs);
+        }
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        this.initPermissionToRoles();
+    }
+}
+```
+
+### 2. 实现 AccessDecesionManager 接口
+
+```java 
+/**
+ * 动态权限决策管理器, {@link DynamicAccessDecisionManager} 类用于判断用户是否有其请求资源的访问权限
+ */
+public class DynamicAccessDecisionManager implements AccessDecisionManager {
+    
+    /**
+     * @param authentication 用户身份信息，里面包含用户的角色信息
+     * @param configAttribute 资源所配置的角色信息
+     */
+    @Override
+    public void decide(Authentication authentication, Object object, Collection<ConfigAttribute> configAttributes) throws AccessDeniedException, InsufficientAuthenticationException {
+        if (CollectionUtil.isEmpty(configAttributes))
+            return;
+        for (ConfigAttribute config : configAttributes) { // 将用户的角色信息和资源配置的角色信息进行比对
+            String needRole = config.getAttribute();
+            for (GrantedAuthority authority : authentication.getAuthorities()) {
+                String curRole = authority.getAuthority();
+                if (curRole.trim().equals(needRole.trim())) // 角色符合要求，直接放行
+                    return;
+            }
+        }
+        throw new AccessDeniedException("没有访问当前资源的权限"); // 没有权限时，抛出异常，交给异常处理过滤器处理
+    }
+
+    @Override
+    public boolean supports(ConfigAttribute attribute) {
+        return true;
+    }
+
+    @Override
+    public boolean supports(Class<?> clazz) {
+        return true;
+    }
+}
+```
+
+### 3. 继承 AbstractSecurityInterceptor 并实现 Filter 接口
+
+```java
+/**
+ * 动态权限过滤器
+ */
+@RequiredArgsConstructor
+public class DynamicSecurityFilter extends AbstractSecurityInterceptor implements Filter {
+    private final FilterInvocationSecurityMetadataSource metadataSource;
+    private final AccessDecisionManager manager;
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        FilterInvocation filterInvocation = new FilterInvocation(request, response, chain);
+        InterceptorStatusToken token = super.beforeInvocation(filterInvocation);
+        try {
+            filterInvocation.getChain().doFilter(filterInvocation.getRequest(), filterInvocation.getResponse());
+        } finally {
+            super.finallyInvocation(token);
+        }
+        super.afterInvocation(token, null);
+    }
+
+    @Override
+    public Class<?> getSecureObjectClass() {
+        return FilterInvocation.class;
+    }
+
+    @Override
+    public SecurityMetadataSource obtainSecurityMetadataSource() {
+        return this.metadataSource;
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        // 该方法需要在 super.afterPropertiesSet(); 之前调用
+        super.setAccessDecisionManager(this.manager); 
+        super.afterPropertiesSet();
+    }
+}
+```
+
+### 4. 将 Filter 放在 FilterSecurityInterceptor 前面
+
+```java
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+    private final UserMapper userMapper;
+    private final PermissionMapper permissionMapper;
+
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+
+		// 动态权限控制
+        http.authorizeRequests()
+                .anyRequest()
+                .authenticated()
+                .and()
+                // 未登录时，进入登录页面
+                .formLogin()
+                .and()
+                // 将动态权限过滤器放在默认的授权过滤器 FilterSecurityInterceptor 前面
+                .addFilterBefore(dynamicSecurityFilter(), FilterSecurityInterceptor.class); 
+    }
+
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userDetailsService())
+                .passwordEncoder(passwordEncoder());
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return new CustomUserDetailsService(userMapper);
+    }
+
+    @Bean
+    public AccessDecisionManager dynamicAccessDecisionManager() {
+        return new DynamicAccessDecisionManager();
+    }
+
+    @Bean
+    public FilterInvocationSecurityMetadataSource dynamicMetadataSource() {
+        return new DynamicSecurityMetadataSource(permissionMapper);
+    }
+    
+    @Bean
+    public Filter dynamicSecurityFilter() {
+        return new DynamicSecurityFilter(dynamicMetadataSource(), dynamicAccessDecisionManager());
+    }
+}
+
+```
+
 # @EnableGlobalMethodSecurity 注解
 
 该注解的作用是开启 Spring Security 方法级别的权限控制，常用的参数：
