@@ -903,3 +903,70 @@ Spring Data 是 Spring 的一个子项目，用于简化数据库的访问, 支�
    - JPA
 
 Spring Data JPA 致力于减少数据访问层(DAO)的开发量. 开发者唯一需要做的就是声明持久层的接口，其他的交给 Spring Data JPA 来完成。Spring Data JPA 通过规范方法的名字, 然后根据方法的名字来确定如何操作数据库。
+
+# HTTP 响应统一处理
+
+Spring Web 项目总，如果要对 http 响应做统一的处理，只需要实现 Spring Web 提供的 ResponseBodyAdvice 接口即可
+
+## ResponseBodyAdvice 接口
+
+接口定义如下:
+
+```java
+/**
+ * ResponseBodyAdvice 接口允许自定义修改 Controller 方法执行之后的返回值，
+ * 前提是该方法被 @ResponseBody 注解修饰或者返回值类型是 ResponseEntity。
+ *
+ * ResponseBodyAdvice 接口的实现类可以需要注册到 RequestMappingHandlerAdapter 和 ExceptionHandlerExceptionResolver 中。
+ * 但是如果实现类使用 @ControllerAdvice 注解，则会被上述的两个类自动检测到并完成相应的注册
+ */
+public interface ResponseBodyAdvice<T> {
+    /**
+     * 判断是否支持指定的数据类型以及 Spring Web 选择的消息转换器，通常直接返回 true 就好
+     *
+     * @param returnType: 返回类型，通过该参数可以获取到方法的返回值类型
+     * @param converterType: Spring Web 选择的 消息转化器 的类型
+     * @return 如果返回值为 true，则调用接口的 beforeBodyWrite 方法，否则不调用
+     */
+	boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType);
+
+	/**
+	 * 该方法中执行具体的转换逻辑
+	 * 
+	 * @param body Controller 方法返回的数据
+	 * @param returnType 方法的返回值类型参数
+	 * @param selectedContentType 响应体 ContenetType
+	 * @param selectedConverterType Spring Web 根据 ContentType 选择的消息转换器
+	 * @param request 请求对象
+	 * @param response 响应对象
+	 * @return 转换后的数据对象
+	 */
+	@Nullable
+	T beforeBodyWrite(@Nullable T body, MethodParameter returnType, MediaType selectedContentType,
+			Class<? extends HttpMessageConverter<?>> selectedConverterType,
+			ServerHttpRequest request, ServerHttpResponse response);
+
+}
+```
+
+### String 类型转换成自定义消息体类型失败的问题
+
+Spring Web 转换的流程：
+
+1. 首先根据 Controller 方法的返回值类型选择合适的消息转换器(HttpMessageConverter)
+2. 调用 ResponseBodyAdvice 的 beforeBodyWrite 方法
+3. 使用选择的数据转换器进行数据转换
+
+而 String 类型转换失败的问题就出在数据类型转换器。因为 Spring Web 为 String 类型选择的数据转换器是 StringHttpMessageConverter，而该转换器的作用就是将输入参数转化成 String 类型输出，所以如果 beforeBodyWrite  方法返回不是 String 类型，就会报类型转换异常的错误。
+
+解决的办法就是直接将需要封装的消息先转化成 String 之后，在返回：
+
+```java
+if (body instanceof String) {
+    return new ObjectMapper().writeValueAsString(ResponseResult.success(body));
+}
+// 如果本身已经是自定义的响应结果，直接返回即可
+if(body instanceof ResponseResult) 
+    return body;
+return ResponseResult.success(body);
+```
