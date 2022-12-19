@@ -362,7 +362,7 @@ public class HelloController {
 }
 ```
 
-`@RequestMapping`注解的作用是将一个请求路径和一个方法进行绑定。绑定的方法必须返回一个 ModelAndView 对象。在处理对应的请求时，可以设置该请求视图名称，比如 `setViewName("hello")`, 该代码表示为对应的请求返回 `/WEB-INF/templates/hello.jsp`对应的页面，类似于 Servlet 的 doGet, doPost 方法
+`@RequestMapping` 注解的作用是将一个请求路径和一个方法进行绑定。绑定的方法必须返回一个 ModelAndView 对象。在处理对应的请求时，可以设置该请求视图名称，比如 `setViewName("hello")`, 该代码表示为对应的请求返回 `/WEB-INF/templates/hello.jsp`对应的页面，类似于 Servlet 的 doGet, doPost 方法
 
 Model 表示要显示给用户的数据，View 表示视图，比如 jsp 页面。可以通过 ModelAndView 对象的 addObject()方法 传递数据给对应的视图，然后在视图中进行使用
 
@@ -964,6 +964,8 @@ public interface ResponseBodyAdvice<T> {
 
 }
 ```
+
+该两个接口只对 @ResponseBody 注解以及 HttpEntity 类有用，具体的代码逻辑可以查看 `RequestResponseBodyMethodProcessor` 和 `HttpEntityMethodProcessor` 类对应的 `resolveArgument()` 方法, `writeWithMessageConverters()` 方法以及 `readWithMessageConverters()` 方法。
 
 # LocaleContext 和 RequestAttributes
 

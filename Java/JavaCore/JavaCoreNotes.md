@@ -40,18 +40,11 @@ The UTF-16 encoding represents all Unicode code points in a variable-length code
 
 The rules for how characters are encoded in UTF-16 are:
 
-   -  Characters with values less than 0x10000 are represented as a
-      single 16-bit integer with a value equal to that of the character
-      number.
+   - Characters with values less than 0x10000 are represented as a single 16-bit integer with a value equal to that of the character number.
 
-   -  Characters with values between 0x10000 and 0x10FFFF are
-      represented by a 16-bit integer with a value between `0xD800` and
-      `0xDBFF` (within the so-called high-half zone or high surrogate
-      area) followed by a 16-bit integer with a value between `0xDC00` and
-      `0xDFFF` (within the so-called low-half zone or low surrogate area).
+   - Characters with values between 0x10000 and 0x10FFFF are represented by a 16-bit integer with a value between `0xD800` and `0xDBFF` (within the so-called high-half zone or high surrogate area) followed by a 16-bit integer with a value between `0xDC00` and `0xDFFF` (within the so-called low-half zone or low surrogate area).
 
-   -  Characters with values greater than `0x10FFFF` cannot be encoded in
-      UTF-16.
+   - Characters with values greater than `0x10FFFF` cannot be encoded in UTF-16.
 
 Note: **Values between 0xD800 and 0xDFFF are specifically reserved for use with UTF-16, and don't have any characters assigned to them.**
 
@@ -68,10 +61,11 @@ If completely predictable results are more important than performance, use the S
 The solid arrow denotes conversions without information loss, The dotted arrows denotes conversions that may lose precision.
 
 When two values are combined with a binary operator (such as n + f where n is an integer and f is a floating-point value), both operands are converted to a common type before the operation is carried out.
-• If either of the operands is of type double, the other one will be converted to a double.
-• Otherwise, if either of the operands is of type float, the other one will be converted to a float.
-• Otherwise, if either of the operands is of type long, the other one will be converted to a long.
-• **Otherwise, both operands will be converted to an int**.
+
+- If either of the operands is of type double, the other one will be converted to a double.
+- Otherwise, if either of the operands is of type float, the other one will be converted to a float.
+- Otherwise, if either of the operands is of type long, the other one will be converted to a long.
+- **Otherwise, both operands will be converted to an int**.
 
 ```java
 int x = 0;
@@ -85,7 +79,7 @@ int x = 0;
 x = (int)(x + 3.5)
 ```
 
-A switch expression with an integer or String operand must always have a default since it must yield a value, no matter what the operand value is. The right-hand argument of the shift operators is reduced modulo 32 (unless the left-hand argument is a long, in which case the right-hand argument is reduced modulo 64). For example, the value of 1 << 35 is the same as 1 << 3 or 8
+A switch expression with an integer or String operand must always have a default since it must yield a value, no matter what the operand value is. The right-hand argument of the shift operators is reduced modulo 32 (unless the left-hand argument is a long, in which case the right-hand argument is reduced modulo 64). For example, the value of `1 << 35` is the same as `1 << 3` or 8
 
 # 浮点数运算精度问题
 

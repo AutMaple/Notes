@@ -91,7 +91,7 @@ Python 中的协程经历了很长的一段发展历程。最初的生成器 `yi
 
 如果协程还没激活(状态是`'GEN_CREATED'`），就立即把 None 之外的值发给它，会出现 TypeError 。因此，始终要先调用 `next(my_coro)` 激活协程（也可以调用 `my_coro.send(None)` ），这一过程被称作预激活。
 
-## **@asyncio.coroutine 与 yield from**
+## @asyncio.coroutine 与 yield from
 
 **@asyncio.coroutine：asyncio 模块中的装饰器，用于将一个生成器声明为协程。**
 
@@ -153,7 +153,7 @@ Loop: 2 Time: 2017-10-17 21:19:55.439083
 Loop: 1 Time: 2017-10-17 21:19:55.439083
 ```
 
-## **async 和 await**
+## async 和 await
 
 Python3.5 中对协程提供了更直接的支持，引入了 `async/await` 关键字。上面的代码可以这样改写：使用 `async` 代替`@asyncio.coroutine`，使用 `await` 代替 `yield from` ，代码变得更加简洁可读。从 Python 设计的角度来说， `async/await` 让协程独立于生成器而存在，不再使用 yield 语法。
 
@@ -175,7 +175,7 @@ loop.run_until_complete(asyncio.gather(*tasks))  # "阻塞"直到所有的tasks�
 loop.close()
 ```
 
-## **asyncio模块**
+## asyncio模块
 
 asyncio 的使用可分三步走：
 

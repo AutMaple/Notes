@@ -26,7 +26,7 @@ Spring 框架是 Java 平台的一个开源的全栈( full-stack) 应用程序�
 
 ## 控制反转 IOC
 
-IOC ==> Iversion of Control 。控制反转在 java 中表示把创建对象的权利交给框架，也就是指将对象的创建和赋值、对象的存储、对象的管理交给了 Spring 容器。Spring 容器是 Spring 中的一个核心模块，用于管理对象，底层是一个 ConcurrentHashMap 集合。Spring 实现 IOC 通过 DI (Dependency Injection )依赖注入来实现。
+IOC ==> Inversion of Control 。控制反转在 java 中表示把创建对象的权利交给框架，也就是指将对象的创建和赋值、对象的存储、对象的管理交给了 Spring 容器。Spring 容器是 Spring 中的一个核心模块，用于管理对象，底层是一个 ConcurrentHashMap 集合。Spring 实现 IOC 通过 DI (Dependency Injection )依赖注入来实现。
 
 IOC 在 Spring 中的体现就是：把创建对象的过程交给 Spring 来进行管理，从而做到将原来需要自己手动 new 对象，变成直接从 Spring 中获取。
 

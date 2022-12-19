@@ -908,6 +908,14 @@ Spring Data JPA 致力于减少数据访问层(DAO)的开发量. 开发者唯一
 
 Spring Web 项目总，如果要对 http 响应做统一的处理，只需要实现 Spring Web 提供的 ResponseBodyAdvice 接口即可
 
+在 Spring Web 项目中，Controller 中的参数与返回值的处理流程：
+
+1. 首先需要经过 `HandlerMethodArgumentResolver` 判断是否支持对应参数类型的解析
+2. 如果允许解析则会调用对应的解析方法，将对应的值赋值给对应的参数
+3. 执行 Controller 中的逻辑
+4. 将方法的执行结果返回给用户
+5. 在第 2 步以及第 4 步中，有的 `HandlerMethodArgumentResolver` 还支持 `RequestBodyAdvice` 和 `ResponseBodyAdvice` 接口，方便开发者对请求体和响应体进行自定义处理。Spring Web 中默认支持这两个接口的消息转换器是：`RequestResponseBodyMethodProcessor` 以及 `HttpEntityMethodProcessor`。
+
 ## ResponseBodyAdvice 接口
 
 接口定义如下:
@@ -970,3 +978,104 @@ if(body instanceof ResponseResult)
     return body;
 return ResponseResult.success(body);
 ```
+
+# 全局异常处理器
+
+在 SpringBoot 项目中实现全局异常统一处理可以通过 `@ControllerAdvice` 注解、`@RestControllerAdvice` 注解以及 `BasicErrorController` 类将 Filter、Intercepor 以及 Controller 中的异常集中在一个地方进行一个统一的处理。
+
+这里需要注意的一个地方就是 `@ControllerAdvice` 注解和 `@RestControllerAdvice` 注解对于 Interceptor 中抛出的异常的一个捕获。有的情况下可以捕获，有的情况不可以捕获：
+
+- 如果用户请求的是系统中存在的路径，那么在 Intercepor 中抛出的异常则能够被 `@ControllerAdvice` 和 `@RestControllerAdvice` 注解所修饰的类所捕获
+- 如果用户请求的是系统中不存在的路径，则 Intercepor 中抛出的异常不能够被 `@ControllerAdvice` 和 `@RestControllerAdvice` 注解所修饰的类所捕获。这时，异常将会直接交给 SpringBoot 自带的一个兜底处理器 `BasicErrorController` 进行一个异常的处理
+
+## SpringBoot 全局异常处理自动配置
+
+SpringBoot 通过配置类 `ErrorMvcAutoConfiguration` 对异常提供了自动配置，该配置类向容器中注入了以下的 4 个类
+
+- ErrorPageCustomizer: 该组件在系统发生异常后，默认将请求转发到 `/error` 路径下。
+- BasicErrorController: 处理 `/error` 请求
+- DefautltErrorViewResolver: 默认的异常视图解析器，将异常信息解析到视图上
+- DefautlErrorAttribute: 用于在请求过程中，共享一些配置信息
+
+其中，ErrorPageCustomizer 默认会注入到 Spring 容器中。其他的三个，都是条件注入，如果用户提供了对应的类，那么 SpringBoot 将不会再注入对应的 Bean
+
+## BasicErrorController
+
+BasicErrorController 是 SpringBoot 自带的一个全局异常处理器，该处理器会处理 Web 项目中所有未被处理的异常，该组件的作用是作为一个兜底的组件来处理项目未考虑到的一些异常情况。
+
+当异常未被处理时，请求会被转发到 `/error` 路径进行处理，而这个路径是 `BasicErrorController` 注册的。
+
+如果我们想要自定义异常的逻辑，可以继承 `BasicErrorController` 并重写它的  `error` 方法即可
+
+该 Controller 返回的 json 数据中会包含如下字段：
+
+- timestamp：时间戳；
+- status：错误状态码
+- error：错误的提示
+- errors: 错误提示
+- exception：导致请求处理失败的异常对象
+- message：错误/异常消息
+- trace： 错误/异常栈信息
+- path: 错误/异常抛出时所请求的URL路径
+
+其中默认会返回的字段是：
+
+- timestamp
+- status
+- error
+- path
+
+如果要返回其他的字段需要在 application 文件中进行配置：
+
+```yaml
+server:  
+  error:  
+    include-stacktrace: always # 开启 trace  字段
+    include-message: always # 开启 message 字段
+    include-exception: true  # 开启 exception 字段
+    include-binding-errors: always # 开启 errors 字段
+```
+
+可配置字段的值的设置：
+
+1.  status
+
+```java
+request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
+```
+
+其中 code 是 Integer 的类型
+
+2. exception
+
+```java
+request.setAttribute(DefaultErrorAttributes.ERROR_INTERNAL_ATTRIBUTE, exception); 
+
+request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, exception);
+```
+
+其中 exception 为 Throwable 类型, 上面两种方式都可以设置 exception ，但是第一个的优先级更高。个人比较喜欢使用第二种方式，因为与设置其他参数的写法比较统一
+
+3. message
+
+```java
+request.setAttribute(RequestDispatcher.ERROR_MESSAGE, msg);
+```
+
+其中 msg 类型可以是：
+
+- Optional
+- Array
+- CharSequence: 字符串
+- Collection
+- Map
+
+最终的 msg 为上述类型调用对应的 `toString()` 方法的返回值
+
+4. path
+
+```java
+request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, path)
+```
+
+其中的 path 是 String 类型

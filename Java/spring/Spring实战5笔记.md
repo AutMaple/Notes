@@ -785,7 +785,7 @@ Spring Integration 提供了多种通道实现:
 | @apiModelProperty                       | @Schema                                                      |
 | @ApiOperation(value=“foo”, notes=“bar”) | @Operation(summery=“foo”, description=“bar”)                 |
 | @ApiParam                               | @Parameter                                                   |
-| @ApiResponse(code=404, message=“foo”)   | @ApiResponse(responseCode=“404”, description=“foo”)ns        |
+| @ApiResponse(code=404, message=“foo”)   | @ApiResponse(responseCode=“404”, description=“foo”)        |
 
 
 

@@ -57,7 +57,7 @@ resources.xml : 该配置文件用于设置数据库相关的配置以及各表�
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 4.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+    "http://mybatis.org/dtd/mybatis-3-config.dtd">
 
 <configuration>
     <!--
