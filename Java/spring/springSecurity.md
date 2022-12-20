@@ -268,7 +268,7 @@ public void info(HttpServletRequest request){
 
 对请求的 HttpServletRequest 包装之后，接下来在过滤器链中传递的 HttpServletRequest 对象，它的 getRemoteUser()、isUserInRole(String) 以及 getUserPrincipal() 方法就可以直接使用了。
 
-HttpServletRequest 中 getUserPrincipal() 方法有了返回值之后，最终在 Spring MVC 的 ServletRequestMethodArgumentResolver#resolveArgument(Class<?>,HttpServletRequest) 进行默认参数解析，自动解析出 Principal 对象。开发者在 Controller 中既可以通过 Principal 来接收参数，也可以通过 Authentication 对象来接收。
+HttpServletRequest 中 getUserPrincipal() 方法有了返回值之后，最终在 Spring MVC 的 ServletRequestMethodArgumentResolver#resolveArgument(`Class<?>,HttpServletRequest`) 进行默认参数解析，自动解析出 Principal 对象。开发者在 Controller 中既可以通过 Principal 来接收参数，也可以通过 Authentication 对象来接收。
 
 ## UserDetails 接口
 
@@ -382,7 +382,7 @@ public interface ObjectPostProcessor<T>{
 
 ObjectPostProcessor 有两个实现类：
 
-- AutowireBeanFactoryObjectPostProcessor: 由于Spring Security 中大量采用了 Java 配置，许多过滤器都是直接 new 出来的，这些直接new 出来的对象并不会自动注入到 Spring 容器中。Spring Security 这样做的本意是为了简化配置，但是却带来了另外一个问题就是，大量 new 出来的对象需要我们手动注册到 Spring 容器中去。AutowireBeanFactoryObjectPostProcessor 对象所承担的就是这件事，一个对象 new 出来之后，只要调用 AutowireBeanFactoryObjectPostProcessor#postProcess 方法，就可以成功注入到 Spring 容器中，它的实现原理就是通过调用 Spring 容器中的 AutowireCapableBeanFactory 对象将一个 new 出来的对象注入到 Spring 容器中去。
+- AutowireBeanFactoryObjectPostProcessor: 由于Spring Security 中大量采用了 Java 配置，许多过滤器都是直接 new 出来的，这些直接 new 出来的对象并不会自动注入到 Spring 容器中。Spring Security 这样做的本意是为了简化配置，但是却带来了另外一个问题就是，大量 new 出来的对象需要我们手动注册到 Spring 容器中去。AutowireBeanFactoryObjectPostProcessor 对象所承担的就是这件事，一个对象 new 出来之后，只要调用 AutowireBeanFactoryObjectPostProcessor#postProcess 方法，就可以成功注入到 Spring 容器中，它的实现原理就是通过调用 Spring 容器中的 AutowireCapableBeanFactory 对象将一个 new 出来的对象注入到 Spring 容器中去。
 - CompositeObjectPostProcessor: 这是 ObjectPostProcessor 的另一个实现，一个对象可以有一个后置处理器，开发者也可以自定义多个对象后置处理器。CompositeObjectPostProcessor 是一个组合的对象后置处理器，它里边维护了一个 List 集合，集合中存放了某一个对象的所有后置处理器，当需要执行对象的后置处理器时，会遍历集合中的所有 ObjectPostProcessor 实例，分别调用实例的 postProcess 方法进行对象后置处理。在 Spring Security 框架中，最终使用的对象后置处理器其实就是 CompositeObjectPostProcessor ,它里边的集合默认只有一个对象，就是 AutowireBeanFactoryObjectPostProcessor
 
 在 Spring Security 中，开发者可以灵活地配置项目中需要哪些 Spring Security 过滤器，一旦选定过滤器之后，每一个过滤器都会有一个对应的配置器，叫作 xxxConfigurer (例如 CorsConfigurer、CsrfConfigurer 等)。过滤器都是在 xxxConfigurer 中 new 出来的，然后在 postProcess 方法中处理一遍，就将这些过滤器注入到 Spring 容器中了。
@@ -433,6 +433,44 @@ public interface SecurityFilterchain{
 - getFilters: 该方法返回一个 List 集合，集合中存放的就是 Spring Security 中的过滤器。换言之，如果 matches 方法返回 true, 那么 request 请求就会在 getFilters 方法所返回的 Filter 集合中被处理。
 
 SecurityFilterChain 只有一个默认的实现类就是 DefaultSecurityFilterChain, 其中定义了两个属性，并具体实现了 SecurityFilterChain 中的两个方法。
+
+### 过滤器链的顺序
+
+SpringSecurity 中在加载完 Filter 之后，会对 Filter 做一个排序，排序后的顺序如下：
+
+1. ChannelProcessingFilter
+2. WebAsyncManagerIntegrationFilter
+3. SecurityContextPersistenceFilter
+4. HeaderWriterFilter
+5. CorsFilter
+6. CsrfFilter
+7. LogoutFilter
+8. OAuth2AuthorizationRequestRedirectFilter
+9. Saml2WebSsoAuthenticationRequestFilter
+10. X509AuthenticationFilter
+11. AbstractPreAuthenticatedProcessingFilter
+12. CasAuthenticationFilter
+13. OAuth2LoginAuthenticationFilter
+14. Saml2WebSsoAuthenticationFilter
+15. UsernamePasswordAuthenticationFilter
+16. OpenlDAuthenticationFilter
+17. DefaultLoginPageGeneratingFilter
+18. DefaultLogoutPageGeneratingFilter
+19. ConcurrentSessionFilter
+20. DigestAuthenticationFilter
+21. BearerTokenAuthenticationFilter
+22. BasicAuthenticationFilter
+23. RequestCacheAwareFilter
+24. SecurityContextHolderAwareRequestFilter
+25. JaasApiIntegrationFilter
+26. RememberMeAuthenticationFilter
+27. AnonymousAuthenticationFilter
+28. OAuth2AuthorizationCodeGrantFilter
+29. SessionManagementFilter
+30. ExceptionTranslationFilter
+31. DynamicSecurityFilter
+32. FilterSecurityInterceptor
+
 
 ## HttpSecurity
 
