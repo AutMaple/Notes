@@ -118,8 +118,7 @@ NIO，也称非阻塞 I/O，包含三大核心部分：Channel（信道）、Buf
 
 ### Topic
 
-- RoutingKey 为一个点号 `.` 分隔的字符串（被点号 `.`分隔开的每一段独立的字符
-  串称为一个单词），如 `com.rabbitmq.client` 、 `java.util.concurrent`、 `com.hidden.client`；
+- RoutingKey 为一个点号 `.` 分隔的字符串（被点号 `.`分隔开的每一段独立的字符串称为一个单词），如 `com.rabbitmq.client` 、 `java.util.concurrent`、 `com.hidden.client`；
 - BindingKey 和 RoutingKey 一样也是点号 `.` 分隔的字符串；
 - BindingKey 中可以存在两种特殊字符串 `*` 和 `#`，用于做模糊匹配，其中 `*` 用于匹配一个单词，`#` 用于匹配若干个单词（可以是零个）
 
