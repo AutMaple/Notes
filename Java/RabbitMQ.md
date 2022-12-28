@@ -303,8 +303,7 @@ String basicConsume(String queue,
 ```
 
 - consumerTag: 用来标识不同的消费者
-- noLocal: 设置为 true 则表示不能将同一个 Connection 中生产者发送的消息传送给
-  这个 Connection 中的消费者
+- noLocal: 设置为 true 则表示不能将同一个 Connection 中生产者发送的消息传送给这个 Connection 中的消费者
 
 实现复杂的消费者客户端，需要使用到如下的钩子函数
 
@@ -324,8 +323,7 @@ void handleRecoverOk(String consumerTag);
 
 和生产者一样，消费者客户端同样需要考虑**线程安全的问题**。消费者客户端的这些 callback 会被分配到与 Channel 不同的线程池上，这意味着消费者客户端可以安全地调用这些阻塞方法，比如 channel.queueDeclare、channel.basicCancel 等。
 
-每个 Channel 都拥有自己独立的线程。最常用的做法是一个 Channel 对应一个消费者,
-也就是意味着消费者彼此之间没有任何关联。**当然也可以在一个 Channel 中维持多个消费者, 但是要注意一个问题，如果 Channel 中的一个消费者一直在运行，那么其他消费者的 callback 会被“耽搁”**。
+每个 Channel 都拥有自己独立的线程。最常用的做法是一个 Channel 对应一个消费者,也就是意味着消费者彼此之间没有任何关联。**当然也可以在一个 Channel 中维持多个消费者, 但是要注意一个问题，如果 Channel 中的一个消费者一直在运行，那么其他消费者的 callback 会被“耽搁”**。
 
 ### 拉取模式
 
@@ -927,8 +925,6 @@ Shovel 的主要优势在于：
 | 注解            | 描述                                                         |
 | --------------- | ------------------------------------------------------------ |
 | @RabbitListener | 该注解放在方法上，当接收到 RabbitMQ 指定消息队列的消息时，调用其修饰的方法进行处理。该注解适用于 push 这种被动的的模式。 |
-|                 |                                                              |
-|                 |                                                              |
 
  ## 配置消息转换器
 
