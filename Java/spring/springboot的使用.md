@@ -1054,7 +1054,7 @@ request.setAttribute(DefaultErrorAttributes.ERROR_INTERNAL_ATTRIBUTE, exception)
 request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, exception);
 ```
 
-其中 exception 为 Throwable 类型, 上面两种方式都可以设置 exception ，但是第一个的优先级更高。个人比较喜欢使用第二种方式，因为与设置其他参数的写法比较统一
+其中 exception 为 Throwable 类型, 上面两种方式都可以设置 exception ，但是第一个的优先级更高。个人推荐使用第二种方式，因为与设置其他参数的写法类似
 
 3. message
 
