@@ -373,7 +373,7 @@ System.out.println(stu);
 </select>
 ```
 
-### #和$
+### # 和 $
 
 \#：占位符，告诉 mybatis 使用实际的参数值代替。并使用 PrepareStatement 对象执行 sql 语句, #{…} 代替 sql 语句的“?”。这样做更安全，更迅速，通常也是首选做法
 
