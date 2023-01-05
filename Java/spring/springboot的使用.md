@@ -957,6 +957,15 @@ public interface ResponseBodyAdvice<T> {
 }
 ```
 
+```ad-info
+title: 总结
+
+ResponseBodyAdvice 接口的实现类需要注册到 RequestMappingHandlerAdapter 和 ExceptionHandlerExceptionResolver 中。但是如果实现类使用 @ControllerAdvice 注解，则会被上述的两个类自动检测到并完成相应的注册。
+
+因此使用 @ControllerAdvice 注解是最方便的
+```
+
+
 ### String 类型转换成自定义消息体类型失败的问题
 
 Spring Web 转换的流程：

@@ -33,5 +33,5 @@ public interface Decoder {
 ```
 
 - response: 微服务的响应
-- type:
+- type: 接口返回值的类型
 
