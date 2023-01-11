@@ -179,3 +179,12 @@ revert(把自己的代码取消) => pull => 在最新的代码上进行修改
 stash save(将自己的代码隐藏) => pull => stash pop(将隐藏的代码重新拉回来) => merge (会有冲突，得手动进行解决)
 ```
 
+# 分支管理
+
+| 命令                                       | 描述                     |
+| ------------------------------------------ | ------------------------ |
+| `git checkout <branch>`                    | 切换到 branch 分支       |
+| `git branch -d <branch>`                   | 删除 branch 分支         |
+| `git merge <branch>`                       | 合并 branch 分支         |
+| `git push [远程名] [本地分支:远程分支] -d` | 删除远程分支             | 
+| `git checkout -b <branch>`                 | 创建并切换到 branch 分支 |
