@@ -2,6 +2,18 @@
 
 当访问路径 `/` 时，springboot 默认显示 static 文件夹下的 index.html 文件
 
+# 配置文件存放的位置
+
+1. file: ./config
+2. file: ./config/\*/
+3. file: ./
+4. classpath:/config/
+5. classpath:/
+
+`./` 表示的是项目的根目录下
+
+配置文件扫描的顺序为从上到下。一个配置在加入配置集合的时候，会首先判断是否已经存在同名配置，如果存在的话，就不加入了，所以遇到同名问题的时候需要根据加载顺序判断优先级。顺序越靠前，优先级越高
+
 ## 参考文章
 
 - [Spring全解系列 - @Import注解](https://zhuanlan.zhihu.com/p/147025312)
