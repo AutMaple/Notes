@@ -1100,3 +1100,59 @@ request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, path)
 ```
 
 其中的 path 是 String 类型
+
+# ApplicationRunner 和 CommandLineRunner
+
+某些情况下，我们需要在项目启动之后，执行一些任务，例如配置文件的加载等。Spring Boot 提供了两种解决方案：
+
+1. ApplicationRunner 接口
+2. CommandLineRunner 接口
+
+这两个接口的使用方法大体上是一致的，差别主要体现在参数上:
+
+```java
+public interface CommandLineRunner {
+
+	/**
+	 * Callback used to run the bean.
+	 * @param args incoming main method arguments
+	 * @throws Exception on error
+	 */
+	void run(String... args) throws Exception;
+}
+```
+
+```java
+public interface ApplicationRunner {
+
+	/**
+	 * Callback used to run the bean.
+	 * @param args incoming application arguments
+	 * @throws Exception on error
+	 */
+	void run(ApplicationArguments args) throws Exception;
+}
+```
+
+`SpringApplicaiton#run(String... args)` 方法会在方法的最后调用 `callRunners(args)` 方法，这个方法会收集 Spring 容器中所有的 ApplicationRunner 和 CommandLineRunner 接口，并调用相应的方法：
+
+```java
+private void callRunners(ApplicationContext context, ApplicationArguments args) {
+		List<Object> runners = new ArrayList<>();
+		runners.addAll(context.getBeansOfType(ApplicationRunner.class).values());
+		runners.addAll(context.getBeansOfType(CommandLineRunner.class).values());
+		AnnotationAwareOrderComparator.sort(runners);
+		for (Object runner : new LinkedHashSet<>(runners)) {
+			if (runner instanceof ApplicationRunner) {
+				callRunner((ApplicationRunner) runner, args);
+			}
+			if (runner instanceof CommandLineRunner) {
+				callRunner((CommandLineRunner) runner, args);
+			}
+		}
+	}
+```
+
+通过上面的方法可以看出：
+
+1. 可以通过 @Order 注解或者实现 `org.springframework.core.Ordered` 接口指定 Runner 的执行顺序，值越小，优先级越高。
