@@ -71,7 +71,6 @@ public Object fromMessage(Message message) throws MessageConversionException {
 - 如果 properties 不为 null 且 contentType 为 text，则将 body 转换成 String，然后进行返回
 - 如果 properties 不为 null 且 contentType 为 `application/x-java-serialized-object`，则调用反序列化工具进行反序列化
 
-
 ## contentType 属性
 
 - application/octet-stream: 二进制字节数组存储，反序列化时使用 `byte[]` 进行存储

@@ -69,3 +69,72 @@ public class RabbitEnvironmentPostProcessor implements EnvironmentPostProcessor 
 ```text
 org.springframework.boot.env.EnvironmentPostProcessor=com.autmaple.user.config.RabbitEnvironmentPostProcessor
 ```
+
+## @PropertySource 注解
+
+扩展 @PropertySrouce 注解也可以往 Spring Environment 中注入属性。该注解支持 `properties` 和 `xml` 类型的文件。并且文件的路径可以是 classpath 也可以是系统路径：
+
+- @PropertySource("classpath:rabbitmq.properties")
+- @PropertySource("file:./rabbitmq.properties")
+
+```ad-warning
+title: 注意
+不允许使用资源位置通配符，例如：\*\*/*.properties
+```
+
+如果配置文件是基于 classpath 的，则 classpath 可以省略：
+
+- @PropertySource("rabbitmq.properties")
+
+### 支持 yaml 文件
+
+@PropertySource 注解，默认只支持 properties 和 xml 文件。但是现在 yaml 文件越来越流行，那如何让 @PropertySource 注解支持 yaml 文件呢？这是就需要用到 @PropertySource 注解的 factory 属性了。通过指定一个 PropertySourceFactory 进行加载。
+
+具体步骤如下：
+
+1. 让类 YmlPropertyResourceFactory  实现 PropertySourceFactory 接口
+2. 在 @PropertySource 注解中指定 factory 属性为 YmlPropertyResourceFactory 
+
+```java
+import org.springframework.boot.env.YamlPropertySourceLoader;
+import org.springframework.core.env.PropertySource;
+import org.springframework.core.io.support.DefaultPropertySourceFactory;
+import org.springframework.core.io.support.EncodedResource;
+import org.springframework.core.io.support.PropertySourceFactory;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * 在 @PropertySource 注解的 factory 属性指定 YmlPropertyResourceFactory 类，则可以支持读取 yml
+ */
+public class YmlPropertyResourceFactory implements PropertySourceFactory {
+
+    private static String YML = ".yml";
+    private static String YAML = ".yaml";
+    /**
+     *
+     * @param name：@PropertySource 注解 name 的值
+     * @param resource：资源
+     */
+    @Override
+    public PropertySource<?> createPropertySource(String name, EncodedResource resource) throws IOException {
+        // 文件名称
+        String filename = resource.getResource().getFilename();
+        // 属性源的名称
+        String resourceName = Optional.ofNullable(name).orElse(filename);
+        if (filename.endsWith(YML) || filename.endsWith(YAML)) {
+            List<PropertySource<?>> yamlSources = new YamlPropertySourceLoader().load(resourceName, resource.getResource());
+            return yamlSources.get(0);
+        } else {
+            // 其他文件后缀
+            return new DefaultPropertySourceFactory().createPropertySource(name, resource);
+        }
+    }
+}
+```
+
+```java
+@PropertySource(name = "rabbitmq", value = {"rabbitmq.yml"},factory = YmlPropertyResourceFactory.class)
+```
