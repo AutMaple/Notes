@@ -218,3 +218,142 @@ AmqpAdmin 的 `declareXXX()` 方法在调用之后，会自动在 RabbitMq 中�
 
 > AmqpAdmin 会自动寻找 Spring 容器中类型为 Queue, Exchange, Binding 的 Bean，并自动在 rabbitmq 中进行声明。
 
+# Connection/Topology 的恢复
+
+`RabbitAdmin` 在重新建立 Connection 之后，会再一次声明基础的配置(Queue 以及其他的配置). Spring AMQP 的回复机制并不依赖 `amqp-client` 的自动恢复机制。并且 Spring AMQP 与 `amqp-client` 的恢复机制有些不兼容。因此 Spring AMQP 会将 ConnectionFactory 的 automaticRecoveryEnabled 属性设置为 false。并且如果该值设置为 true, Spring AMQP 也会自动关闭恢复的 Connection。
+
+```ad-caution
+title: 注意
+
+只有被声明称 Bean 的配置(Queues, Exchanges, Bindings) 才会在连接失败之后被重新声明
+```
+
+# 如何检测消息发布是成功还是失败
+
+消息发布失败的场景：
+
+1. 消息发布到 exchange，但是对应的队列不存在
+2. 消息发布到一个不存在的 exchange
+
+对于第一种情况可以通过确认和消息返回这两种机制来判断。
+
+## 消息返回机制(returned messages)
+
+消息返回机制：指的是将消息发送到不可到达的队列，此时 Spring AMQP 会通过回调函数将对应的消息返回给客户端，并告知不可达的原因。
+
+要开启消息返回机制，需要如下几个设置：
+
+1. 将 `AmqpTemplate` 的 `mandatory` 属性设置为 true 或者是 `mandatory-expression` 的计算结果为 true. 
+2. 将 `CachingConnectionFactory` 的 `publisherReturns` 属性设置为 `true`
+3. 通过 `RabbitTemplate` 的 `setReturnsCallback()` 方法设置回调函数:
+
+```java
+    @FunctionalInterface
+    public interface ReturnsCallback extends ReturnCallback {
+        /** @deprecated */
+        @Deprecated
+        default void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
+            throw new UnsupportedOperationException("This should never be called, please open a GitHub issue with a stack trace");
+        }
+
+        void returnedMessage(ReturnedMessage var1);
+
+        /** @deprecated */
+        @Deprecated
+        @Nullable
+        default ReturnCallback delegate() {
+            return null;
+        }
+    }
+
+```
+
+实现 `returnedMessage()` 方法即可。其中该方法的 `ReturnedMessage` 参数有如下几个属性：
+
+-   `message` - the returned message itself
+-   `replyCode` - a code indicating the reason for the return
+-   `replyText` - a textual reason for the return - e.g. `NO_ROUTE`
+-   `exchange` - the exchange to which the message was sent
+-   `routingKey` - the routing key that was used
+
+```ad-caution
+title: 注意
+
+每个 template 只支持一个该类型的回调函数
+```
+
+## 消息确认机制(publisher confirms)
+
+要开启消息确认机制，需要进行如下的设置：
+
+1. 将 `CachingConnectionFactory` 的 `publisherConfirm` 属性设置为 `ConfirmType.CORRELATED`
+2. 将 `CachingConnectionFactory` 的 `publisherReturns` 属性设置为 `true`
+3. 通过 `RabbitTemplate` 的 `setConfirmCallback(ConfirmCallback callback)` 方法设置回调函数:
+
+```java
+@FunctionalInterface  
+public interface ConfirmCallback {  
+    void confirm(@Nullable CorrelationData correlationData, boolean ack, @Nullable String cause);  
+}
+```
+
+- CorrelationData: 是客户端发送消息时提供的
+- ack: 为 rabbitmq 为发送的确认消息，发送成功为 true, 否则为 false
+- cause: 当发送失败时，失败的原因会包含在 cause 参数中
+
+
+## 发布到不存在的 exchange
+
+对于第二种情况，消息会被直接的丢弃并且没有任何的返回。底层的 channel 会在抛出异常后关闭。默认情况下，被抛出的异常会被记录到日志中，但是我们可以通过 `ConnectionFactory` 的 `addChannelListener()` 方法添加一个 `ChannelListener` 来监听 Channel 的创建和关闭事件：
+
+```java
+@FunctionalInterface
+public interface ChannelListener {
+
+	/**
+	 * Called when a new channel is created.
+	 * @param channel the channel.
+	 * @param transactional true if transactional.
+	 */
+	void onCreate(Channel channel, boolean transactional);
+
+	/**
+	 * Called when the underlying RabbitMQ channel is closed for any
+	 * reason.
+	 * @param signal the shut down signal.
+	 */
+	default void onShutDown(ShutdownSignalException signal) {
+	}
+}
+```
+
+## 总结
+
+1. 对于发布确认机制通过注册 ConfirmCallback 即可
+2. 对于队列不可达的情况需要注册消息返回机制
+3. 对于 exchange 不可达(不存在) 的情况通过监听 Channel 的创建和关闭事件来判断
+
+# Container 容器
+
+Contaienr 主要负责 Linstener 的管理。配置 Container 本质上是为了建立 Queue 和 Listener 之间的连接
+
+# 手动 ACK
+
+```java
+    @RabbitListener(
+            queues = "${rabbitmq.rawQueueName}",
+            concurrency = "5",
+            ackMode = "MANUAL"
+    )
+    public void consume(String message,
+                        Channel channel,
+                        @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
+        try {
+	        // channel.basicNack(tag, false, true);
+            channel.basicAck(tag, false);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        log.info("1 <===== {}", message);
+    }
+```

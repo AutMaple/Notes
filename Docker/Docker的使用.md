@@ -47,7 +47,7 @@ LXC 技术主要是借助 Linux 内核中提供的 CGroup 功能和 namespace �
 
 * __namespace 是 Linux 内核用来隔离内核资源的方式。__ 通过 namespace 可以让一些进程只能看到与自己相关的一部分资源，而另外一些进程也只能看到与它们自己相关的资源，这两拨进程根本就感觉不到对方的存在。具体的实现方式是把一个或多个进程的相关资源指定在同一个 namespace 中。Linux namespaces 是对全局系统资源的一种封装隔离，使得处于不同 namespace 的进程拥有独立的全局系统资源，改变一个 namespace 中的系统资源只会影响当前 namespace 里的进程，对其他 namespace 中的进程没有影响。
 
-  （以上关于 namespace 介绍内容来自<https://www.cnblogs.com/sparkdev/p/9365405.html> ，更多关于 namespace 的呢内容可以查看这篇文章 ）。
+  （以上关于 namespace 介绍内容来自<https://www.cnblogs.com/sparkdev/p/9365405.html> ，更多关于 namespace 的内容可以查看这篇文章 ）。
 
 * __CGroup 是 Control Groups 的缩写，是 Linux 内核提供的一种可以限制、记录、隔离进程组 (process groups) 所使用的物力资源 (如 cpu memory i/o 等等) 的机制。__
 
@@ -116,3 +116,136 @@ $ docker start [name or id]
 ```
 
 只是单纯的启动。不会新建容器 
+
+# docker compose 的使用
+
+docker compose 的作用是根据 yaml 配置文件，一次性启动多个容器。有了 docker compose，只需要配置一次 yaml 文件，就可以在不同的机器上使用相同的运行环境。
+
+docker compose 的配置文件是 `docker-compose.yaml` 文件。docker compose 运行时，默认会在命令运行的目录中找 `docker-compose.yaml` 文件。
+
+- [docker-compose.yaml 选项官方文档](https://docs.docker.com/compose/compose-file/)
+- [docker-compose.yaml 选项中文资料](https://yeasy.gitbook.io/docker_practice/compose/compose_file)
+
+## 常用命令
+
+| 命令                                  | 描述                                                               |
+| ------------------------------------- | ------------------------------------------------------------------ |
+| docker compose \[-f path]             | 指定配置文件的位置,不指定则为当前目录下的 docker-compose.yaml 文件 |
+| docker compose up                     | 根据配置文件创建并启动容器                                         |
+| docker compose up -d                  | 根据配置文件启动容器，并在后台运行                                 |
+| docker compose down                   | 关闭并删除配置文件启动的容器                                       |
+| docker compose ps                     | 查看配置文件启动的容器                                             |
+| docker compose stop                   | 关闭配置文件启动的容器                                             |
+| docker compose rm                     | 删除停止的容器                                                     |
+| docker compose run                    | 在指定的容器(服务)中运行命令                                       |
+| docker compose down --volumes         | 关闭并删除配置文件启动的容器以及容器对应的 volumes                 |
+| docker compose scale                  | 设置某个服务容器的数量                                             |
+| docker compose cp \[source] \[target] | 将 source 处的文件复制到 target 处, 容器和本地可以相互复制         | 
+
+### copy 命令
+
+将本机文件复制到所有的容器中
+
+```bash
+$ docker compose cp --all ~/local/path/to/source/file my-service:~/path/to/copied/fil
+```
+
+### scale 命令
+
+scale 命令用于指定服务运行容器的个数
+
+```bash
+$ docker compose scale web=2 db=3
+```
+
+
+## 环境变量
+
+docker compose 的配置文件中可以包含 Shell 中的环境变量，只需要在配置文件中使用 `${variable}` 或者 `$variable` 进行引用即可，使用 docker compose 启动服务时，会自动读取指定环境变量的值进行替换。如果没有找到对应的环境变量则会使用空字符串来进行替换。如果在配置文件中要使用 `$` 符，使用 `$$` 进行转义即可
+
+我们可以通过 `.env` 文件来设置环境变量的默认值。如果 Shell 存在对应的环境变量就使用 Shell 环境变量的值，否则使用 `.env` 文件中环境变量的默认值。
+
+我们可以通过 `--env-file` 选项来指定 `.env` 文件。如果不指定，则默认在命令运行的目录中查找 `.env` 文件
+
+```ad-important
+title: 注意
+
+`.env` 文件只在运行 docker compose up 命令时有效
+```
+
+`.env` 文件本质上是键值对，并且值可用单引号或者双引号包裹起来，并且支持转义符，如 `\n`, `\r`, `\t` 等。`#` 开头的为注释，并且如果在一行的中间使用注释，则 `#` 的前面需要有一个空格
+
+```txt
+VAR=VAL
+VAR="VAL"
+VAR='VAL'
+VAR=VAL # this is comment.
+```
+
+## 指定不同环境下的配置文件
+
+docker compose 允许只有在指定了 profile 时，对应的容器才会启动。配置文件中配置的多个 profiles 是 or 的关系，即只需要其中一个被激活，就会启动对应的服务
+
+```yaml
+version: "3.9"
+services:
+  frontend:
+    image: frontend
+    profiles: ["frontend"]
+
+  phpmyadmin:
+    image: phpmyadmin
+    depends_on:
+      - db
+    profiles:
+      - debug
+
+  backend:
+    image: backend
+
+  db:
+    image: mysql
+```
+
+上面的配置文件，当执行 `docker comose up` 命令的时，只会启动 `db` 和 `backend` 服务，而 `frontend` 和 `phpmyadmin` 服务则不会启动, 因为没有为它们指定 profile 
+
+### 指定 profiles
+
+指定 profiles，可以通过命令行参数 `--profile` 或者 `COMPOSE_PROFILES` 环境变量。
+
+```bash
+$ docker compose --profile debug up
+
+$ COMPOSE_PROFILES=debug docker compose up
+```
+
+上面的这两条命令都可以开启 phpmyadmin 服务
+
+如果我们直接通过命令启动配置了 profile 的服务，那么就不需要在指定 profile
+，例如直接启动 phpmyadmin 容器
+
+```bash
+$ docker compose run phpmyadmin
+```
+
+此时相当于激活了 phpmyadmin 配置的 debug 环境。其他配置了 debug 环境的服务也会启动
+
+# docker compose 中的网络
+
+通过 docker compose 启动的容器，默认处于同一个网络中，并且主机名就是服务名，被启动的容器通过主机名就可以可以相互间进行通信。
+
+docker compose 默认的网络名是 `项目名_deafult`，项目名为 docker-compose.yaml 文件所在目录的名字，我们也可以通过命令行参数 `--project-name` 或者环境变量 `COMPOSE_PROJECT_NAME` 来自定义项目名。
+
+```yaml
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+  db:
+    image: postgres
+    ports:
+      - "8001:5432"
+```
+
+根据上面的配置文件启动之后，web 服务就可以通过 `postgres://db:5432` 连接到 db 服务
