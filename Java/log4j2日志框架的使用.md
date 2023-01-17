@@ -43,6 +43,7 @@ log4j 2.x 版本不再支持像 1.x 中的 `.properties` 后缀的文件配置�
 | ---------- | -------------------------------------------------------------------------------- |
 | `%d`       | 输出时间，后可接时间输出的样式，如 `%d{yyyy-MM-dd HH:mm:ss, SSS}`                |
 | `%t`       | 输出当前线程的名称                                                               |
+| `%p`       | 输出日志等级                                                                     |
 | `%-5level` | 输出日志级别，`-5` 表示左对齐并且固定输出 5 个字符，如果不足则在右边使用空格补齐 |
 | `%logger`  | 输出 logger 的名称，                                                             |
 | `%msg`     | 日志信息，即我们传入的信息                                                       |
@@ -50,6 +51,57 @@ log4j 2.x 版本不再支持像 1.x 中的 `.properties` 后缀的文件配置�
 | `%F`       | 输出日志语句所在类的文件名                                                       |
 | `%L`       | 输出日志语句在代码中的行号                                                       |
 | `%M`       | 输出方法名                                                                       |
-| `%l`       | 输出日志语句所在的位置，包括类名、方法名、文件名、行号                           | 
+| `%l`       | 输出日志语句所在的位置，包括类名、方法名、文件名、行号                           |
 | `%%`       | 输出一个 %                                                                       |
+| `%C`       | 输出日志输出语句所在类的全限定类名                                                                   | 
 
+# Arbiters(裁决)
+
+Arbiters 根据运行的环境来判断是否需要将 Appender 作为配置的一部分。Arbiters 会在配置文件对应的 Node Tree 转换成 Configuration 之前，获取运行环境中的一些属性，并判断是否需要将它的子节点添加的 Node Tree 中:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!--日志级别以及优先级排序: OFF > FATAL > ERROR > WARN > INFO > DEBUG > TRACE > ALL -->
+<!--Configuration后面的 status，这个用于设置 log4j2 自身内部的信息输出，可以不设置，当设置成trace时，你会看到log4j2内部各种详细输出-->
+<!--monitorInterval：该参数用于设置重新读取配置文件的间隔，单位秒-->
+<Configuration name="ConfigTest" status="ERROR" monitorInterval="5">
+    <Appenders>
+	    <!-- 获取启动程序时，通过 -D 选项设置的参数名为 env 的值-->
+		<!-- 如果 env 的值为 dev 就将 Console 节点加入到 Node Tree 中 -->
+        <SystemPropertyArbiter propertyName="env" propertyValue="dev">
+            <Console name="Out">
+                <PatternLayout pattern="%m%n"/>
+            </Console>
+        </SystemPropertyArbiter>
+    </Appenders>
+    <Loggers>
+        <Logger name="org.apache.test" level="trace" additivity="false">
+            <AppenderRef ref="Out"/>
+        </Logger>
+        <Root level="info">
+            <AppenderRef ref="Out"/>
+        </Root>
+    </Loggers>
+</Configuration>
+```
+
+# 根据环境挑选配置文件
+
+开发项目时，经常出现一个项目多个环境的情况，而不同的环境对日志的要求是不一样的。
+
+SpringBoot 项目可以通过如下方式进行配置：
+
+application.yaml 文件：
+
+```yaml
+spring:
+  profiles:
+    active: dev
+```
+
+application-dev.yaml 文件：
+
+```yaml
+logging:  
+  config: classpath:log4j2-dev.xml
+```
