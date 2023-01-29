@@ -1,4 +1,4 @@
-# ava基础
+# java基础
 
 ## 数据类型
 
@@ -592,7 +592,7 @@ System.out.println(value);
 
 #### 循环 JsonNode 字段
 
-JsonNode 类具有一个名为 fieldNames() 的方法，该方法返回一个 Iterato r，可以迭代 JsonNode 的所有字段名称
+JsonNode 类具有一个名为 fieldNames() 的方法，该方法返回一个 Iterator，可以迭代 JsonNode 的所有字段名称
 
 ```java
 ObjectMapper mapper = new ObjectMapper();
@@ -610,3 +610,46 @@ while(it.hasNext()){
 | ---------- | ------------------------------------- |
 | JsonIgnore | 告诉 Jackson 忽略 Java 对象的某个属性 |
 | JsonFormat | 告诉 Jackson 转换成对应格式的数据     |
+
+#### 添加自定义序列化器
+
+1. 继承 JsonSerializer 类
+2. 通过 Module 类设置自定义的 JsonSerializer 
+
+```java
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.yihuo.device.feign.common.enums.IEnum;
+
+import java.io.IOException;
+
+public class IEnumSerializer extends JsonSerializer<IEnum> {
+    @Override
+    public void serialize(IEnum value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        gen.writeStartObject();
+        gen.writeNumberField("code", value.getCode());
+        gen.writeStringField("message", value.getMessage());
+        gen.writeEndObject();
+    }
+}
+```
+
+```java
+import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.yihuo.device.feign.common.enums.IEnum;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class JacksonConfiguration {
+
+    @Bean
+    Module module() {
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(IEnum.class, new IEnumSerializer());
+        return module;
+    }
+}
+```
