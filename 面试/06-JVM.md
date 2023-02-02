@@ -1185,6 +1185,25 @@ JVM具有四种类型的*GC*实现：
 | -XX:ParallelGCThreads      | 并行收集器的线程数                                         |                      | 此值最好配置与处理器数目相等 同样适用于 CMS                  |
 | -XX:MaxGCPauseMillis       | 每次年轻代垃圾回收的最长时间(最大暂停时间)                 |                      | 如果无法满足此时间,JVM 会自动调整年轻代大小,以满足此值.      |
 
+# JVM 选项优先级
+
+如果在启动 JVM 时，同时设置了多个控制相同参数的选项，那么这些选项优先级是怎么样的呢？
+
+以设置年轻代的堆内存大小为例，可以设置年轻代大小的选项如下：
+
+- -XX:NewSize
+- -XX:MaxNewSize
+- -Xmn
+- -XX:NewRatio
+
+这几个 JVM 的优先级如下：
+
+1. -XX:NewSize, -XX:MaxNewSize
+2. -Xmn
+3. -XX:NewRatio
+
+`-Xmn=100` 与 `-XX:NewSize=100, -XX:MaxNewSize=100` 选项设置等价
+
 # 排查 JVM 问题
 
 对于还在正常运⾏的系统：
@@ -1197,7 +1216,7 @@ JVM具有四种类型的*GC*实现：
 
 对于已经发⽣了 OOM 的系统：
 1. ⼀般⽣产系统中都会设置当系统发⽣了 OOM 时，⽣成当时的 dump ⽂件（-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/base）
-2. 我们可以利⽤ jsisualvm 等⼯具来分析 dump ⽂件
+2. 我们可以利⽤ jvisualvm 等⼯具来分析 dump ⽂件
 2. 根据 dump ⽂件找到异常的实例对象，和异常的线程（占⽤ CPU ⾼），定位到具体的代码
 3. 然后再进⾏详细的分析和调试
 
