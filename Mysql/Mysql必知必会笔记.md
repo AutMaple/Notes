@@ -13,6 +13,7 @@
 | `show character set`                                | 查看数据库支持的字符集    |
 | `show collation`                                    | 查看所有字符集的校对规则  |
 | `show table status like '<tableName>' \G`           | 查看 tableName 表的信息   |
+| `show variables like 'datadir'`                     | 查看数据存放的位置        |
 
 # Select 命令
 
