@@ -162,6 +162,55 @@ mvn help:system
 </properties>
 ```
 
+## 内置变量
+
+- ${basedir} 项目根目录(即 pom.xml 文件所在目录)
+- ${project.build.directory} 构建目录，缺省为 target 目录
+- ${project.build.outputDirectory} 构建过程输出目录，缺省为target/classes
+- `${project.build.finalName}` 产出物名称，缺省为`${project.artifactId}-${project.version}`
+- ${project.packaging} 打包类型，缺省为jar
+- ${project.xxx} 当前 pom 文件的任意节点的内容
+- `${env.xxx}` 获取系统环境变量。例如,"env.PATH"指代了$path环境变量（在 Windows上 是 %PATH% ）。
+- ${settings.xxx} 指代了 settings.xml 中对应元素的值。例如：`<settings><offline>false</offline></settings>` 通过 ${settings.offline} 获得 offline 的值。
+- Java System Properties: 所有可通过java.lang.System.getProperties() 访问的属性都能在POM 中使用，例如 ${JAVA_HOME}。
+
+Maven总共有6类属性，内置属性、POM属性、自定义属性、Settings属性、java系统属性和环境变量属性；
+
+### 内置属性
+
+两个常用内置属性 ${basedir} 或者 ${project.basedir} 表示项目跟目录，即包含pom.xml文件的目录 ${version} 表示项目版本
+
+### POM 属性
+
+用户可以使用该类属性引用POM文件中对应元素的值。如${project.artifactId} 就对应了`<project> <artifactId>`元素的值，常用的POM属性包括：
+
+- ${project.build.sourceDirectory}: 项目的主源码目录，默认为 `src/main/java/`
+- ${project.build.testSourceDirectory}: 项目的测试源码目录，默认为src/test/java/
+- ${project.build.directory}: 项目构建输出目录，默认为target/
+- ${project.outputDirectory}: 项目主代码编译输出目录，默认为target/classes/
+- ${project.testOutputDirectory}：项目测试主代码输出目录，默认为target/testclasses/
+- ${project.groupId}：项目的groupId
+- ${project.artifactId}：项目的artifactId
+- ${project.version}：项目的 version,与 ${version} 等价
+- `${project.build.finalName}`: 项目打包输出文件的名称，默认为 `${project.artifactId}-${project.version}`
+
+### 自定义属性
+
+如下 account-aggregator 的 pom.xml，那么继承了此pom.xml 的子模块也可以用此自定义属性
+
+### Settings属性
+
+与POM属性同理，用户使用以 settings. 开头的属性引用settings.xml 文件中的 XML 元素的值。 
+
+### Java系统属性
+
+所有 java 系统属性都可以用 Maven 属性引用，如 ${user.home} 指向了用户目录。
+
+### 环境变量属性
+
+所有环境变量属性都可以使用以 `env.` 开头的 Maven 属性引用，如 ${env.JAVA_HOME} 指代了 JAVA_HOME 环境变量的的值。
+
+
 ## 常用命令
 
 | 命令               | 说明                                                         |
