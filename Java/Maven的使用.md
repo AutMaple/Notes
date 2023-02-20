@@ -597,3 +597,171 @@ pom.xml
     </snapshotRepository>
 </distributionManagement>
 ```
+
+# Maven 生命周期
+
+Maven 由三个内置的生命周期：
+
+- default: 负责项目的部署
+- clean：清除前一个构建生成的所有文件
+- site: 生成在线网站文档
+
+每一个生命周期又是由一系列的阶段 (phases) 组成的：
+
+- default: 由 23 个 phase 组成
+- clean： 由 3 个 phase 组成
+- site: 由 4 个 phase 组成
+
+## default 生命周期
+
+default 声明周期所有的 phase 可查看[官方文档](https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#lifecycle-reference), 这里列举几个比较重要的 phase:
+
+- validate: check if all information necessary for the build is available 
+- compile: compile the source code
+- test-compile: compile the test source code
+- test: run unit tests
+- package: package compiled source code into the distributable format (jar, war, …)
+- integration-test: process and deploy the package if needed to run integration tests
+- install: install the package to a local repository
+- deploy: copy the package to the remote repository
+
+```ad-warning
+phase 是按顺序执行的，也就是说执行某个 phase 时，排在该 phase 前的所有的 phase 都必须成功执行
+```
+
+当我们执行 default 生命周期的最后一个 phase: `deploy`. 意味着 default 生命周期中所有的 phase 都会被执行
+
+## 插件前缀
+
+Maven 对于插件 artifactId 的命名有以下规范
+
+- 官方：`maven-${prefix}-plugin`
+- 第三方：`${prefix}-maven-plugin`
+
+如果插件命名符合上面这两个规范，在使用到插件的地方，可以使用 prefix 直接引用，Maven 会自动关联上。
+
+```shell
+$ mvn maven-compiler-plugin:compile
+$ mvn compiler:compile
+```
+
+上面两个命令式等价的
+
+## Maven Goal
+
+每个 phase 是由一些列 goal 组成的，当我们执行一个 phase 时，绑定到该 phase 的所有 goal 都会被执行。下面是 Maven 中的一些默认绑定：
+
+- `jar:jar`: jar 插件名为 jar 的 goal 绑定到了 default 生命周期的 `package` phase
+- `war:war`: war 插件名为 war 的 goal 绑定到了 default 声明中期中的 `package` phase
+- `compiler:compile`: compiler 插件名为 compile 的 goal 绑定到了 default 生命周期的 `compile` phase
+- `compiler:testCompile`： compiler 插件名为 textCompile 的 goal 绑定到了 default 生命周期的 `test-compile` phase
+- `surefire:test`: surefile 插件名为 test 的 goal 绑定到了 default 生命周期的 `test` phase
+- `install:install` install 插件名为 install 的 goal 绑定到了 default 生命周期的 `install` phase
+
+```ad-info
+每个 Maven 插件都可以声明多个 goal， 并与 maven 生命周期中的某个 phase 相绑定
+```
+
+## 查看项目中 goal 与 phase 的绑定关系
+
+```shell
+$ mvn help:describe -Dcmd=<Phase Name>
+```
+
+例如查看绑定到 compile phase 的 goal
+
+```shell
+$ mvn help:describe -Dcmd=compile
+```
+
+输出：
+
+```text
+'compile' is a phase corresponding to this plugin:
+org.apache.maven.plugins:maven-compiler-plugin:3.1:compile
+```
+
+上面的输出表示 `maven-compiler-plugin` 的 complie goal 绑定到了 default 生命周期的 compile phase 
+
+```ad-info
+上述命令除了会输出 compile phase 绑定的 goal 外，还会输出当前项目 default  生命周期其他 phase 绑定的 goal
+```
+
+```text
+It is a part of the lifecycle for the POM packaging 'jar'. This lifecycle includes the following phases:
+* validate: Not defined
+* initialize: Not defined
+* generate-sources: Not defined
+* process-sources: Not defined
+* generate-resources: Not defined
+* process-resources: org.apache.maven.plugins:maven-resources-plugin:2.6:resources
+* compile: org.apache.maven.plugins:maven-compiler-plugin:3.1:compile
+* process-classes: Not defined
+* generate-test-sources: Not defined
+* process-test-sources: Not defined
+* generate-test-resources: Not defined
+* process-test-resources: org.apache.maven.plugins:maven-resources-plugin:2.6:testResources
+* test-compile: org.apache.maven.plugins:maven-compiler-plugin:3.1:testCompile
+* process-test-classes: Not defined
+* test: org.apache.maven.plugins:maven-surefire-plugin:2.12.4:test
+* prepare-package: Not defined
+* package: org.apache.maven.plugins:maven-jar-plugin:2.4:jar
+* pre-integration-test: Not defined
+* integration-test: Not defined
+* post-integration-test: Not defined
+* verify: Not defined
+* install: org.apache.maven.plugins:maven-install-plugin:2.4:install
+* deploy: org.apache.maven.plugins:maven-deploy-plugin:2.7:deploy
+
+```
+
+# Maven 默认插件
+
+一个 maven 插件可以定义多个 goal
+
+## 如何使用插件
+
+要使用插件，首先得知道插件有哪些 goal，每个插件都会包含`help` goal，输出插件中 goal 的简介文档:
+
+```shell
+$ mvn compiler:help
+```
+
+输出
+
+```text
+This plugin has 3 goals:
+
+compiler:compile
+  Compiles application sources
+
+compiler:help
+  Display help information on maven-compiler-plugin.
+  Call mvn compiler:help -Ddetail=true -Dgoal=<goal-name> to display parameter
+  details.
+
+compiler:testCompile
+  Compiles application test sources.
+```
+
+如果要查看某个 goal (例如 compile)的详细情况可以使用如下命令：
+
+```shell
+mvn compiler:help -Ddetail -Dgoal=compile
+```
+
+## 执行插件的某个 goal
+
+```shell
+$ mvn <plugin name>:<goal>
+```
+
+例如执行 `complier` 的 compile goal
+
+```shell
+$ mvn compiler:compile
+```
+
+```ad-warning
+我们在执行 maven 命令时，必须指定生命周期中的某个 phase 或者插件的某个 goal, 否则 maven 会报错。goal 是与 phase 绑定的，所以指定插件的 goal 也是可行的
+```
