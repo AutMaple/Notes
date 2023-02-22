@@ -59,27 +59,28 @@ LXC 技术主要是借助 Linux 内核中提供的 CGroup 功能和 namespace �
 
 ## 常用命令
 
-| 命令                                                   | 描述                                                         |
-| ------------------------------------------------------ | ------------------------------------------------------------ |
-| docker version                                         | 查看 docker 版本                                             |
-| docker images                                          | 查看所有以下载的镜像,等价于 docker image ls 命令             |
-| docker contianer ls                                    | 查看所有的容器                                               |
-| docker container kill \[containerId]                   | 杀死正在运行的容器                                           |
-| docker container run --rm                              | 在容器停止运行后自动删除容器文件                             |
-| docker container start                                 | 启动一个已经存在的容器                                       |
-| docker container stop \[containerId]                   | 停止运行指定 containerId 的容器                              |
-| docker container exec -it \[containerId] /bin/bash     | 进入一个正在运行的容器                                       |
-| docker container logs                                  | 查看 docker 容器的输出，即容器里面 Shell 的标准输出          |
-| docker ps                                              | 查看正在运行的容器                                           |
-| docker prune                                           | 清理临时的、没有被使用的镜像文件 -a --all: 删除所有没有用的镜像文件，而不仅仅是临时文件 |
-| docker search \[keywords]                              | 查找 keywords 相关的镜像                                     |
-| docker pull \[keywords:version]                        | 拉取名为 keywords 的镜像到本地，并且可以指定版本号           |
+| 命令                                                   | 描述                                                                                                                   |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| docker version                                         | 查看 docker 版本                                                                                                       |
+| docker images                                          | 查看所有以下载的镜像,等价于 docker image ls 命令                                                                       |
+| docker contianer ls                                    | 查看所有的容器                                                                                                         |
+| docker container kill \[containerId]                   | 杀死正在运行的容器                                                                                                     |
+| docker container run --rm                              | 在容器停止运行后自动删除容器文件                                                                                       |
+| docker container start                                 | 启动一个已经存在的容器                                                                                                 |
+| docker container stop \[containerId]                   | 停止运行指定 containerId 的容器                                                                                        |
+| docker container exec -it \[containerId] /bin/bash     | 进入一个正在运行的容器                                                                                                 |
+| docker container logs                                  | 查看 docker 容器的输出，即容器里面 Shell 的标准输出                                                                    |
+| docker ps                                              | 查看正在运行的容器                                                                                                     |
+| docker prune                                           | 清理临时的、没有被使用的镜像文件 -a --all: 删除所有没有用的镜像文件，而不仅仅是临时文件                                |
+| docker search \[keywords]                              | 查找 keywords 相关的镜像                                                                                               |
+| docker pull \[keywords:version]                        | 拉取名为 keywords 的镜像到本地，并且可以指定版本号                                                                     |
 | docker rmi \[imageId]                                  | 删除指定的镜像，等价于 docker image rm \[imageId]，删除镜像前需要查看有没有被容器引用，可以使用 docker ps 命令进行查看 |
-| docer run -d                                           | 设置容器在后台运行，同时运行成功后在终端输出容器的 ID        |
-| docker cp \[Hostfile] \[containerId:containerFilePath] | 将主机中的文件复制到容器中, 这两个参数可以互换位置，实现容器到主机的文件复制 |
-| docker inspect \[containerId]                          | 返回指定容器的详细信息,如监听的端口，绑定的 IP 地址等        |
-| docker top \[containerId]                              | 查看指定容器运行的进程                                       |
-| docker stop $(docker ps -a -q)                         | 停止所有在运行的容器                                         |
+| docer run -d                                           | 设置容器在后台运行，同时运行成功后在终端输出容器的 ID                                                                  |
+| docker cp \[Hostfile] \[containerId:containerFilePath] | 将主机中的文件复制到容器中, 这两个参数可以互换位置，实现容器到主机的文件复制                                           |
+| docker inspect \[containerId]                          | 返回指定容器的详细信息,如监听的端口，绑定的 IP 地址等                                                                  |
+| docker top \[containerId]                              | 查看指定容器运行的进程                                                                                                 |
+| docker stop $(docker ps -a -q)                         | 停止所有在运行的容器                                                                                                   |
+| `docker build -t <imageName> <dockerfileDir>`          | 根据 dockerfileDir 中的 Dockerfile 构建 image，并将镜像名设置为 imageName                                              | 
 
 ### 命令参数注意事项
 
@@ -249,3 +250,88 @@ services:
 ```
 
 根据上面的配置文件启动之后，web 服务就可以通过 `postgres://db:5432` 连接到 db 服务
+
+# 容器时区问题解决方案
+
+在 Linux 系统中，控制时区和时间主要是两个地方：
+
+- `/etc/timezone`: 时区设置，一般链接指向 `/usr/share/zoneinfo` 目录下的具体时区
+- `/etc/localtime`: 时间设置，当前时区下的时间设置
+
+## 修改容器时间
+
+### 宿主机是 linux 系统
+
+如果宿主机是 linux 系统，可以直接将 `/etc/timezone` 和 `/etc/localtime` 挂载到容器对应的位置:
+
+```bash
+$ docker run --name web -v /etc/timezone:/etc/timezone:ro -v /etc/localtime:/etc/localtime:ro -d web
+```
+
+### 指定 TZ 环境变量
+
+- 适用于基于 Debian 基础镜像, CentOS 基础镜像制作的 Docker 镜像
+- 不适用于基于 Alpine 基础镜像, Ubuntu 基础镜像制作的 Docker 镜像
+
+对于基于 Debian 基础镜像，CentOS 基础镜像制作的 Docker 镜像，在运行 Docker 容器时，传递环境变量 `-e TZ=Asia/Shanghai` 进去，能修改 docker 容器时区。
+
+```bash
+-e TZ=Asia/Shanghai
+```
+
+## 制作镜像修改时间
+
+### 1. Alpine
+
+根据[《Setting the timezone》](https://wiki.alpinelinux.org/wiki/Setting_the_timezone)提示，我们可以将以下代码添加到 Dockerfile 中：
+
+```dockerfile
+ENV TZ Asia/Shanghai
+
+RUN apk add tzdata && cp /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && echo ${TZ} > /etc/timezone \
+    && apk del tzdata
+```
+
+### 2. Debian
+
+Debian 基础镜像 中已经安装了 tzdata 包，我们可以将以下代码添加到 Dockerfile 中：
+
+```dockerfile
+ENV TZ=Asia/Shanghai \
+    DEBIAN_FRONTEND=noninteractive
+
+RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && echo ${TZ} > /etc/timezone \
+    && dpkg-reconfigure --frontend noninteractive tzdata \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+### 3. Ubuntu
+
+Ubuntu 基础镜像中没有安装了 tzdata 包，因此我们需要先安装 tzdata 包。
+
+我们可以将以下代码添加到 Dockerfile 中。
+
+```dockerfile
+ENV TZ=Asia/Shanghai \
+    DEBIAN_FRONTEND=noninteractive
+
+RUN apt update \
+    && apt install -y tzdata \
+    && ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && echo ${TZ} > /etc/timezone \
+    && dpkg-reconfigure --frontend noninteractive tzdata \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+### 4. CentOS
+
+CentOS 基础镜像中已经安装了 tzdata 包，我们可以将以下代码添加到 Dockerfile 中。
+
+```dockerfile
+ENV TZ Asia/Shanghai
+
+RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && echo ${TZ} > /etc/timezone
+```
