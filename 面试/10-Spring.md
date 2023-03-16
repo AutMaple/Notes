@@ -161,6 +161,14 @@ MVC 是一种设计模式,Spring MVC 是一款很优秀的 MVC 框架。Spring M
 
 推荐阅读文章：[Spring事务传播行为](https://juejin.cn/post/6844903600943022088) --> 该文章讲的非常详细
 
+```ad-info
+title: 总结
+
+- 处于同一个事务中的不同方法 A 和 B，只要其中的一个方法触发了回滚操作，整个事务都得进行回滚，即 B 对数据库的操作也需要回滚。
+- 同一个方法存在多个非嵌套事务，触发回滚操作时，只回滚处于同一个事务中进行的操作，其他的事务不受影响。
+- 同一个方法中的嵌套事务，外层事务回滚时，内层事务也需要回滚；而内层事务回滚时，外层事务不需要回滚。
+```
+
 ## Spring 事务中的隔离级别有哪几种?
 
 和事务传播行为这块一样，为了方便使用，Spring 也相应地定义了一个枚举类：`Isolation`
@@ -469,9 +477,7 @@ AutoConfigurationEntry getAutoConfigurationEntry(AutoConfigurationMetadata autoC
 ```
 
 1. 判断自动装配开关是否打开。默认 `spring.boot.enableautoconfiguration=true`，可在 `application.properties` 或 `application.yml` 中设置
-
 2. 用于获取 `EnableAutoConfiguration` 注解中的 `exclude` 和 `excludeName`。
-
 3. 获取需要自动装配的所有配置类，读取 `META-INF/spring.factories`
 
 ```java
@@ -497,8 +503,7 @@ spring-boot/spring-boot-project/spring-boot-autoconfigure/src/main/resources/MET
    }
    ```
 
-   有兴趣的童鞋可以详细了解下 Spring Boot 提供的条件注解
-
+有兴趣的童鞋可以详细了解下 Spring Boot 提供的条件注解
    - `@ConditionalOnBean`：当容器里有指定 Bean 的条件下
    - `@ConditionalOnMissingBean`：当容器里没有指定 Bean 的情况下
    - `@ConditionalOnSingleCandidate`：当指定 Bean 在容器中只有一个，或者虽然有多个但是指定首选 Bean
@@ -511,7 +516,6 @@ spring-boot/spring-boot-project/spring-boot-autoconfigure/src/main/resources/MET
    - `@ConditionalOnJndi`：在 JNDI 存在的条件下差在指定的位置
    - `@ConditionalOnNotWebApplication`：当前项目不是 Web 项目的条件下
    - `@ConditionalOnWebApplication`：当前项目是 Web 项 目的条件下
-
 ## starter 组件命名规则
 
 `SpringBoot` 官方的建议是，如果是我们开发者自己开发的 `starter` 组件（即属于第三方组件），那么命名规范是`{name}-spring-boot-starter`，而如果是 `SpringBoot` 官方自己开发的组件，则命名为 `spring-boot-starter-{name}`。
@@ -565,7 +569,7 @@ spring-boot/spring-boot-project/spring-boot-autoconfigure/src/main/resources/MET
 
 - 单纯做 Spring Boot 开发，可能不太容易遇到 bootstrap.properties 配置文件，但是在结合 Spring Cloud 时，这个配置就会经常遇到了，特别是在需要加载一些远程配置文件的时侯。
 - spring boot 核心的两个配置文件：
-  - bootstrap (. yml 或者 . properties)：boostrap 由父 ApplicationContext 加载的，比 applicaton 优先加载，配置在应用程序上下文的引导阶段生效。一般来说我们在 Spring Cloud 配置就会使用这个文件。且 boostrap 里面的属性不能被覆盖；
+  - bootstrap (. yml 或者 . properties)：boostrap 由父 ApplicationContext 加载的，比 application 优先加载，配置在应用程序上下文的引导阶段生效。一般来说我们在 Spring Cloud 配置就会使用这个文件。且 boostrap 里面的属性不能被覆盖；
   - application (. yml 或者 . properties)： 由 ApplicatonContext 加载，用于 spring boot 项目的自动化配置。
 
 ### 什么是 Spring Profiles？
