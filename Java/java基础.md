@@ -653,3 +653,46 @@ public class JacksonConfiguration {
     }
 }
 ```
+
+#### RabbitMQ 自定义序列化器
+
+1. 自定义序列化器
+2. 在 ObjectMapper 对象中注入自定义序列化器
+3. 将 ObjectMapper 对象注入到 MessageConverter 中
+4. 将 MessageConverter 注入到 IOC 容器中
+
+```java
+@Configuration
+public class RabbitConfiguration {
+	@Bean
+    RabbitListenerContainerFactory<?> rabbitListenerContainerFactory() {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory());
+        factory.setMessageConverter(messageConverter());
+        return factory;
+    }
+
+    @Bean
+    MessageConverter messageConverter() {
+        return new Jackson2JsonMessageConverter(objectMapper());
+    }
+
+    @Bean
+    ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(JobState.class, new JobStateSerializer());
+        module.addSerializer(DeviceState.class, new DeviceStateSerializer());
+        module.addSerializer(ChannelState.class, new ChannelStateSerializer());
+        mapper.registerModule(module);
+        return mapper;
+    }
+}
+
+public class JobStateSerializer extends JsonSerializer<JobState> {
+    @Override
+    public void serialize(JobState value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        gen.writeNumber(value.getCode());
+    }
+}
+```
